@@ -1,0 +1,1472 @@
+"use client";
+
+import { useState, useRef, useCallback, useTransition } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/formatting";
+import { INDUSTRY_OPTIONS } from "@/lib/constants";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Download,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
+import {
+  createProposalAction,
+  updateProposalContentAction,
+  exportProposalPdfAction,
+  exportProposalDocxAction,
+} from "@/actions/proposals";
+import { SalesEnablementPanel } from "./sales-enablement-panel";
+import type {
+  ClientWithContracts,
+  Proposal,
+  ProposalContent,
+  ProposalServiceRef,
+  BundleType,
+} from "@/lib/types";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface ActiveBundle {
+  id: string;
+  name: string;
+  bundle_type: BundleType;
+}
+
+interface BundleVersionInfo {
+  id: string;
+  suggested_price: number | null;
+  seat_count: number;
+}
+
+interface SalesStudioClientProps {
+  clients: ClientWithContracts[];
+  activeBundles: ActiveBundle[];
+  bundleVersions: Record<string, BundleVersionInfo>;
+  proposals: Proposal[];
+  initialMode: "client" | "prospect";
+  preSelectedClientId: string | null;
+  preSelectedClientContracts: {
+    bundle_id: string;
+    bundle_version_id: string;
+    bundle_name: string;
+  }[];
+  orgName: string;
+  orgTargetVerticals: string[];
+  playbookStatus: Record<string, boolean>;
+}
+
+interface ServiceSelection {
+  bundle_id: string;
+  pricing_version_id: string;
+  service_name: string;
+  checked: boolean;
+  suggested_price: number | null;
+}
+
+type StudioTab = "generate" | "past";
+
+// ── Helper ───────────────────────────────────────────────────────────────────
+
+function downloadBase64(base64: string, filename: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
+export function SalesStudioClient({
+  clients,
+  activeBundles,
+  bundleVersions,
+  proposals,
+  initialMode,
+  preSelectedClientId,
+  preSelectedClientContracts,
+  orgName,
+  orgTargetVerticals,
+  playbookStatus,
+}: SalesStudioClientProps) {
+  const [, startTransition] = useTransition();
+
+  // ── Tab state ──────────────────────────────────────────────────────────
+  const [tab, setTab] = useState<StudioTab>("generate");
+
+  // ── Mode state ─────────────────────────────────────────────────────────
+  const [mode, setMode] = useState<"client" | "prospect" | "enablement">(initialMode);
+
+  // ── Client mode state ──────────────────────────────────────────────────
+  const [clientId, setClientId] = useState(preSelectedClientId ?? "");
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientServices, setClientServices] = useState<ServiceSelection[]>(
+    () =>
+      preSelectedClientContracts.map((c) => ({
+        bundle_id: c.bundle_id,
+        pricing_version_id: c.bundle_version_id,
+        service_name: c.bundle_name,
+        checked: true,
+        suggested_price:
+          bundleVersions[c.bundle_id]?.suggested_price ?? null,
+      }))
+  );
+
+  // ── Prospect mode state ────────────────────────────────────────────────
+  const [prospectName, setProspectName] = useState("");
+  const [prospectIndustry, setProspectIndustry] = useState("");
+  const [prospectSize, setProspectSize] = useState("");
+  const [primaryConcern, setPrimaryConcern] = useState("");
+  const [matchedServices, setMatchedServices] = useState<ServiceSelection[]>(
+    []
+  );
+  const [matchLoading, setMatchLoading] = useState(false);
+
+  // ── Proposal state ─────────────────────────────────────────────────────
+  const [generating, setGenerating] = useState(false);
+  const [proposal, setProposal] = useState<ProposalContent | null>(null);
+  const [proposalId, setProposalId] = useState<string | null>(null);
+  const [inputCollapsed, setInputCollapsed] = useState(false);
+  const [editedSections, setEditedSections] = useState<Set<string>>(new Set());
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">(
+    "saved"
+  );
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Regeneration state (per-section) ───────────────────────────────────
+  const [regenSection, setRegenSection] = useState<string | null>(null);
+
+  // ── Export state ───────────────────────────────────────────────────────
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingDocx, setExportingDocx] = useState(false);
+
+  // ── Client selection handler ───────────────────────────────────────────
+  function handleClientSelect(id: string) {
+    setClientId(id);
+    const client = clients.find((c) => c.id === id);
+    if (!client) {
+      setClientServices([]);
+      return;
+    }
+    // Load services from client's active contracts
+    if (client.active_contract) {
+      // Client may have multiple contracts — but our model returns just one.
+      // Use active bundles as the full set, pre-check the contracted one.
+      const contracted = new Set([client.active_contract.bundle_id]);
+      const services: ServiceSelection[] = activeBundles
+        .filter(
+          (b) =>
+            contracted.has(b.id) || bundleVersions[b.id]
+        )
+        .map((b) => ({
+          bundle_id: b.id,
+          pricing_version_id: bundleVersions[b.id]?.id ?? "",
+          service_name: b.name,
+          checked: contracted.has(b.id),
+          suggested_price:
+            bundleVersions[b.id]?.suggested_price ?? null,
+        }))
+        .filter((s) => s.pricing_version_id);
+
+      // If the contracted bundle isn't in activeBundles, add it
+      if (
+        client.active_contract &&
+        !services.some((s) => s.bundle_id === client.active_contract!.bundle_id)
+      ) {
+        services.unshift({
+          bundle_id: client.active_contract.bundle_id,
+          pricing_version_id: client.active_contract.bundle_version_id,
+          service_name: client.active_contract.bundle_name,
+          checked: true,
+          suggested_price: null,
+        });
+      }
+      setClientServices(services);
+    } else {
+      // No active contract — show all available services unchecked
+      setClientServices(
+        activeBundles
+          .filter((b) => bundleVersions[b.id])
+          .map((b) => ({
+            bundle_id: b.id,
+            pricing_version_id: bundleVersions[b.id].id,
+            service_name: b.name,
+            checked: false,
+            suggested_price:
+              bundleVersions[b.id]?.suggested_price ?? null,
+          }))
+      );
+    }
+  }
+
+  // ── Prospect: match services ───────────────────────────────────────────
+  async function handleMatchServices() {
+    setMatchLoading(true);
+    try {
+      const res = await fetch("/api/ai/match-services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prospect_industry: prospectIndustry,
+          prospect_size: prospectSize,
+          primary_concern: primaryConcern,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const matched: ServiceSelection[] = (
+          data.matched_services ?? []
+        ).map(
+          (m: { bundle_id: string; service_name: string }) => ({
+            bundle_id: m.bundle_id,
+            pricing_version_id:
+              bundleVersions[m.bundle_id]?.id ?? "",
+            service_name: m.service_name,
+            checked: true,
+            suggested_price:
+              bundleVersions[m.bundle_id]?.suggested_price ?? null,
+          })
+        );
+        setMatchedServices(matched.filter((m) => m.pricing_version_id));
+      } else {
+        toast.error("Failed to match services");
+      }
+    } catch {
+      toast.error("Failed to match services");
+    } finally {
+      setMatchLoading(false);
+    }
+  }
+
+  // ── Generate proposal ──────────────────────────────────────────────────
+  const currentServices =
+    mode === "client" ? clientServices : matchedServices;
+  const checkedServices = currentServices.filter((s) => s.checked);
+
+  const canGenerate =
+    checkedServices.length > 0 &&
+    (mode === "client" ? !!clientId : !!prospectName.trim());
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setEditedSections(new Set());
+
+    const services = checkedServices.map((s) => ({
+      bundle_id: s.bundle_id,
+      pricing_version_id: s.pricing_version_id,
+      service_name: s.service_name,
+      suggested_price: s.suggested_price ?? undefined,
+      billing_unit: "per month",
+    }));
+
+    try {
+      const res = await fetch("/api/ai/generate-proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          client_id: mode === "client" ? clientId : undefined,
+          prospect_name: mode === "prospect" ? prospectName : undefined,
+          prospect_industry:
+            mode === "prospect" ? prospectIndustry : undefined,
+          prospect_size: mode === "prospect" ? prospectSize : undefined,
+          primary_concern:
+            mode === "prospect" ? primaryConcern : undefined,
+          services,
+        }),
+      });
+
+      if (!res.ok) {
+        toast.error("Failed to generate proposal");
+        return;
+      }
+
+      const content: ProposalContent = await res.json();
+      setProposal(content);
+      setInputCollapsed(true);
+
+      // Auto-save to DB
+      const serviceRefs: ProposalServiceRef[] = checkedServices.map(
+        (s) => ({
+          bundle_id: s.bundle_id,
+          pricing_version_id: s.pricing_version_id,
+          service_name: s.service_name,
+        })
+      );
+
+      startTransition(async () => {
+        const result = await createProposalAction({
+          client_id: mode === "client" ? clientId : null,
+          prospect_name: mode === "prospect" ? prospectName : null,
+          prospect_industry:
+            mode === "prospect" ? prospectIndustry : null,
+          prospect_size: mode === "prospect" ? prospectSize : null,
+          services_included: serviceRefs,
+          content,
+        });
+        if (result.success) {
+          setProposalId(result.data.id);
+          setSaveStatus("saved");
+        }
+      });
+    } catch {
+      toast.error("Failed to generate proposal");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ── Auto-save on edit (debounced) ──────────────────────────────────────
+  const debouncedSave = useCallback(
+    (content: ProposalContent) => {
+      if (!proposalId) return;
+      setSaveStatus("unsaved");
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        setSaveStatus("saving");
+        updateProposalContentAction({
+          proposal_id: proposalId,
+          content,
+        }).then((result) => {
+          setSaveStatus(result.success ? "saved" : "unsaved");
+        });
+      }, 2000);
+    },
+    [proposalId]
+  );
+
+  function updateSection(key: keyof ProposalContent, value: unknown) {
+    if (!proposal) return;
+    const updated = { ...proposal, [key]: value };
+    setProposal(updated);
+    setEditedSections((prev) => new Set([...prev, key]));
+    debouncedSave(updated);
+  }
+
+  // ── Regenerate single section ──────────────────────────────────────────
+  async function handleRegenSection(sectionKey: string) {
+    setRegenSection(sectionKey);
+    try {
+      const services = checkedServices.map((s) => ({
+        bundle_id: s.bundle_id,
+        pricing_version_id: s.pricing_version_id,
+        service_name: s.service_name,
+        suggested_price: s.suggested_price ?? undefined,
+        billing_unit: "per month",
+      }));
+
+      const res = await fetch("/api/ai/generate-proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          client_id: mode === "client" ? clientId : undefined,
+          prospect_name: mode === "prospect" ? prospectName : undefined,
+          services,
+        }),
+      });
+
+      if (res.ok) {
+        const content: ProposalContent = await res.json();
+        if (proposal && sectionKey in content) {
+          updateSection(
+            sectionKey as keyof ProposalContent,
+            content[sectionKey as keyof ProposalContent]
+          );
+        }
+      }
+    } catch {
+      toast.error("Failed to regenerate section");
+    } finally {
+      setRegenSection(null);
+    }
+  }
+
+  // ── Regenerate full proposal ───────────────────────────────────────────
+  async function handleRegenFull() {
+    if (editedSections.size > 0) {
+      const confirmed = window.confirm(
+        "You have manual edits that will be lost. Regenerate the entire proposal?"
+      );
+      if (!confirmed) return;
+    }
+    await handleGenerate();
+  }
+
+  // ── Load past proposal ────────────────────────────────────────────────
+  function handleLoadProposal(p: Proposal) {
+    setProposal(p.content);
+    setProposalId(p.id);
+    setInputCollapsed(true);
+    setEditedSections(new Set());
+    setSaveStatus("saved");
+    setTab("generate");
+  }
+
+  // ── Export handlers ────────────────────────────────────────────────────
+  async function handleExportPdf(id?: string) {
+    const exportId = id ?? proposalId;
+    if (!exportId) return;
+    setExportingPdf(true);
+    startTransition(async () => {
+      const result = await exportProposalPdfAction(exportId);
+      if (result.success) {
+        downloadBase64(result.data.base64, result.data.filename);
+        toast.success("PDF exported");
+      } else {
+        toast.error(result.error);
+      }
+      setExportingPdf(false);
+    });
+  }
+
+  async function handleExportDocx(id?: string) {
+    const exportId = id ?? proposalId;
+    if (!exportId) return;
+    setExportingDocx(true);
+    startTransition(async () => {
+      const result = await exportProposalDocxAction(exportId);
+      if (result.success) {
+        downloadBase64(result.data.base64, result.data.filename);
+        toast.success("Word document exported");
+      } else {
+        toast.error(result.error);
+      }
+      setExportingDocx(false);
+    });
+  }
+
+  // ── Filtered clients ───────────────────────────────────────────────────
+  const filteredClients = clientSearch.trim()
+    ? clients.filter((c) =>
+        c.name.toLowerCase().includes(clientSearch.toLowerCase())
+      )
+    : clients;
+
+  // ── Recipient name for display ─────────────────────────────────────────
+  const recipientName =
+    mode === "client"
+      ? clients.find((c) => c.id === clientId)?.name ?? "Client"
+      : prospectName || "Prospect";
+
+  // ── Render ─────────────────────────────────────────────────────────────
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1
+          className="text-2xl font-bold tracking-tight text-foreground"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Sales Studio
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Generate client-ready proposals powered by AI
+        </p>
+      </div>
+
+      {/* Tab bar: Generate / Past Proposals */}
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 w-fit">
+        <button
+          type="button"
+          onClick={() => setTab("generate")}
+          className={cn(
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            tab === "generate"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          New Proposal
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("past")}
+          className={cn(
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            tab === "past"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Past Proposals
+          {proposals.length > 0 && (
+            <span className="ml-1.5 text-xs text-muted-foreground">
+              ({proposals.length})
+            </span>
+          )}
+        </button>
+      </div>
+
+      {tab === "generate" && (
+        <>
+          {/* Mode toggle + Input panel */}
+          {!inputCollapsed || mode === "enablement" ? (
+            <Card>
+              <CardContent className="p-5 space-y-5">
+                {/* Mode selector */}
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setMode("client")}
+                    className={cn(
+                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      mode === "client"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Client Proposal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("prospect")}
+                    className={cn(
+                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      mode === "prospect"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Prospect Proposal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("enablement")}
+                    className={cn(
+                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      mode === "enablement"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Sales Enablement
+                  </button>
+                </div>
+
+                {mode !== "enablement" && (
+                  <>
+                    {mode === "client" ? (
+                      <ClientInputPanel
+                        clients={filteredClients}
+                        clientId={clientId}
+                        clientSearch={clientSearch}
+                        onSearchChange={setClientSearch}
+                        onClientSelect={handleClientSelect}
+                        services={clientServices}
+                        onToggleService={(idx) => {
+                          const updated = [...clientServices];
+                          updated[idx] = {
+                            ...updated[idx],
+                            checked: !updated[idx].checked,
+                          };
+                          setClientServices(updated);
+                        }}
+                        playbookStatus={playbookStatus}
+                        onSwitchToEnablement={() => setMode("enablement")}
+                      />
+                    ) : (
+                      <ProspectInputPanel
+                        prospectName={prospectName}
+                        prospectIndustry={prospectIndustry}
+                        prospectSize={prospectSize}
+                        primaryConcern={primaryConcern}
+                        onNameChange={setProspectName}
+                        onIndustryChange={setProspectIndustry}
+                        onSizeChange={setProspectSize}
+                        onConcernChange={setPrimaryConcern}
+                        matchLoading={matchLoading}
+                        onMatch={handleMatchServices}
+                        matchedServices={matchedServices}
+                        onToggleService={(idx) => {
+                          const updated = [...matchedServices];
+                          updated[idx] = {
+                            ...updated[idx],
+                            checked: !updated[idx].checked,
+                          };
+                          setMatchedServices(updated);
+                        }}
+                        canMatch={!!prospectName.trim()}
+                        playbookStatus={playbookStatus}
+                        onSwitchToEnablement={() => setMode("enablement")}
+                      />
+                    )}
+
+                    {/* Generate button */}
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={!canGenerate || generating}
+                      className="w-full gap-2"
+                      size="lg"
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Drafting your proposal...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate Proposal
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            /* Collapsed summary bar (only for client/prospect modes) */
+            <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Proposal for {recipientName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {checkedServices.length} service
+                    {checkedServices.length !== 1 ? "s" : ""} included
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "text-xs",
+                    saveStatus === "saved"
+                      ? "text-muted-foreground"
+                      : saveStatus === "saving"
+                        ? "text-amber-400"
+                        : "text-red-400"
+                  )}
+                >
+                  {saveStatus === "saved"
+                    ? "Saved"
+                    : saveStatus === "saving"
+                      ? "Saving..."
+                      : "Unsaved changes"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInputCollapsed(false)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sales Enablement panel */}
+          {mode === "enablement" && (
+            <SalesEnablementPanel
+              activeBundles={activeBundles}
+              orgName={orgName}
+              orgTargetVerticals={orgTargetVerticals}
+            />
+          )}
+
+          {/* Generating overlay */}
+          {mode !== "enablement" && generating && !proposal && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-lg font-medium text-foreground">
+                Drafting your proposal...
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI is generating a tailored proposal for {recipientName}
+              </p>
+            </div>
+          )}
+
+          {/* Proposal output */}
+          {mode !== "enablement" && proposal && !generating && (
+            <ProposalOutput
+              content={proposal}
+              proposalId={proposalId}
+              onUpdateSection={updateSection}
+              onRegenSection={handleRegenSection}
+              onRegenFull={handleRegenFull}
+              editingSection={editingSection}
+              onEditSection={setEditingSection}
+              regenSection={regenSection}
+              saveStatus={saveStatus}
+              checkedServices={checkedServices}
+              onExportPdf={() => handleExportPdf()}
+              onExportDocx={() => handleExportDocx()}
+              exportingPdf={exportingPdf}
+              exportingDocx={exportingDocx}
+            />
+          )}
+        </>
+      )}
+
+      {tab === "past" && (
+        <PastProposals
+          proposals={proposals}
+          clients={clients}
+          onLoad={handleLoadProposal}
+          onExportPdf={handleExportPdf}
+          onExportDocx={handleExportDocx}
+          exportingPdf={exportingPdf}
+          exportingDocx={exportingDocx}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Client Input Panel ───────────────────────────────────────────────────────
+
+function ClientInputPanel({
+  clients,
+  clientId,
+  clientSearch,
+  onSearchChange,
+  onClientSelect,
+  services,
+  onToggleService,
+  playbookStatus,
+  onSwitchToEnablement,
+}: {
+  clients: ClientWithContracts[];
+  clientId: string;
+  clientSearch: string;
+  onSearchChange: (v: string) => void;
+  onClientSelect: (id: string) => void;
+  services: ServiceSelection[];
+  onToggleService: (idx: number) => void;
+  playbookStatus: Record<string, boolean>;
+  onSwitchToEnablement: (bundleId: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Client</Label>
+        <Input
+          placeholder="Search clients..."
+          value={clientSearch}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="mb-2"
+        />
+        <Select value={clientId} onValueChange={onClientSelect}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.length === 0 ? (
+              <SelectItem value="__none" disabled>
+                No clients found
+              </SelectItem>
+            ) : (
+              clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {services.length > 0 && (
+        <ServiceChecklist
+          services={services}
+          onToggle={onToggleService}
+          playbookStatus={playbookStatus}
+          onSwitchToEnablement={onSwitchToEnablement}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Prospect Input Panel ─────────────────────────────────────────────────────
+
+function ProspectInputPanel({
+  prospectName,
+  prospectIndustry,
+  prospectSize,
+  primaryConcern,
+  onNameChange,
+  onIndustryChange,
+  onSizeChange,
+  onConcernChange,
+  matchLoading,
+  onMatch,
+  matchedServices,
+  onToggleService,
+  canMatch,
+  playbookStatus,
+  onSwitchToEnablement,
+}: {
+  prospectName: string;
+  prospectIndustry: string;
+  prospectSize: string;
+  primaryConcern: string;
+  onNameChange: (v: string) => void;
+  onIndustryChange: (v: string) => void;
+  onSizeChange: (v: string) => void;
+  onConcernChange: (v: string) => void;
+  matchLoading: boolean;
+  onMatch: () => void;
+  matchedServices: ServiceSelection[];
+  onToggleService: (idx: number) => void;
+  canMatch: boolean;
+  playbookStatus: Record<string, boolean>;
+  onSwitchToEnablement: (bundleId: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Prospect name</Label>
+          <Input
+            value={prospectName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Acme Corp"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Industry</Label>
+          <Select value={prospectIndustry} onValueChange={onIndustryChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select industry" />
+            </SelectTrigger>
+            <SelectContent>
+              {INDUSTRY_OPTIONS.map((ind) => (
+                <SelectItem key={ind} value={ind}>
+                  {ind}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Company size</Label>
+          <Select value={prospectSize} onValueChange={onSizeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1-50">1–50 employees</SelectItem>
+              <SelectItem value="51-200">51–200 employees</SelectItem>
+              <SelectItem value="201-1000">201–1,000 employees</SelectItem>
+              <SelectItem value="1000+">1,000+ employees</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Primary concern</Label>
+          <Input
+            value={primaryConcern}
+            onChange={(e) => onConcernChange(e.target.value)}
+            placeholder="e.g. ransomware risk, SOC 2 compliance"
+          />
+        </div>
+      </div>
+
+      <Button
+        variant="outline"
+        onClick={onMatch}
+        disabled={matchLoading || !canMatch}
+        className="gap-1.5"
+      >
+        {matchLoading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5" />
+        )}
+        AI Match Services
+      </Button>
+
+      {matchedServices.length > 0 && (
+        <ServiceChecklist
+          services={matchedServices}
+          onToggle={onToggleService}
+          playbookStatus={playbookStatus}
+          onSwitchToEnablement={onSwitchToEnablement}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Service Checklist ────────────────────────────────────────────────────────
+
+function ServiceChecklist({
+  services,
+  onToggle,
+  playbookStatus,
+  onSwitchToEnablement,
+}: {
+  services: ServiceSelection[];
+  onToggle: (idx: number) => void;
+  playbookStatus: Record<string, boolean>;
+  onSwitchToEnablement: (bundleId: string) => void;
+}) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">
+          Services to include
+        </Label>
+        {services.map((s, i) => (
+          <label
+            key={s.bundle_id}
+            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+          >
+            <input
+              type="checkbox"
+              checked={s.checked}
+              onChange={() => onToggle(i)}
+              className="rounded border-border"
+            />
+            <span className="text-sm text-foreground flex-1">
+              {s.service_name}
+            </span>
+            {playbookStatus[s.bundle_id] ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+                    Playbook ready
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">
+                    A sales playbook exists for this service and will be used to
+                    strengthen this proposal
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSwitchToEnablement(s.bundle_id);
+                    }}
+                    className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                  >
+                    No playbook
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">
+                    Build a playbook in Sales Enablement to improve proposals for
+                    this service
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {s.suggested_price !== null && (
+              <span className="text-xs text-muted-foreground font-mono">
+                {formatCurrency(s.suggested_price)}/mo
+              </span>
+            )}
+          </label>
+        ))}
+      </div>
+    </TooltipProvider>
+  );
+}
+
+// ── Proposal Output ──────────────────────────────────────────────────────────
+
+function ProposalOutput({
+  content,
+  proposalId,
+  onUpdateSection,
+  onRegenSection,
+  onRegenFull,
+  editingSection,
+  onEditSection,
+  regenSection,
+  saveStatus,
+  checkedServices,
+  onExportPdf,
+  onExportDocx,
+  exportingPdf,
+  exportingDocx,
+}: {
+  content: ProposalContent;
+  proposalId: string | null;
+  onUpdateSection: (key: keyof ProposalContent, value: unknown) => void;
+  onRegenSection: (key: string) => void;
+  onRegenFull: () => void;
+  editingSection: string | null;
+  onEditSection: (key: string | null) => void;
+  regenSection: string | null;
+  saveStatus: "saved" | "saving" | "unsaved";
+  checkedServices: ServiceSelection[];
+  onExportPdf: () => void;
+  onExportDocx: () => void;
+  exportingPdf: boolean;
+  exportingDocx: boolean;
+}) {
+  return (
+    <div className="space-y-0">
+      {/* Proposal header bar */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-semibold text-foreground">
+          Proposal
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRegenFull}
+          className="gap-1.5 h-7 text-xs"
+        >
+          <RefreshCw className="h-3 w-3" />
+          Regenerate Full Proposal
+        </Button>
+      </div>
+
+      {/* Proposal sections — document-like layout */}
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        {/* Executive Summary */}
+        <EditableSection
+          title="Executive Summary"
+
+          value={content.executive_summary}
+          onUpdate={(v) => onUpdateSection("executive_summary", v)}
+          onRegen={() => onRegenSection("executive_summary")}
+          isEditing={editingSection === "executive_summary"}
+          onStartEdit={() => onEditSection("executive_summary")}
+          onStopEdit={() => onEditSection(null)}
+          isRegenerating={regenSection === "executive_summary"}
+        />
+
+        {/* Services Overview */}
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              Services Overview
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRegenSection("services_overview")}
+              disabled={regenSection === "services_overview"}
+              className="h-6 text-xs gap-1 text-muted-foreground"
+            >
+              {regenSection === "services_overview" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Regenerate
+            </Button>
+          </div>
+          <div className="space-y-6">
+            {content.services_overview.map((svc, i) => (
+              <div key={i} className="space-y-2">
+                <h4 className="text-base font-medium text-foreground">
+                  {svc.name}
+                </h4>
+                {editingSection === `services_overview_${i}` ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={svc.description}
+                      onChange={(e) => {
+                        const updated = [...content.services_overview];
+                        updated[i] = { ...updated[i], description: e.target.value };
+                        onUpdateSection("services_overview", updated);
+                      }}
+                      rows={6}
+                      className="text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-xs"
+                      onClick={() => onEditSection(null)}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed cursor-text hover:bg-white/[0.02] rounded-md p-2 -m-2 transition-colors"
+                    onClick={() => onEditSection(`services_overview_${i}`)}
+                  >
+                    {svc.description || (
+                      <span className="italic">Click to edit...</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pricing Summary */}
+        <div className="p-6">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
+            Pricing Summary
+          </h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Service</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Frequency</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {checkedServices.map((s) => (
+                <TableRow key={s.bundle_id}>
+                  <TableCell className="font-medium">
+                    {s.service_name}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {s.suggested_price !== null
+                      ? formatCurrency(s.suggested_price)
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    Monthly
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="border-t-2 border-border">
+                <TableCell className="font-semibold">Total MRR</TableCell>
+                <TableCell className="text-right font-mono font-semibold">
+                  {formatCurrency(
+                    checkedServices.reduce(
+                      (sum, s) => sum + (s.suggested_price ?? 0),
+                      0
+                    )
+                  )}
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  Monthly
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Why Us */}
+        <EditableSection
+          title="Why Us"
+
+          value={content.why_us}
+          onUpdate={(v) => onUpdateSection("why_us", v)}
+          onRegen={() => onRegenSection("why_us")}
+          isEditing={editingSection === "why_us"}
+          onStartEdit={() => onEditSection("why_us")}
+          onStopEdit={() => onEditSection(null)}
+          isRegenerating={regenSection === "why_us"}
+        />
+
+        {/* Risk Snapshot */}
+        <EditableSection
+          title="Risk Snapshot"
+
+          value={content.risk_snapshot}
+          onUpdate={(v) => onUpdateSection("risk_snapshot", v)}
+          onRegen={() => onRegenSection("risk_snapshot")}
+          isEditing={editingSection === "risk_snapshot"}
+          onStartEdit={() => onEditSection("risk_snapshot")}
+          onStopEdit={() => onEditSection(null)}
+          isRegenerating={regenSection === "risk_snapshot"}
+        />
+      </div>
+
+      {/* Export footer */}
+      {proposalId && (
+        <div className="sticky bottom-0 z-10 mt-4 flex items-center justify-end gap-3 rounded-lg border border-border bg-card/95 backdrop-blur px-4 py-3">
+          <span
+            className={cn(
+              "text-xs mr-auto",
+              saveStatus === "saved"
+                ? "text-muted-foreground"
+                : saveStatus === "saving"
+                  ? "text-amber-400"
+                  : "text-red-400"
+            )}
+          >
+            {saveStatus === "saved"
+              ? "All changes saved"
+              : saveStatus === "saving"
+                ? "Saving..."
+                : "Unsaved changes"}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExportDocx}
+            disabled={exportingDocx}
+            className="gap-1.5"
+          >
+            {exportingDocx ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Export Word (.docx)
+          </Button>
+          <Button
+            size="sm"
+            onClick={onExportPdf}
+            disabled={exportingPdf}
+            className="gap-1.5"
+          >
+            {exportingPdf ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Export PDF
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Editable Section ─────────────────────────────────────────────────────────
+
+function EditableSection({
+  title,
+  value,
+  onUpdate,
+  onRegen,
+  isEditing,
+  onStartEdit,
+  onStopEdit,
+  isRegenerating,
+}: {
+  title: string;
+  value: string;
+  onUpdate: (v: string) => void;
+  onRegen: () => void;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
+  isRegenerating: boolean;
+}) {
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+          {title}
+        </h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRegen}
+          disabled={isRegenerating}
+          className="h-6 text-xs gap-1 text-muted-foreground"
+        >
+          {isRegenerating ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3 w-3" />
+          )}
+          Regenerate
+        </Button>
+      </div>
+      {isEditing ? (
+        <div className="space-y-2">
+          <Textarea
+            value={value}
+            onChange={(e) => onUpdate(e.target.value)}
+            rows={6}
+            className="text-sm"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs"
+            onClick={onStopEdit}
+          >
+            Done
+          </Button>
+        </div>
+      ) : (
+        <div
+          className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed cursor-text hover:bg-white/[0.02] rounded-md p-2 -m-2 transition-colors"
+          onClick={onStartEdit}
+        >
+          {value || <span className="italic">Click to edit...</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Past Proposals List ──────────────────────────────────────────────────────
+
+function PastProposals({
+  proposals,
+  clients,
+  onLoad,
+  onExportPdf,
+  onExportDocx,
+  exportingPdf,
+  exportingDocx,
+}: {
+  proposals: Proposal[];
+  clients: ClientWithContracts[];
+  onLoad: (p: Proposal) => void;
+  onExportPdf: (id: string) => void;
+  onExportDocx: (id: string) => void;
+  exportingPdf: boolean;
+  exportingDocx: boolean;
+}) {
+  const clientMap = new Map(clients.map((c) => [c.id, c.name]));
+
+  if (proposals.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <FileText className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium text-foreground">
+            No proposals generated yet.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Select a client or describe a prospect and the AI will write a complete, outcome-anchored proposal in seconds.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Recipient</TableHead>
+              <TableHead>Services</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {proposals.map((p) => {
+              const name = p.client_id
+                ? clientMap.get(p.client_id) ?? "Client"
+                : p.prospect_name ?? "Prospect";
+              const serviceCount = p.services_included?.length ?? 0;
+              const serviceNames = (p.services_included ?? [])
+                .map((s) => s.service_name)
+                .join(", ");
+
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{name}</TableCell>
+                  <TableCell>
+                    <span
+                      className="text-sm text-muted-foreground cursor-help"
+                      title={serviceNames}
+                    >
+                      {serviceCount} service{serviceCount !== 1 ? "s" : ""}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      status={
+                        p.status as "draft" | "active" | "archived"
+                      }
+                      label={
+                        p.status === "draft"
+                          ? "Draft"
+                          : p.status === "sent"
+                            ? "Sent"
+                            : "Archived"
+                      }
+                    />
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(p.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onLoad(p)}
+                        className="h-7 text-xs"
+                      >
+                        Load
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onExportPdf(p.id)}
+                        disabled={exportingPdf}
+                        className="h-7 text-xs"
+                      >
+                        PDF
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onExportDocx(p.id)}
+                        disabled={exportingDocx}
+                        className="h-7 text-xs"
+                      >
+                        DOCX
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
