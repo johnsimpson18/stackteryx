@@ -129,6 +129,21 @@ export async function upsertOrgSettings(
   return parseRow(data);
 }
 
+/**
+ * Ensure an org_settings row exists for the given org.
+ * Creates one with defaults (onboarding_complete = false) if missing.
+ */
+export async function ensureOrgSettings(orgId: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_settings")
+    .upsert(
+      { org_id: orgId, settings: {} as unknown as Database["public"]["Tables"]["org_settings"]["Insert"]["settings"] },
+      { onConflict: "org_id", ignoreDuplicates: true }
+    );
+  if (error) throw error;
+}
+
 // ── Onboarding wizard helpers ───────────────────────────────────────────────
 
 const ONBOARDING_COLUMNS = `
@@ -222,10 +237,13 @@ export async function saveOnboardingStep(
 
   update.onboarding_step = Math.max(currentStep, step);
 
+  // Use upsert so it works even if no org_settings row exists yet
   const { error } = await supabase
     .from("org_settings")
-    .update(update)
-    .eq("org_id", orgId);
+    .upsert(
+      { org_id: orgId, ...update },
+      { onConflict: "org_id" }
+    );
 
   if (error) throw error;
 }

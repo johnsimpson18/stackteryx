@@ -16,8 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_active_org_id ON profiles(active_org_id)
 -- approvals
 CREATE INDEX IF NOT EXISTS idx_approvals_bundle_id ON approvals(bundle_id);
 CREATE INDEX IF NOT EXISTS idx_approvals_requested_by ON approvals(requested_by);
-CREATE INDEX IF NOT EXISTS idx_approvals_reviewed_by ON approvals(reviewed_by);
 
 -- action_cards
-CREATE INDEX IF NOT EXISTS idx_action_cards_org_id ON action_cards(org_id);
-CREATE INDEX IF NOT EXISTS idx_action_cards_dismissed ON action_cards(dismissed) WHERE dismissed = false;
+CREATE INDEX IF NOT EXISTS idx_ai_action_cards_org_id ON ai_action_cards(org_id);
+CREATE INDEX IF NOT EXISTS idx_ai_action_cards_not_dismissed ON ai_action_cards(dismissed_at) WHERE dismissed_at IS NULL;

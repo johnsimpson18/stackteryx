@@ -40,7 +40,7 @@ export default async function AppLayout({
   // Fetch from org_settings table (not workspace_settings) where the
   // onboarding_complete flag and wizard progress live.
 
-  let onboardingComplete = true; // Default: don't gate if data unavailable
+  let onboardingComplete = false; // Default: gate unless explicitly complete
   let onboardingProfile = null as Awaited<ReturnType<typeof getOnboardingProfile>>;
   let savedStep = 1;
   let savedTools: Awaited<ReturnType<typeof getOnboardingTools>> = [];
@@ -53,9 +53,10 @@ export default async function AppLayout({
         onboardingComplete = onboardingProfile.onboarding_complete;
         savedStep = onboardingProfile.onboarding_step ?? 1;
       }
-      // No row = no org_settings created yet = don't gate (first-time edge case)
+      // No row = new org, onboarding not complete → gate will show
     } catch {
-      // Query failed — don't gate
+      // Query failed — allow through to avoid blocking users
+      onboardingComplete = true;
     }
 
     if (!onboardingComplete) {

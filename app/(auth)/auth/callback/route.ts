@@ -36,16 +36,8 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/setup`);
         }
 
-        // Check onboarding status — incomplete users go to /onboarding
-        const { data: orgSettings } = await supabase
-          .from("org_settings")
-          .select("onboarding_complete")
-          .eq("org_id", membership.org_id)
-          .maybeSingle();
-
-        if (!orgSettings?.onboarding_complete) {
-          return NextResponse.redirect(`${origin}/onboarding`);
-        }
+        // Onboarding is handled by the modal gate in the app layout.
+        // No redirect needed — the gate shows automatically on /dashboard.
       }
 
       return NextResponse.redirect(`${origin}${next}`);

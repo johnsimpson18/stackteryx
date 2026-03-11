@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createOrg as dbCreateOrg, updateOrg as dbUpdateOrg } from "@/lib/db/orgs";
+import { ensureOrgSettings } from "@/lib/db/org-settings";
 import { addOrgMember } from "@/lib/db/org-members";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { logAudit } from "@/lib/db/audit";
@@ -30,6 +31,9 @@ export async function createOrgAction(data: {
       role: "org_owner",
       invited_by: profile.id,
     });
+
+    // Create org_settings row so the onboarding gate triggers
+    await ensureOrgSettings(org.id);
 
     // Set as active org
     await setActiveOrg(org.id);

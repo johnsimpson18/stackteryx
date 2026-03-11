@@ -23,7 +23,7 @@ export default function SetupPage() {
     startTransition(async () => {
       const result = await setupProfile({ display_name: displayName });
       if (result.success) {
-        router.push("/onboarding");
+        router.push("/dashboard");
       } else {
         toast.error(result.error);
       }
