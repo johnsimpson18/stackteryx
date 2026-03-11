@@ -354,6 +354,52 @@ export async function upsertCostModelTiers(
   return (data ?? []) as CostModelTier[];
 }
 
+// ── Single tier price update ─────────────────────────────────────────────
+
+export async function updateCostModelTierPrice(
+  tierId: string,
+  unitPrice: number,
+  orgId: string
+): Promise<CostModelTier> {
+  const supabase = await createClient();
+
+  // Verify ownership: tier → cost_model → org_vendor → org_id
+  const { data: tier, error: tierErr } = await supabase
+    .from("cost_model_tiers")
+    .select("id, cost_model_id")
+    .eq("id", tierId)
+    .single();
+
+  if (tierErr || !tier) throw new Error("Tier not found");
+
+  const { data: model, error: modelErr } = await supabase
+    .from("cost_models")
+    .select("org_vendor_id")
+    .eq("id", tier.cost_model_id)
+    .single();
+
+  if (modelErr || !model) throw new Error("Cost model not found");
+
+  const { data: vendor, error: vendorErr } = await supabase
+    .from("org_vendors")
+    .select("id")
+    .eq("id", model.org_vendor_id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (vendorErr || !vendor) throw new Error("Tier does not belong to this org");
+
+  const { data: updated, error } = await supabase
+    .from("cost_model_tiers")
+    .update({ unit_price: unitPrice })
+    .eq("id", tierId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return updated as CostModelTier;
+}
+
 // ── Org vendor discounts ─────────────────────────────────────────────────────
 
 export interface DiscountInput {

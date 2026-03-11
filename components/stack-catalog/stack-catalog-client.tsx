@@ -19,10 +19,12 @@ import {
   CategoryBadge,
   StatusBadge,
   formatCost,
+  getToolCostField,
 } from "@/components/tools/tool-columns";
+import { InlinePriceEditor } from "@/components/ui/inline-price-editor";
 import { CATEGORY_LABELS, hasPermission } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { deactivateToolAction } from "@/actions/tools";
+import { deactivateToolAction, updateToolCostAction } from "@/actions/tools";
 import { toast } from "sonner";
 import {
   Upload,
@@ -657,9 +659,9 @@ function ToolCard({
       </div>
 
       {/* Cost */}
-      <p className="text-xs text-muted-foreground mb-2">
-        {formatCost(tool)}
-      </p>
+      <div className="text-xs text-muted-foreground mb-2">
+        <ToolCostDisplay tool={tool} canEdit={canEdit} />
+      </div>
 
       {/* Service assignments */}
       {tool.services.length > 0 && (
@@ -766,7 +768,7 @@ function ListView({
                 <CategoryBadge category={tool.category} />
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {formatCost(tool)}
+                <ToolCostDisplay tool={tool} canEdit={canEdit} />
               </TableCell>
               <TableCell>
                 {tool.services.length > 0 ? (
@@ -821,5 +823,37 @@ function ListView({
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+// ── Inline-editable tool cost display ─────────────────────────────────────
+
+function ToolCostDisplay({
+  tool,
+  canEdit,
+}: {
+  tool: ToolWithAssignments;
+  canEdit: boolean;
+}) {
+  const costInfo = getToolCostField(tool);
+
+  if (!costInfo || !costInfo.isEditable || !canEdit) {
+    return <>{formatCost(tool)}</>;
+  }
+
+  return (
+    <InlinePriceEditor
+      value={costInfo.value}
+      unit={costInfo.unit}
+      fieldLabel={`${tool.name} cost`}
+      onSave={async (newValue) => {
+        const result = await updateToolCostAction(tool.id, costInfo.fieldName, newValue);
+        if (result.success && tool.services.length > 0) {
+          const names = tool.services.map((s) => s.bundle_name).join(", ");
+          toast.info(`Affected services: ${names}`);
+        }
+        return result;
+      }}
+    />
   );
 }

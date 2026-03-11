@@ -27,7 +27,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { CostModelForm } from "./cost-model-form";
-import { saveDiscountAction, deleteCostModelAction } from "@/actions/vendors";
+import { saveDiscountAction, deleteCostModelAction, updateTierPriceAction } from "@/actions/vendors";
+import { InlinePriceEditor } from "@/components/ui/inline-price-editor";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/formatting";
 import {
@@ -185,7 +186,18 @@ export function CostModelCard({
                         {tier.max_value != null ? tier.max_value : "∞"}
                       </td>
                       <td className="px-3 py-1.5 text-right font-mono">
-                        {formatCurrency(tier.unit_price)}
+                        <InlinePriceEditor
+                          value={tier.unit_price}
+                          unit=""
+                          fieldLabel={`Tier ${tier.min_value}+ unit price`}
+                          onSave={async (newValue) => {
+                            const result = await updateTierPriceAction(tier.id, newValue);
+                            if (result.success) {
+                              toast.success("Tier price updated");
+                            }
+                            return result;
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}

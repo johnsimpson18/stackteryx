@@ -9,6 +9,7 @@ import {
   updateCostModel as dbUpdateCostModel,
   upsertCostModelTiers as dbUpsertCostModelTiers,
   upsertOrgVendorDiscount as dbUpsertOrgVendorDiscount,
+  updateCostModelTierPrice as dbUpdateCostModelTierPrice,
   getOrgVendorById,
   getOrgVendors,
 } from "@/lib/db/vendors";
@@ -218,6 +219,39 @@ export async function saveDiscountAction(
     return { success: true, data: discount };
   } catch {
     return { success: false, error: "Failed to save discount" };
+  }
+}
+
+// ── Update single tier price ──────────────────────────────────────────────
+
+export async function updateTierPriceAction(
+  tierId: string,
+  unitPrice: number
+): Promise<ActionResult<{ id: string; unit_price: number }>> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { success: false, error: "Not authenticated" };
+
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "edit_tools")) {
+      return { success: false, error: "You do not have permission to edit tier pricing" };
+    }
+
+    if (typeof unitPrice !== "number" || isNaN(unitPrice) || unitPrice < 0) {
+      return { success: false, error: "Unit price must be ≥ 0" };
+    }
+
+    const tier = await dbUpdateCostModelTierPrice(tierId, unitPrice, orgId);
+
+    await logAudit(profile.id, "UPDATE", "cost_model_tier", tier.id, {
+      unit_price: unitPrice,
+    }, orgId);
+
+    revalidatePath("/vendors");
+    return { success: true, data: { id: tier.id, unit_price: tier.unit_price } };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Failed to update tier price";
+    return { success: false, error: msg };
   }
 }
 

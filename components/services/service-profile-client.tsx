@@ -28,6 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { cn } from "@/lib/utils";
 import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
@@ -557,8 +558,8 @@ export function ServiceProfileClient({
                           </Link>
                         </TableCell>
                         <TableCell className="text-right">{v.seat_count}</TableCell>
-                        <TableCell className={`text-right font-mono ${marginColor(margin)}`}>
-                          {formatPercent(margin)}
+                        <TableCell className="text-right">
+                          <MarginHealthBadge margin={margin} />
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatCurrency(Number(v.computed_mrr ?? 0))}

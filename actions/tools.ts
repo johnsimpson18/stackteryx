@@ -234,6 +234,66 @@ function buildToolData(
   };
 }
 
+// ── Inline tool cost update ──────────────────────────────────────────────────
+
+const ALLOWED_COST_FIELDS = [
+  "per_seat_cost",
+  "per_user_cost",
+  "per_org_cost",
+  "flat_monthly_cost",
+  "annual_flat_cost",
+] as const;
+
+type CostFieldName = (typeof ALLOWED_COST_FIELDS)[number];
+
+export async function updateToolCostAction(
+  toolId: string,
+  fieldName: string,
+  value: number
+): Promise<ActionResult<Tool>> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { success: false, error: "Not authenticated" };
+
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "edit_tools")) {
+      return { success: false, error: "You do not have permission to edit tools" };
+    }
+
+    // Validate field name
+    if (!ALLOWED_COST_FIELDS.includes(fieldName as CostFieldName)) {
+      return { success: false, error: "Invalid cost field" };
+    }
+
+    // Validate value
+    if (typeof value !== "number" || isNaN(value) || value < 0) {
+      return { success: false, error: "Cost must be ≥ 0" };
+    }
+
+    // Verify tool belongs to the active org
+    const existingTool = await getToolById(toolId);
+    if (!existingTool || existingTool.org_id !== orgId) {
+      return { success: false, error: "Not found" };
+    }
+
+    const tool = await dbUpdateTool(toolId, { [fieldName]: value });
+
+    await logAudit(profile.id, "tool_updated", "tool", tool.id, {
+      name: tool.name,
+      field: fieldName,
+      old_value: Number(existingTool[fieldName as CostFieldName]),
+      new_value: value,
+    }, orgId);
+
+    revalidatePath("/stack-catalog");
+    revalidatePath("/services");
+    revalidatePath("/tools");
+    return { success: true, data: tool };
+  } catch {
+    return { success: false, error: "Failed to update tool cost" };
+  }
+}
+
 // ── Inline tool creation (wizard Step 3) ────────────────────────────────────
 
 export async function createToolInlineAction(data: {
