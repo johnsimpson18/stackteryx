@@ -1,5 +1,9 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 const COMPANY_SIZES = ["1–10", "11–50", "51–200", "200+"];
 
 const GEOGRAPHIES = [
@@ -47,88 +51,61 @@ export function StepCompany({
     <div className="space-y-8">
       {/* Headline */}
       <div>
-        <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
-        >
+        <h1 className="font-display text-white text-4xl font-bold uppercase tracking-tight">
           LET&apos;S BUILD YOUR STACKTERYX
         </h1>
-        <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
-        >
+        <p className="mt-2 font-mono text-muted-foreground text-sm">
           First, tell us about your company.
         </p>
       </div>
 
       {/* Company Name */}
       <div className="space-y-2">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
           Company Name
-        </label>
-        <input
+        </Label>
+        <Input
           type="text"
           value={companyName}
           onChange={(e) => onCompanyNameChange(e.target.value)}
           placeholder="Your MSP or company name"
-          className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444]"
-          style={{
-            backgroundColor: "#111111",
-            borderColor: "#1E1E1E",
-            color: "#FFFFFF",
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "#A8FF3E"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; }}
+          className="h-auto rounded-lg bg-[#111111] border-border text-white px-4 py-3 text-sm placeholder:text-[#444] focus-visible:border-primary focus-visible:ring-primary/50"
         />
       </div>
 
       {/* Your Name */}
       <div className="space-y-2">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
           Your Name
-        </label>
-        <input
+        </Label>
+        <Input
           type="text"
           value={founderName}
           onChange={(e) => onFounderNameChange(e.target.value)}
           placeholder="Full name"
-          className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444]"
-          style={{
-            backgroundColor: "#111111",
-            borderColor: "#1E1E1E",
-            color: "#FFFFFF",
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "#A8FF3E"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; }}
+          className="h-auto rounded-lg bg-[#111111] border-border text-white px-4 py-3 text-sm placeholder:text-[#444] focus-visible:border-primary focus-visible:ring-primary/50"
         />
       </div>
 
       {/* Your Title */}
       <div className="space-y-2">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
           Your Title
-        </label>
-        <input
+        </Label>
+        <Input
           type="text"
           value={founderTitle}
           onChange={(e) => onFounderTitleChange(e.target.value)}
           placeholder="e.g. CEO, CTO, Director of Security"
-          className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444]"
-          style={{
-            backgroundColor: "#111111",
-            borderColor: "#1E1E1E",
-            color: "#FFFFFF",
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "#A8FF3E"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; }}
+          className="h-auto rounded-lg bg-[#111111] border-border text-white px-4 py-3 text-sm placeholder:text-[#444] focus-visible:border-primary focus-visible:ring-primary/50"
         />
       </div>
 
       {/* Company Size */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
           Company Size
-        </label>
+        </Label>
         <div className="grid grid-cols-4 gap-3">
           {COMPANY_SIZES.map((size) => {
             const selected = companySize === size;
@@ -137,12 +114,12 @@ export function StepCompany({
                 key={size}
                 type="button"
                 onClick={() => onCompanySizeChange(selected ? "" : size)}
-                className="rounded-lg border px-4 py-3 text-sm font-medium transition-[border-color,background-color] duration-100"
-                style={{
-                  backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                  borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                  color: selected ? "#A8FF3E" : "#CCCCCC",
-                }}
+                className={cn(
+                  "rounded-lg border px-4 py-3 text-sm font-medium transition-colors",
+                  selected
+                    ? "bg-primary/[0.06] border-primary text-primary"
+                    : "bg-[#111111] border-border text-[#CCCCCC]"
+                )}
               >
                 {size}
               </button>
@@ -153,9 +130,9 @@ export function StepCompany({
 
       {/* Primary Geography */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
           Primary Geography
-        </label>
+        </Label>
         <div className="flex flex-wrap gap-2">
           {GEOGRAPHIES.map((geo) => {
             const selected = geographies.includes(geo);
@@ -164,12 +141,12 @@ export function StepCompany({
                 key={geo}
                 type="button"
                 onClick={() => toggleGeo(geo)}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-[border-color,background-color,color] duration-100"
-                style={{
-                  backgroundColor: selected ? "#A8FF3E" : "#111111",
-                  color: selected ? "#0A0A0A" : "#CCCCCC",
-                  border: selected ? "1px solid #A8FF3E" : "1px solid #1E1E1E",
-                }}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium border transition-colors",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-[#111111] text-[#CCCCCC] border-border"
+                )}
               >
                 {geo}
               </button>

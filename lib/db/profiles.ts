@@ -19,15 +19,22 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data as Profile;
 }
 
-export async function getProfiles(): Promise<Profile[]> {
+export async function getProfiles(orgId: string): Promise<Profile[]> {
   const supabase = await createClient();
+  // TODO: implement cursor pagination when org data exceeds these limits
   const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at");
+    .from("org_members")
+    .select("profiles(*)")
+    .eq("org_id", orgId)
+    .order("created_at", { referencedTable: "profiles" })
+    .limit(100);
 
   if (error) throw error;
-  return (data as Profile[]) ?? [];
+  return (
+    (data ?? [])
+      .map((row) => (row.profiles as unknown) as Profile)
+      .filter(Boolean)
+  );
 }
 
 export async function getProfileById(id: string): Promise<Profile | null> {

@@ -60,6 +60,18 @@ export async function POST(req: Request) {
     return Response.json({ error: "No active organization" }, { status: 400 });
   }
 
+  // Verify user is a member of this org
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (!membership) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   let formData: FormData;
   try {
     formData = await req.formData();

@@ -50,9 +50,9 @@ interface VendorUploadFormProps {
 type UploadStep = "idle" | "uploading" | "extracted" | "saving";
 
 const CONFIDENCE_COLORS = {
-  high: "bg-emerald-100 text-emerald-700",
-  medium: "bg-amber-100 text-amber-700",
-  low: "bg-red-100 text-red-600",
+  high: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+  medium: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+  low: "bg-red-500/10 text-red-400 border border-red-500/20",
 };
 
 const CONFIDENCE_LABELS = {
@@ -62,9 +62,9 @@ const CONFIDENCE_LABELS = {
 };
 
 function marginColor(margin: number): string {
-  if (margin >= 0.25) return "text-emerald-600";
-  if (margin >= 0.15) return "text-amber-600";
-  return "text-red-600";
+  if (margin >= 0.25) return "text-emerald-400";
+  if (margin >= 0.15) return "text-amber-400";
+  return "text-red-400";
 }
 
 export function VendorUploadForm({
@@ -309,15 +309,15 @@ export function VendorUploadForm({
       )}
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-500 mt-0.5" />
+        <div className="flex items-start gap-2 rounded-lg border bg-red-500/10 border-red-500/20 px-4 py-3">
+          <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-400 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-700">Extraction failed</p>
-            <p className="text-xs text-red-600 mt-0.5">{error}</p>
+            <p className="text-sm font-medium text-red-400">Extraction failed</p>
+            <p className="text-xs text-red-400/70 mt-0.5">{error}</p>
           </div>
           <button
             onClick={() => setError(null)}
-            className="ml-auto text-red-400 hover:text-red-600"
+            className="ml-auto text-red-400 hover:text-red-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -357,9 +357,9 @@ export function VendorUploadForm({
 
           {/* Claude's notes */}
           {extracted.notes && (
-            <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-              <Info className="h-4 w-4 flex-shrink-0 text-blue-500 mt-0.5" />
-              <p className="text-xs text-blue-700">{extracted.notes}</p>
+            <div className="flex items-start gap-2 rounded-lg border bg-blue-500/10 border-blue-500/20 px-4 py-3">
+              <Info className="h-4 w-4 flex-shrink-0 text-blue-400 mt-0.5" />
+              <p className="text-xs text-blue-400">{extracted.notes}</p>
             </div>
           )}
 
@@ -369,7 +369,7 @@ export function VendorUploadForm({
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     Extracted Pricing — Review & Edit
                   </CardTitle>
                 </CardHeader>
@@ -573,13 +573,13 @@ export function VendorUploadForm({
                 <CardContent className="space-y-3">
                   {/* Category status */}
                   {isNewCategory ? (
-                    <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600 mt-0.5" />
+                    <div className="flex items-start gap-2 rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3 py-2">
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-400 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-emerald-800">
+                        <p className="text-xs font-semibold text-emerald-400">
                           New capability for your stack
                         </p>
-                        <p className="text-xs text-emerald-700 mt-0.5">
+                        <p className="text-xs text-emerald-400/70 mt-0.5">
                           You don&apos;t currently have any{" "}
                           <strong>
                             {CATEGORY_LABELS[category as Tool["category"]]}
@@ -589,13 +589,13 @@ export function VendorUploadForm({
                       </div>
                     </div>
                   ) : overlappingTools.length > 0 ? (
-                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                      <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 mt-0.5" />
+                    <div className="flex items-start gap-2 rounded-lg border bg-amber-500/10 border-amber-500/20 px-3 py-2">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-amber-800">
+                        <p className="text-xs font-semibold text-amber-400">
                           Category overlap detected
                         </p>
-                        <p className="text-xs text-amber-700 mt-1">
+                        <p className="text-xs text-amber-400/70 mt-1">
                           You already have{" "}
                           {overlappingTools.length === 1
                             ? "a"
@@ -611,10 +611,10 @@ export function VendorUploadForm({
                               key={t.id}
                               className="flex items-center justify-between text-xs"
                             >
-                              <span className="font-medium text-amber-800">
+                              <span className="font-medium text-amber-400">
                                 {t.name}
                               </span>
-                              <span className="font-mono text-amber-700">
+                              <span className="font-mono text-amber-400/70">
                                 {t.pricing_model === "per_seat"
                                   ? `${formatCurrency(Number(t.per_seat_cost))}/seat`
                                   : t.pricing_model === "flat_monthly"
@@ -628,14 +628,14 @@ export function VendorUploadForm({
                           overlappingTools.some(
                             (t) => t.pricing_model === "per_seat"
                           ) && (
-                            <p className="mt-2 text-xs text-amber-700">
+                            <p className="mt-2 text-xs text-amber-400/70">
                               {perSeatCost <
                               Number(
                                 overlappingTools.find(
                                   (t) => t.pricing_model === "per_seat"
                                 )?.per_seat_cost
                               ) ? (
-                                <span className="font-semibold text-emerald-700">
+                                <span className="font-semibold text-emerald-400">
                                   ↓ This vendor is cheaper per seat
                                 </span>
                               ) : (
@@ -673,14 +673,14 @@ export function VendorUploadForm({
                           className={cn(
                             "text-xs",
                             cat === category &&
-                              "bg-amber-100 text-amber-700"
+                              "bg-amber-500/10 text-amber-400"
                           )}
                         >
                           {CATEGORY_LABELS[cat as Tool["category"]]}
                         </Badge>
                       ))}
                       {isNewCategory && (
-                        <Badge className="text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                        <Badge className="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/10">
                           + {CATEGORY_LABELS[category as Tool["category"]]}
                         </Badge>
                       )}
@@ -771,8 +771,8 @@ export function VendorUploadForm({
                               className={cn(
                                 "flex items-start gap-1.5 rounded-md px-2 py-1.5 text-xs",
                                 f.severity === "error"
-                                  ? "bg-red-50 text-red-700"
-                                  : "bg-amber-50 text-amber-700"
+                                  ? "bg-red-500/10 text-red-400"
+                                  : "bg-amber-500/10 text-amber-400"
                               )}
                             >
                               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />

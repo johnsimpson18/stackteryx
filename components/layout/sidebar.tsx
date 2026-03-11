@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/constants";
@@ -15,16 +16,6 @@ import { useState } from "react";
 interface SidebarProps {
   profile: Profile;
   memberCount?: number;
-}
-
-function StackLogo() {
-  return (
-    <div className="relative h-7 w-7 flex-shrink-0">
-      <div className="absolute inset-0 rounded-[5px] bg-[#A8FF3E] rotate-[14deg] opacity-30" />
-      <div className="absolute inset-[2px] rounded-[4px] bg-[#A8FF3E] rotate-[7deg] opacity-50" />
-      <div className="absolute inset-[4px] rounded-[3px] bg-[#A8FF3E]" />
-    </div>
-  );
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -73,16 +64,13 @@ export function Sidebar({ profile }: SidebarProps) {
       {/* Header */}
       <div className="flex h-14 items-center justify-between px-3 border-b border-sidebar-border flex-shrink-0">
         {!collapsed && (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <StackLogo />
-            <span className="text-[15px] font-bold tracking-tight text-foreground truncate">
-              Stackteryx
-            </span>
+          <div className="flex items-center min-w-0">
+            <Image src="/stackteryx-logo.svg" alt="Stackteryx" width={130} height={28} priority />
           </div>
         )}
         {collapsed && (
           <div className="mx-auto">
-            <StackLogo />
+            <Image src="/favicon.svg" alt="Stackteryx" width={24} height={24} priority />
           </div>
         )}
         {!collapsed && (

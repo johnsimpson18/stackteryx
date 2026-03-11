@@ -25,6 +25,28 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  // Verify user belongs to an active org
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("active_org_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.active_org_id) {
+    return new Response("No active organization", { status: 400 });
+  }
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("org_id", profile.active_org_id)
+    .single();
+
+  if (!membership) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   const { selectedVendors, endpointRange } = await req.json();
 
   const endpointCount: Record<string, number> = {

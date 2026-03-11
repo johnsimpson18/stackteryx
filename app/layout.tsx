@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   },
   description:
     "The pricing, margin, and enablement engine for profitable MSP security offerings.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

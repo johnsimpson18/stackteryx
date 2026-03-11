@@ -8,9 +8,16 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -91,30 +98,13 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // After profile setup, if onboarding not completed, redirect to /onboarding.
-  // Wrapped in try/catch because the org_settings row may not exist yet.
-  // In that case we let the user through rather than loop them.
-  if (user && isAppRoute && !pathname.startsWith("/onboarding") && pathname !== "/setup") {
-    try {
-      const orgId = request.cookies.get(ORG_COOKIE)?.value;
-      if (orgId) {
-        const { data: orgSettings } = await supabase
-          .from("org_settings")
-          .select("onboarding_complete")
-          .eq("org_id", orgId)
-          .single();
-
-        // Only redirect if the row exists AND onboarding is explicitly false.
-        // null/undefined means no row — don't redirect.
-        if (orgSettings && orgSettings.onboarding_complete === false) {
-          const url = request.nextUrl.clone();
-          url.pathname = "/onboarding";
-          return NextResponse.redirect(url);
-        }
-      }
-    } catch {
-      // Query failed — don't block the user
-    }
+  // Onboarding is now handled by a modal gate inside the app layout.
+  // If users navigate to /onboarding directly, redirect them to /dashboard
+  // where the gate modal will show automatically.
+  if (user && pathname.startsWith("/onboarding")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

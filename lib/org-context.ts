@@ -1,12 +1,25 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgMember } from "@/lib/types";
 
 const ORG_COOKIE = "x-org-id";
 
+// cache() deduplicates this within a single request — zero extra latency on repeat calls
+const verifyOrgMembership = cache(async (userId: string, orgId: string): Promise<boolean> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("org_members")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("org_id", orgId)
+    .single();
+  return !!data;
+});
+
 /**
  * Get the active org ID for the current user.
- * 1. Check `x-org-id` cookie
+ * 1. Check `x-org-id` cookie (validated against org_members)
  * 2. Fall back to `profiles.active_org_id`
  * 3. Fall back to user's first org membership
  * Returns null if user has no org.
@@ -14,7 +27,23 @@ const ORG_COOKIE = "x-org-id";
 export async function getActiveOrgId(): Promise<string | null> {
   const cookieStore = await cookies();
   const fromCookie = cookieStore.get(ORG_COOKIE)?.value;
-  if (fromCookie) return fromCookie;
+
+  // Fast UUID format check — reject obviously invalid values before hitting the DB
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (fromCookie) {
+    if (!uuidPattern.test(fromCookie)) return null;
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const isMember = await verifyOrgMembership(user.id, fromCookie);
+    if (isMember) return fromCookie;
+
+    // Cookie was invalid — fall through to profile/membership resolution
+    cookieStore.delete(ORG_COOKIE);
+  }
 
   const supabase = await createClient();
   const {
@@ -30,15 +59,20 @@ export async function getActiveOrgId(): Promise<string | null> {
     .single();
 
   if (profile?.active_org_id) {
-    // Set the cookie for future requests
-    cookieStore.set(ORG_COOKIE, profile.active_org_id, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-    });
-    return profile.active_org_id;
+    if (uuidPattern.test(profile.active_org_id)) {
+      const isMember = await verifyOrgMembership(user.id, profile.active_org_id);
+      if (isMember) {
+        // Set the cookie for future requests
+        cookieStore.set(ORG_COOKIE, profile.active_org_id, {
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 60 * 60 * 24 * 365, // 1 year
+        });
+        return profile.active_org_id;
+      }
+    }
   }
 
   // Fall back to first org membership

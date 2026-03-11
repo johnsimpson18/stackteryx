@@ -1,21 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { getAnthropicClient } from "@/lib/ai/client";
-import { getVersionsByBundleId } from "@/lib/db/bundle-versions";
+import { getBundleById } from "@/lib/db/bundles";
+import { getServiceOutcome } from "@/lib/db/service-outcomes";
+import {
+  getVersionsByBundleId,
+  getVersionById,
+} from "@/lib/db/bundle-versions";
 import { upsertPlaybookContent } from "@/lib/db/enablement";
+import { CATEGORY_LABELS } from "@/lib/constants";
+import type { ToolCategory } from "@/lib/types";
 
 export const maxDuration = 120;
 
 interface PlaybookRequestBody {
-  org_id: string;
   bundle_id: string;
-  service_name: string;
-  outcome_type: string;
-  outcome_statement: string;
-  target_vertical: string;
-  target_persona: string;
-  service_capabilities: { name: string; description: string }[];
-  assigned_tools: { name: string; vendor: string; domain: string }[];
   org_name: string;
   org_target_verticals: string[];
 }
@@ -45,31 +44,70 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // ── 5. Resolve latest version for persistence ─────────────────────────
-  const versions = await getVersionsByBundleId(body.bundle_id);
+  if (!body.bundle_id) {
+    return Response.json({ error: "bundle_id is required" }, { status: 400 });
+  }
+
+  // ── 5. Fetch service data server-side ─────────────────────────────────
+  const bundle = await getBundleById(body.bundle_id);
+  if (!bundle || bundle.org_id !== orgId) {
+    return Response.json({ error: "Service not found" }, { status: 404 });
+  }
+
+  const [outcome, versions] = await Promise.all([
+    getServiceOutcome(body.bundle_id),
+    getVersionsByBundleId(body.bundle_id),
+  ]);
+
   const latestVersionId = versions.length > 0 ? versions[0].id : null;
 
-  // ── 7. Build prompts ──────────────────────────────────────────────────
-  const toolsList = body.assigned_tools
+  // Fetch tools from latest version
+  let assignedTools: { name: string; vendor: string; domain: string }[] = [];
+  if (latestVersionId) {
+    const latestVersion = await getVersionById(latestVersionId);
+    if (latestVersion?.tools) {
+      assignedTools = latestVersion.tools
+        .filter((vt) => vt.tool)
+        .map((vt) => ({
+          name: vt.tool!.name,
+          vendor: vt.tool!.vendor,
+          domain:
+            CATEGORY_LABELS[vt.tool!.category as ToolCategory] ??
+            vt.tool!.category,
+        }));
+    }
+  }
+
+  const serviceName = bundle.name;
+  const outcomeType = outcome?.outcome_type ?? "";
+  const outcomeStatement = outcome?.outcome_statement ?? "";
+  const targetVertical = outcome?.target_vertical ?? "";
+  const targetPersona = outcome?.target_persona ?? "";
+  const serviceCapabilities = (outcome?.service_capabilities ?? []).map(
+    (c) => ({ name: c.name, description: c.description })
+  );
+
+  // ── 6. Build prompts ──────────────────────────────────────────────────
+  const toolsList = assignedTools
     .map((t) => `- ${t.name} (${t.vendor}) — ${t.domain}`)
     .join("\n");
 
-  const capsList = body.service_capabilities
+  const capsList = serviceCapabilities
     .map((c) => `- ${c.name}: ${c.description}`)
     .join("\n");
 
-  const verticalsList = body.org_target_verticals.join(", ");
+  const verticalsList = (body.org_target_verticals ?? []).join(", ");
 
   const systemPrompt = `You are a sales enablement strategist for managed service providers (MSPs). You produce vendor-agnostic, outcome-focused sales playbooks. Never mention specific vendor product names in customer-facing language — refer to capabilities and outcomes instead. Output valid JSON only, no markdown fences, no commentary.`;
 
   const userPrompt = `Generate a complete sales playbook for the service described below.
 
-SERVICE: ${body.service_name}
-OUTCOME TYPE: ${body.outcome_type}
-OUTCOME STATEMENT: ${body.outcome_statement}
-TARGET VERTICAL: ${body.target_vertical || "General"}
-TARGET PERSONA: ${body.target_persona || "IT Decision Maker"}
-MSP NAME: ${body.org_name}
+SERVICE: ${serviceName}
+OUTCOME TYPE: ${outcomeType}
+OUTCOME STATEMENT: ${outcomeStatement}
+TARGET VERTICAL: ${targetVertical || "General"}
+TARGET PERSONA: ${targetPersona || "IT Decision Maker"}
+MSP NAME: ${body.org_name || ""}
 MSP TARGET VERTICALS: ${verticalsList || "General"}
 
 CAPABILITIES:

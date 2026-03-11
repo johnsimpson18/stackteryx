@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   saveOutcomeStepAction,
   updateOutcomeStepAction,
@@ -375,12 +376,9 @@ export function ServiceWizardShell({
   const progress = step / TOTAL_STEPS;
 
   return (
-    <div className="flex min-h-screen flex-col app-grid-bg" style={{ backgroundColor: "#0A0A0A" }}>
+    <div className="flex min-h-screen flex-col app-grid-bg bg-background">
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <header
-        className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between px-6"
-        style={{ backgroundColor: "#0A0A0A" }}
-      >
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between px-6 bg-background">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -388,12 +386,9 @@ export function ServiceWizardShell({
             className="flex items-center justify-center h-8 w-8 rounded-md transition-colors hover:bg-white/10"
             title="Exit wizard"
           >
-            <X className="h-4 w-4" style={{ color: "#666666" }} />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
-          <span
-            className="text-lg font-bold tracking-tight"
-            style={{ fontFamily: "var(--font-display)", color: "#A8FF3E", fontSize: 18 }}
-          >
+          <span className="text-lg font-display font-bold tracking-tight text-primary">
             STACKTERYX
           </span>
         </div>
@@ -406,12 +401,10 @@ export function ServiceWizardShell({
             return (
               <span
                 key={label}
-                className="text-xs tracking-wide transition-colors"
-                style={{
-                  fontFamily: "var(--font-mono-alt)",
-                  color: isActive ? "#A8FF3E" : isComplete ? "#666666" : "#333333",
-                  fontWeight: isActive ? 600 : 400,
-                }}
+                className={cn(
+                  "text-xs font-mono tracking-wide transition-colors",
+                  isActive ? "text-primary font-semibold" : isComplete ? "text-muted-foreground" : "text-[#333333]"
+                )}
               >
                 {label}
               </span>
@@ -420,10 +413,10 @@ export function ServiceWizardShell({
         </div>
 
         <div className="w-48">
-          <div className="h-1 w-full rounded-full" style={{ backgroundColor: "#1E1E1E" }}>
+          <div className="h-1 w-full rounded-full bg-[#1E1E1E]">
             <div
-              className="h-1 rounded-full transition-all duration-300 ease-out"
-              style={{ backgroundColor: "#A8FF3E", width: `${progress * 100}%` }}
+              className="h-1 rounded-full transition-all duration-300 ease-out bg-primary"
+              style={{ width: `${progress * 100}%` }}
             />
           </div>
         </div>
@@ -528,19 +521,13 @@ export function ServiceWizardShell({
 
       {/* ── Bottom bar ────────────────────────────────────────────────────── */}
       {step < 7 && (
-        <footer
-          className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-between px-6"
-          style={{ backgroundColor: "#0A0A0A", borderTop: "1px solid #1E1E1E" }}
-        >
+        <footer className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-between px-6 bg-background border-t border-border">
           {step > 1 ? (
             <button
               type="button"
               onClick={handleBack}
               disabled={isPending}
-              className="flex items-center gap-1.5 text-sm transition-colors disabled:opacity-40"
-              style={{ color: "#666666" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#CCCCCC"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#666666"; }}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#CCCCCC] transition-colors disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
               Back
@@ -553,11 +540,10 @@ export function ServiceWizardShell({
             type="button"
             onClick={handleContinue}
             disabled={!canContinue() || isPending}
-            className="flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: canContinue() && !isPending ? "#A8FF3E" : "#333333",
-              color: canContinue() && !isPending ? "#0A0A0A" : "#666666",
-            }}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed",
+              canContinue() && !isPending ? "bg-primary text-primary-foreground" : "bg-[#333333] text-muted-foreground"
+            )}
           >
             {isPending ? (
               <>

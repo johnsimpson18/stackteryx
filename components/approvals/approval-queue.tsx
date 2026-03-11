@@ -30,9 +30,9 @@ interface ApprovalQueueProps {
 
 function marginColor(margin: number | null): string {
   if (margin === null) return "text-muted-foreground";
-  if (margin >= 0.25) return "text-emerald-600";
-  if (margin >= 0.15) return "text-amber-600";
-  return "text-red-600";
+  if (margin >= 0.25) return "text-emerald-400";
+  if (margin >= 0.15) return "text-amber-400";
+  return "text-red-400";
 }
 
 export function ApprovalQueue({ approvals, canManage }: ApprovalQueueProps) {
@@ -113,7 +113,7 @@ export function ApprovalQueue({ approvals, canManage }: ApprovalQueueProps) {
               className={cn(
                 "transition-colors",
                 approval.status === "pending" &&
-                  "border-amber-200 bg-amber-50/30"
+                  "bg-amber-500/10 border-amber-500/20"
               )}
             >
               <CardContent className="p-5">
@@ -238,7 +238,7 @@ export function ApprovalQueue({ approvals, canManage }: ApprovalQueueProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        className="text-red-400 border-red-500/20 hover:bg-red-500/10"
                         onClick={() => openReview(approval.id, "rejected")}
                       >
                         <XCircle className="h-3.5 w-3.5 mr-1" />
@@ -246,7 +246,7 @@ export function ApprovalQueue({ approvals, canManage }: ApprovalQueueProps) {
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
                         onClick={() => openReview(approval.id, "approved")}
                       >
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" />

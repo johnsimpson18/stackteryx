@@ -259,15 +259,7 @@ export function SalesEnablementPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          org_id: "", // filled by server from auth context
           bundle_id: selectedBundleId,
-          service_name: serviceDetails.service_name,
-          outcome_type: serviceDetails.outcome_type,
-          outcome_statement: serviceDetails.outcome_statement ?? "",
-          target_vertical: serviceDetails.target_vertical ?? "",
-          target_persona: serviceDetails.target_persona ?? "",
-          service_capabilities: serviceDetails.service_capabilities,
-          assigned_tools: serviceDetails.assigned_tools,
           org_name: orgName,
           org_target_verticals: orgTargetVerticals,
         }),

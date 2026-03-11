@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 import { PricingImportDropzone } from "@/components/imports/pricing-import-dropzone";
 
 // ── Billing options mapped to BillingBasis enum ───────────────────────────────
@@ -120,39 +122,21 @@ export function StepPricing({
     <div className="space-y-8">
       {/* Headline */}
       <div>
-        <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
-        >
+        <h1 className="font-display text-white text-4xl font-bold uppercase tracking-tight">
           WHAT DO YOU CHARGE?
         </h1>
-        <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
-        >
+        <p className="mt-2 font-mono text-muted-foreground text-sm">
           Enter your cost and sell price for each tool in your stack. This is how we model your
           margins.
         </p>
       </div>
 
       {/* Billing unit explainer */}
-      <div
-        className="rounded-lg border px-5 py-4"
-        style={{
-          backgroundColor: "rgba(168, 255, 62, 0.03)",
-          borderColor: "rgba(168, 255, 62, 0.15)",
-        }}
-      >
-        <p
-          className="text-sm font-bold"
-          style={{ color: "#A8FF3E" }}
-        >
+      <div className="rounded-lg border bg-primary/[0.03] border-primary/[0.15] px-5 py-4">
+        <p className="text-sm font-bold text-primary">
           Per-user and per-device are billing units, not pricing strategies.
         </p>
-        <p
-          className="mt-1 text-xs"
-          style={{ color: "#999999" }}
-        >
+        <p className="mt-1 text-xs text-muted-foreground">
           We&apos;ll help you model the economics beneath them — cost floor, target margin, and the
           price that makes this service profitable.
         </p>
@@ -168,12 +152,12 @@ export function StepPricing({
             key={opt.key}
             type="button"
             onClick={() => setPath(opt.key)}
-            className="flex items-center justify-center gap-2 rounded-lg border px-4 py-4 text-sm font-semibold transition-[border-color,background-color] duration-100"
-            style={{
-              backgroundColor: path === opt.key ? "rgba(168, 255, 62, 0.06)" : "#111111",
-              borderColor: path === opt.key ? "#A8FF3E" : "#1E1E1E",
-              color: path === opt.key ? "#A8FF3E" : "#CCCCCC",
-            }}
+            className={cn(
+              "flex items-center justify-center gap-2 rounded-lg border px-4 py-4 text-sm font-semibold transition-[border-color,background-color] duration-100",
+              path === opt.key
+                ? "bg-primary/[0.06] border-primary text-primary"
+                : "bg-[#111111] border-border text-[#CCCCCC]"
+            )}
           >
             <span className="text-lg">{opt.icon}</span>
             {opt.label}
@@ -190,10 +174,7 @@ export function StepPricing({
               setPath("manual");
             }}
           />
-          <p
-            className="text-xs text-center"
-            style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-          >
+          <p className="text-xs text-center font-mono text-muted-foreground">
             We&apos;ll extract your tool pricing automatically. You can review before continuing.
           </p>
         </div>
@@ -201,18 +182,16 @@ export function StepPricing({
         <>
           {/* Pricing table */}
           {tools.length === 0 ? (
-            <p className="text-sm py-8 text-center" style={{ color: "#666666" }}>
+            <p className="text-sm py-8 text-center text-muted-foreground">
               No tools selected. Go back to Step 4 to add your tools.
             </p>
           ) : (
             <div className="space-y-2">
               {/* Header */}
               <div
-                className="grid gap-2 px-3 py-2 text-[10px] font-medium uppercase tracking-widest"
+                className="grid gap-2 px-3 py-2 text-[10px] font-medium uppercase tracking-widest font-mono text-muted-foreground"
                 style={{
                   gridTemplateColumns: "1.5fr 1fr 1.2fr 0.8fr 0.8fr 0.6fr 0.7fr",
-                  color: "#666666",
-                  fontFamily: "var(--font-mono-alt)",
                 }}
               >
                 <span>Tool</span>
@@ -233,17 +212,14 @@ export function StepPricing({
                   return (
                     <div
                       key={t.tool_name}
-                      className="grid gap-2 items-center rounded-lg border px-3 py-2.5"
+                      className="grid gap-2 items-center rounded-lg border px-3 py-2.5 bg-[#111111] border-border"
                       style={{
                         gridTemplateColumns: "1.5fr 1fr 1.2fr 0.8fr 0.8fr 0.6fr 0.7fr",
-                        backgroundColor: "#111111",
-                        borderColor: "#1E1E1E",
                       }}
                     >
                       {/* Tool name */}
                       <span
-                        className="text-sm font-semibold truncate"
-                        style={{ color: "#FFFFFF" }}
+                        className="text-sm font-semibold truncate text-white"
                         title={t.tool_name}
                       >
                         {t.tool_name}
@@ -251,8 +227,7 @@ export function StepPricing({
 
                       {/* Category badge */}
                       <span
-                        className="text-[10px] truncate rounded px-1.5 py-0.5 text-center"
-                        style={{ backgroundColor: "#1E1E1E", color: "#999999" }}
+                        className="text-[10px] truncate rounded px-1.5 py-0.5 text-center bg-[#1E1E1E] text-muted-foreground"
                         title={t.category}
                       >
                         {t.category}
@@ -264,12 +239,7 @@ export function StepPricing({
                         onChange={(e) =>
                           updateField(t.tool_name, "billing_basis", e.target.value)
                         }
-                        className="rounded border px-1.5 py-1.5 text-xs outline-none"
-                        style={{
-                          backgroundColor: "#0A0A0A",
-                          borderColor: "#1E1E1E",
-                          color: "#CCCCCC",
-                        }}
+                        className="rounded border border-border bg-background text-[#CCCCCC] px-1.5 py-1.5 text-xs outline-none"
                       >
                         <option value="">Select…</option>
                         {BILLING_OPTIONS.map((o) => (
@@ -281,10 +251,7 @@ export function StepPricing({
 
                       {/* Cost */}
                       <div className="relative">
-                        <span
-                          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                          style={{ color: "#666666" }}
-                        >
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                           $
                         </span>
                         <input
@@ -300,21 +267,13 @@ export function StepPricing({
                             )
                           }
                           placeholder="0.00"
-                          className="w-full rounded border py-1.5 pl-5 pr-1.5 text-xs outline-none"
-                          style={{
-                            backgroundColor: "#0A0A0A",
-                            borderColor: "#1E1E1E",
-                            color: "#FFFFFF",
-                          }}
+                          className="w-full rounded border border-border bg-background text-white py-1.5 pl-5 pr-1.5 text-xs outline-none"
                         />
                       </div>
 
                       {/* Sell */}
                       <div className="relative">
-                        <span
-                          className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                          style={{ color: "#666666" }}
-                        >
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                           $
                         </span>
                         <input
@@ -330,12 +289,7 @@ export function StepPricing({
                             )
                           }
                           placeholder="0.00"
-                          className="w-full rounded border py-1.5 pl-5 pr-1.5 text-xs outline-none"
-                          style={{
-                            backgroundColor: "#0A0A0A",
-                            borderColor: "#1E1E1E",
-                            color: "#FFFFFF",
-                          }}
+                          className="w-full rounded border border-border bg-background text-white py-1.5 pl-5 pr-1.5 text-xs outline-none"
                         />
                       </div>
 
@@ -360,12 +314,7 @@ export function StepPricing({
                           )
                         }
                         placeholder="—"
-                        className="w-full rounded border px-1.5 py-1.5 text-xs outline-none"
-                        style={{
-                          backgroundColor: "#0A0A0A",
-                          borderColor: "#1E1E1E",
-                          color: "#FFFFFF",
-                        }}
+                        className="w-full rounded border border-border bg-background text-white px-1.5 py-1.5 text-xs outline-none"
                       />
                     </div>
                   );
@@ -373,11 +322,8 @@ export function StepPricing({
               </div>
 
               {/* Blended margin summary */}
-              <div
-                className="flex items-center justify-between rounded-lg border px-4 py-3 mt-3"
-                style={{ backgroundColor: "#111111", borderColor: "#1E1E1E" }}
-              >
-                <span className="text-sm font-medium" style={{ color: "#999999" }}>
+              <div className="flex items-center justify-between rounded-lg border px-4 py-3 mt-3 bg-[#111111] border-border">
+                <span className="text-sm font-medium text-muted-foreground">
                   Blended margin across all tools:
                 </span>
                 <span
@@ -392,12 +338,9 @@ export function StepPricing({
 
           {/* Add another tool */}
           <div className="space-y-2">
-            <label
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: "#999999" }}
-            >
+            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Add Another Tool
-            </label>
+            </Label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -410,23 +353,12 @@ export function StepPricing({
                   }
                 }}
                 placeholder="Tool name"
-                className="flex-1 rounded-lg border px-3 py-2.5 text-sm outline-none placeholder:text-[#444]"
-                style={{
-                  backgroundColor: "#111111",
-                  borderColor: "#1E1E1E",
-                  color: "#FFFFFF",
-                }}
+                className="flex-1 rounded-lg border border-border bg-[#111111] text-white px-3 py-2.5 text-sm outline-none placeholder:text-[#444]"
               />
               <select
                 value={addCategory}
                 onChange={(e) => setAddCategory(e.target.value)}
-                className="rounded-lg border px-2 py-2.5 text-sm outline-none"
-                style={{
-                  backgroundColor: "#111111",
-                  borderColor: "#1E1E1E",
-                  color: "#CCCCCC",
-                  minWidth: 140,
-                }}
+                className="rounded-lg border border-border bg-[#111111] text-[#CCCCCC] px-2 py-2.5 text-sm outline-none min-w-[140px]"
               >
                 {ADD_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -438,12 +370,7 @@ export function StepPricing({
                 type="button"
                 onClick={handleAddTool}
                 disabled={!addName.trim()}
-                className="rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-30"
-                style={{
-                  borderColor: "#1E1E1E",
-                  color: "#A8FF3E",
-                  backgroundColor: "#111111",
-                }}
+                className="rounded-lg border border-border bg-[#111111] text-primary px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-30"
               >
                 Add
               </button>

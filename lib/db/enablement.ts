@@ -62,10 +62,11 @@ export async function getEnablementStatusByOrgId(
 ): Promise<{ bundleId: string; versionId: string; hasEnablement: boolean }[]> {
   const supabase = await createClient();
 
-  // Get all versions with their bundle_id, ordered by version_number desc
+  // Filter versions at DB level via inner join on bundles.org_id
   const { data: versions } = await supabase
     .from("bundle_versions")
-    .select("id, bundle_id, version_number")
+    .select("id, bundle_id, version_number, bundles!inner(org_id)")
+    .eq("bundles.org_id", orgId)
     .order("version_number", { ascending: false });
 
   if (!versions || versions.length === 0) return [];

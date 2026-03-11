@@ -1,5 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+
 // ── Packaging options ─────────────────────────────────────────────────────────
 
 const PACKAGING_OPTIONS = [
@@ -71,14 +74,12 @@ export function StepBusiness({
       {/* Headline */}
       <div>
         <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
+          className="font-display text-white text-4xl font-bold uppercase tracking-tight"
         >
           HOW DO YOU SELL?
         </h1>
         <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
+          className="mt-2 font-mono text-muted-foreground text-sm"
         >
           This helps us build the right bundle structure for your business.
         </p>
@@ -86,9 +87,9 @@ export function StepBusiness({
 
       {/* Q1 — Packaging */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           How do you package your services?
-        </label>
+        </Label>
         <div className="grid grid-cols-2 gap-3">
           {PACKAGING_OPTIONS.map((opt) => {
             const selected = salesModel === opt.value;
@@ -97,30 +98,32 @@ export function StepBusiness({
                 key={opt.value}
                 type="button"
                 onClick={() => onSalesModelChange(selected ? "" : opt.value)}
-                className="rounded-lg border px-4 py-4 text-left transition-[border-color,background-color] duration-100"
-                style={{
-                  backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                  borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                }}
+                className={cn(
+                  "rounded-lg border px-4 py-4 text-left transition-colors",
+                  selected
+                    ? "bg-primary/[0.06] border-primary"
+                    : "bg-[#111111] border-border"
+                )}
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   <span
-                    className="text-base"
-                    style={{ color: selected ? "#A8FF3E" : "#666666", fontFamily: "monospace" }}
+                    className={cn(
+                      "text-base font-mono",
+                      selected ? "text-primary" : "text-muted-foreground"
+                    )}
                   >
                     {opt.icon}
                   </span>
                   <span
-                    className="text-sm font-bold uppercase"
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      color: selected ? "#A8FF3E" : "#FFFFFF",
-                    }}
+                    className={cn(
+                      "text-sm font-display font-bold uppercase",
+                      selected ? "text-primary" : "text-white"
+                    )}
                   >
                     {opt.label}
                   </span>
                 </div>
-                <p className="text-xs leading-relaxed" style={{ color: "#666666" }}>
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {opt.desc}
                 </p>
               </button>
@@ -131,9 +134,9 @@ export function StepBusiness({
 
       {/* Q2 — Delivery */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           How do you deliver?
-        </label>
+        </Label>
         <div className="grid grid-cols-2 gap-3">
           {DELIVERY_OPTIONS.map((opt) => {
             const selected = deliveryModels.includes(opt.value);
@@ -142,22 +145,22 @@ export function StepBusiness({
                 key={opt.value}
                 type="button"
                 onClick={() => onDeliveryModelsChange(toggleArr(deliveryModels, opt.value))}
-                className="rounded-lg border px-4 py-4 text-left transition-[border-color,background-color] duration-100"
-                style={{
-                  backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                  borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                }}
+                className={cn(
+                  "rounded-lg border px-4 py-4 text-left transition-colors",
+                  selected
+                    ? "bg-primary/[0.06] border-primary"
+                    : "bg-[#111111] border-border"
+                )}
               >
                 <p
-                  className="text-sm font-bold uppercase"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    color: selected ? "#A8FF3E" : "#FFFFFF",
-                  }}
+                  className={cn(
+                    "text-sm font-display font-bold uppercase",
+                    selected ? "text-primary" : "text-white"
+                  )}
                 >
                   {opt.label}
                 </p>
-                <p className="text-xs mt-1" style={{ color: "#666666" }}>
+                <p className="text-xs leading-relaxed text-muted-foreground mt-1">
                   {opt.desc}
                 </p>
               </button>
@@ -168,9 +171,9 @@ export function StepBusiness({
 
       {/* Q3 — Sales team */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           What does your sales team look like?
-        </label>
+        </Label>
         <div className="flex flex-wrap gap-2">
           {SALES_TEAM_OPTIONS.map((opt) => {
             const selected = salesTeamType === opt;
@@ -179,12 +182,12 @@ export function StepBusiness({
                 key={opt}
                 type="button"
                 onClick={() => onSalesTeamTypeChange(selected ? "" : opt)}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-[border-color,background-color,color] duration-100"
-                style={{
-                  backgroundColor: selected ? "#A8FF3E" : "#111111",
-                  color: selected ? "#0A0A0A" : "#CCCCCC",
-                  border: selected ? "1px solid #A8FF3E" : "1px solid #1E1E1E",
-                }}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium border transition-colors",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-[#111111] text-[#CCCCCC] border-border"
+                )}
               >
                 {opt}
               </button>

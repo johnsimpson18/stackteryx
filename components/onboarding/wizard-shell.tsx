@@ -318,12 +318,8 @@ export function WizardShell({
     <div className="flex min-h-screen flex-col app-grid-bg" style={{ backgroundColor: "#0A0A0A" }}>
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between px-6" style={{ backgroundColor: "#0A0A0A" }}>
-        <span
-          className="text-lg font-bold tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#A8FF3E", fontSize: 18 }}
-        >
-          STACKTERYX
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/stackteryx-logo.svg" alt="Stackteryx" height={28} style={{ height: 28, width: "auto" }} />
 
         <span
           className="text-xs tracking-widest"

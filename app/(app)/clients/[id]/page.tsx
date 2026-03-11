@@ -6,6 +6,11 @@ import { getClientById } from "@/lib/db/clients";
 import { getContractsByClientId } from "@/lib/db/client-contracts";
 import { getProposalsByClientId } from "@/lib/db/proposals";
 import { getActiveOrgId } from "@/lib/org-context";
+import {
+  getClientComplianceScores,
+  getOrgComplianceTargets,
+} from "@/lib/db/compliance";
+import { getFrameworkById } from "@/lib/data/compliance-frameworks";
 import { hasPermission, CLIENT_STATUS_LABELS } from "@/lib/constants";
 import { PageHeader } from "@/components/shared/page-header";
 import { RoleGate } from "@/components/shared/role-gate";
@@ -28,9 +33,9 @@ import {
   RenewalBanner,
   ServiceFitBadge,
   ProposalHistory,
-  findSoonestRenewal,
-  calculateServiceFit,
 } from "@/components/clients/client-detail-sections";
+import { findSoonestRenewal, calculateServiceFit } from "@/lib/client-utils";
+import { ClientComplianceSection } from "@/components/compliance/client-compliance-section";
 import { createClient } from "@/lib/supabase/server";
 
 interface ClientDetailPageProps {
@@ -61,17 +66,23 @@ export default async function ClientDetailPage({
   params,
 }: ClientDetailPageProps) {
   const { id } = await params;
-  const profile = await getCurrentProfile();
+  const [profile, orgId] = await Promise.all([
+    getCurrentProfile(),
+    getActiveOrgId(),
+  ]);
   if (!profile) redirect("/login");
   if (!hasPermission(profile.role, "view_clients")) redirect("/dashboard");
 
-  const orgId = await getActiveOrgId();
-
-  const [client, contracts, proposals] = await Promise.all([
-    getClientById(id),
-    getContractsByClientId(id),
-    getProposalsByClientId(id),
-  ]);
+  const [client, contracts, proposals, complianceTargets, complianceScores] =
+    await Promise.all([
+      getClientById(id),
+      getContractsByClientId(id),
+      getProposalsByClientId(id),
+      orgId ? getOrgComplianceTargets(orgId) : Promise.resolve([]),
+      orgId
+        ? getClientComplianceScores(orgId, id)
+        : Promise.resolve([]),
+    ]);
 
   if (!client) notFound();
 
@@ -329,6 +340,28 @@ export default async function ClientDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Compliance */}
+      <ClientComplianceSection
+        clientId={id}
+        scores={complianceScores.map((s) => ({
+          framework_id: s.framework_id,
+          framework_name: getFrameworkById(s.framework_id)?.shortName ?? s.framework_id,
+          score_pct: Number(s.score_pct),
+          controls_total: s.controls_total,
+          controls_satisfied: s.controls_satisfied,
+          controls_partial: s.controls_partial,
+          controls_gap: s.controls_gap,
+          controls_manual: s.controls_manual,
+          domain_scores: s.domain_scores,
+          gap_details: s.gap_details,
+          suggested_services: s.suggested_services,
+          computed_at: s.computed_at,
+        }))}
+        enabledFrameworkIds={complianceTargets
+          .filter((t) => t.enabled)
+          .map((t) => t.framework_id)}
+      />
 
       {/* Proposal History */}
       <ProposalHistory proposals={proposals} clientId={id} />

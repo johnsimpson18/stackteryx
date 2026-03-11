@@ -27,7 +27,7 @@ import {
   TIER_METRICS,
 } from "@/lib/constants";
 import type { TierMetric } from "@/lib/types";
-import { createToolAction, updateToolAction } from "@/actions/tools";
+import { createToolAction, updateToolAction, deactivateToolAction } from "@/actions/tools";
 import { formatCurrency } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Tool, PricingToolInput, ToolCategory } from "@/lib/types";
 
@@ -919,26 +930,72 @@ export function ToolForm({ tool }: ToolFormProps) {
           <Separator className="bg-border/30" />
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="text-sm"
-              onClick={() => router.push("/stack-catalog")}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="text-sm font-semibold bg-primary hover:bg-primary/90 shadow-[0_0_16px_rgba(99,102,241,0.25)]"
-            >
-              {isPending
-                ? "Saving…"
-                : isEditing
-                  ? "Update Tool"
-                  : "Create Tool"}
-            </Button>
+          <div className="flex items-center justify-between">
+            <div>
+              {isEditing && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={isPending}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" />
+                      Remove Tool
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove tool?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Remove <strong>{tool?.name || "this tool"}</strong> from your stack? This tool will be unassigned from any services that reference it.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        onClick={() => {
+                          startTransition(async () => {
+                            const result = await deactivateToolAction(tool!.id);
+                            if (result.success) {
+                              toast.success("Tool removed");
+                              router.push("/stack-catalog");
+                            } else {
+                              toast.error(result.error);
+                            }
+                          });
+                        }}
+                      >
+                        Remove Tool
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-sm"
+                onClick={() => router.push("/stack-catalog")}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="text-sm font-semibold bg-primary hover:bg-primary/90 shadow-[0_0_16px_rgba(99,102,241,0.25)]"
+              >
+                {isPending
+                  ? "Saving…"
+                  : isEditing
+                    ? "Update Tool"
+                    : "Create Tool"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

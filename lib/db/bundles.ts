@@ -9,10 +9,12 @@ import type {
 export async function getBundles(orgId?: string): Promise<BundleWithMeta[]> {
   const supabase = await createClient();
 
+  // TODO: implement cursor pagination when org data exceeds these limits
   let query = supabase
     .from("bundles")
     .select("*")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(500);
 
   if (orgId) {
     query = query.eq("org_id", orgId);

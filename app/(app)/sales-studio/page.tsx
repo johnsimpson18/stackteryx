@@ -12,6 +12,7 @@ import { getVersionsByBundleId } from "@/lib/db/bundle-versions";
 import { getOrgById } from "@/lib/db/orgs";
 import { getOnboardingProfile } from "@/lib/db/org-settings";
 import { getPlaybookStatusByBundleIds } from "@/lib/db/enablement";
+import { getTierPackages } from "@/lib/db/tier-packages";
 import { SalesStudioClient } from "@/components/sales-studio/sales-studio-client";
 
 interface SalesStudioPageProps {
@@ -29,12 +30,13 @@ export default async function SalesStudioPage({
 
   const params = await searchParams;
 
-  const [clients, bundles, proposals, org, onboarding] = await Promise.all([
+  const [clients, bundles, proposals, org, onboarding, tierPackages] = await Promise.all([
     getClients(orgId),
     getBundles(orgId),
     getProposals(orgId),
     getOrgById(orgId),
     getOnboardingProfile(orgId),
+    getTierPackages(orgId),
   ]);
 
   // For each active bundle, get the latest version for pricing info
@@ -110,6 +112,9 @@ export default async function SalesStudioPage({
       orgName={org?.name ?? ""}
       orgTargetVerticals={onboarding?.target_verticals ?? []}
       playbookStatus={playbookStatus}
+      publishedPackages={tierPackages
+        .filter((p) => p.status === "published")
+        .map((p) => ({ id: p.id, name: p.name, item_count: p.item_count }))}
     />
   );
 }

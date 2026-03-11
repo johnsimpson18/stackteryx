@@ -435,8 +435,8 @@ export function ResultsReveal({
 
         {/* ── Bundle Cards ──────────────────────────────────────── */}
         <div className="mt-12 space-y-6">
-          {bundles.map((bundle) => (
-            <BundleCard key={bundle.bundleId} bundle={bundle} outcomeTypes={outcomeTypes} />
+          {bundles.map((bundle, i) => (
+            <BundleCard key={bundle.bundleId || i} bundle={bundle} outcomeTypes={outcomeTypes} />
           ))}
         </div>
 

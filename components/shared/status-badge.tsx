@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 type Status =
   | "draft"
   | "active"
+  | "published"
   | "archived"
   | "pending"
   | "approved"
@@ -21,6 +22,10 @@ const STATUS_CONFIG: Record<Status, { dot: string; classes: string }> = {
   active: {
     dot: "bg-emerald-500",
     classes: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+  },
+  published: {
+    dot: "bg-blue-500",
+    classes: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
   },
   archived: {
     dot: "bg-red-500",

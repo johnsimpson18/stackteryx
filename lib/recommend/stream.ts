@@ -4,75 +4,13 @@
  * can render each recommendation as soon as its data arrives.
  */
 
-/** Strip ```json ... ``` code fences that LLMs sometimes add. */
-function stripCodeFences(text: string): string {
-  return text
-    .replace(/^```(?:json)?\s*/im, "")
-    .replace(/\s*```\s*$/m, "")
-    .trim();
-}
+import { tryParsePartialJSON } from "@/lib/ai/stream";
+import { stripCodeFences } from "@/lib/ai/validate";
 
-/**
- * Attempt to parse a potentially incomplete JSON string.
- * Strategy:
- *   1. Try JSON.parse directly.
- *   2. Try appending increasing numbers of closing braces/brackets to fix
- *      truncated objects.
- *   3. Return null if nothing works.
- */
-export function tryParsePartialJSON(
-  buffer: string
-): Record<string, unknown> | null {
-  const clean = stripCodeFences(buffer).trim();
-  if (!clean) return null;
-
-  // Fast path: complete JSON
-  try {
-    const parsed = JSON.parse(clean);
-    if (typeof parsed === "object" && parsed !== null) {
-      return parsed as Record<string, unknown>;
-    }
-  } catch {
-    // fall through to repair attempts
-  }
-
-  // Attempt repair by counting unbalanced braces/brackets and closing them
-  let openBraces = 0;
-  let openBrackets = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (const ch of clean) {
-    if (escaped) { escaped = false; continue; }
-    if (ch === "\\" && inString) { escaped = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === "{") openBraces++;
-    else if (ch === "}") openBraces--;
-    else if (ch === "[") openBrackets++;
-    else if (ch === "]") openBrackets--;
-  }
-
-  // Build closing suffix — close string/array/object in the right order
-  let suffix = "";
-  // If we're inside an unterminated string value, close it
-  if (inString) suffix += '"';
-  // Close arrays before objects (innermost first)
-  suffix += "]".repeat(Math.max(0, openBrackets));
-  suffix += "}".repeat(Math.max(0, openBraces));
-
-  if (suffix) {
-    try {
-      const repaired = JSON.parse(clean + suffix);
-      if (typeof repaired === "object" && repaired !== null) {
-        return repaired as Record<string, unknown>;
-      }
-    } catch {
-      // still malformed — return null
-    }
-  }
-
-  return null;
+/** Parse a streaming buffer that may contain code fences and incomplete JSON. */
+function parseBuffer(buffer: string): Record<string, unknown> | null {
+  const clean = stripCodeFences(buffer);
+  return tryParsePartialJSON(clean);
 }
 
 /**
@@ -80,7 +18,7 @@ export function tryParsePartialJSON(
  * complete (i.e., have all required fields including `sellingPoints`).
  */
 export function getCompletedRecommendations(buffer: string): number {
-  const parsed = tryParsePartialJSON(buffer);
+  const parsed = parseBuffer(buffer);
   if (!parsed) return 0;
 
   const recs = parsed.recommendations;
@@ -105,7 +43,7 @@ export function getCompletedRecommendations(buffer: string): number {
 export function extractRecommendations(
   buffer: string
 ): Array<Record<string, unknown>> {
-  const parsed = tryParsePartialJSON(buffer);
+  const parsed = parseBuffer(buffer);
   if (!parsed) return [];
   const recs = parsed.recommendations;
   if (!Array.isArray(recs)) return [];

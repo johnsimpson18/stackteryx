@@ -24,11 +24,8 @@ export function StepLaunch({
   if (!launched) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
-        <div
-          className="h-16 w-16 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: "#A8FF3E20" }}
-        >
-          <Rocket className="h-8 w-8" style={{ color: "#A8FF3E" }} />
+        <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-primary/[0.12]">
+          <Rocket className="h-8 w-8 text-primary" />
         </div>
 
         <div className="space-y-2">
@@ -43,11 +40,7 @@ export function StepLaunch({
           onClick={onLaunch}
           disabled={isPending}
           size="lg"
-          className="gap-2 px-8"
-          style={{
-            backgroundColor: "#A8FF3E",
-            color: "#0A0A0A",
-          }}
+          className="gap-2 px-8 bg-primary text-primary-foreground"
         >
           {isPending ? (
             <>

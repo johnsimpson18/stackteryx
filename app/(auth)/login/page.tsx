@@ -615,12 +615,8 @@ function AuthCard() {
     return (
       <div className="space-y-5">
         <div className="space-y-1">
-          <h2
-            className="text-xl font-bold uppercase tracking-wide"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-          >
-            STACKTERYX
-          </h2>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={32} style={{ height: 32, width: "auto" }} />
           <p
             className="text-xs"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
@@ -988,12 +984,8 @@ export default function LoginPage() {
           backdropFilter: "blur(12px)",
         }}
       >
-        <span
-          className="text-sm font-bold uppercase tracking-wider"
-          style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-        >
-          STACKTERYX
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
 
         <div className="flex items-center gap-3">
           <a
@@ -2105,12 +2097,8 @@ export default function LoginPage() {
         style={{ background: "#0A0A0A", borderTop: "1px solid #1E1E1E" }}
       >
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span
-            className="text-sm font-bold uppercase tracking-wider"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-          >
-            STACKTERYX
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
           <div className="flex gap-4">
             <span
               className="text-xs cursor-pointer transition-colors"

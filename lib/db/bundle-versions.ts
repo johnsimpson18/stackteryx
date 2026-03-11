@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { calculatePricing } from "@/lib/pricing/engine";
-import { getToolById } from "@/lib/db/tools";
 import type {
   BundleVersion,
   BundleVersionWithTools,
@@ -49,18 +48,26 @@ export async function getVersionById(
 
   if (toolsError) throw toolsError;
 
-  // Fetch full tool data for each version tool
-  const toolsWithDetails: BundleVersionTool[] = [];
-  for (const vt of versionTools ?? []) {
-    const tool = await getToolById(vt.tool_id);
-    toolsWithDetails.push({
-      id: vt.id,
-      bundle_version_id: vt.bundle_version_id,
-      tool_id: vt.tool_id,
-      quantity_multiplier: Number(vt.quantity_multiplier),
-      tool: tool ?? undefined,
-    });
+  // Batch-fetch full tool data for all version tools
+  const toolIds = (versionTools ?? []).map((vt) => vt.tool_id);
+  const toolMap = new Map<string, Tool>();
+  if (toolIds.length > 0) {
+    const { data: tools } = await supabase
+      .from("tools")
+      .select("*")
+      .in("id", toolIds);
+    for (const t of tools ?? []) {
+      toolMap.set(t.id, t as Tool);
+    }
   }
+
+  const toolsWithDetails: BundleVersionTool[] = (versionTools ?? []).map((vt) => ({
+    id: vt.id,
+    bundle_version_id: vt.bundle_version_id,
+    tool_id: vt.tool_id,
+    quantity_multiplier: Number(vt.quantity_multiplier),
+    tool: toolMap.get(vt.tool_id) ?? undefined,
+  }));
 
   return {
     ...(version as BundleVersion),
@@ -112,11 +119,17 @@ export async function createVersion(
   const latestNum = await getLatestVersionNumber(input.bundle_id);
   const versionNumber = latestNum + 1;
 
-  // 2. Fetch full tool data for each selected tool
+  // 2. Batch-fetch full tool data for all selected tools
   const toolDataMap = new Map<string, Tool>();
-  for (const t of input.tools) {
-    const tool = await getToolById(t.tool_id);
-    if (tool) toolDataMap.set(t.tool_id, tool);
+  const inputToolIds = input.tools.map((t) => t.tool_id);
+  if (inputToolIds.length > 0) {
+    const { data: fetchedTools } = await supabase
+      .from("tools")
+      .select("*")
+      .in("id", inputToolIds);
+    for (const t of fetchedTools ?? []) {
+      toolDataMap.set(t.id, t as Tool);
+    }
   }
 
   // 3. Build PricingInput

@@ -221,6 +221,44 @@ export async function saveDiscountAction(
   }
 }
 
+// ── Delete cost model ────────────────────────────────────────────────────────
+
+export async function deleteCostModelAction(
+  costModelId: string,
+  orgVendorId: string
+): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { success: false, error: "Not authenticated" };
+
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "create_tools")) {
+      return { success: false, error: "You do not have permission to delete cost models" };
+    }
+
+    // Verify the vendor belongs to this org
+    const vendor = await getOrgVendorById(orgId, orgVendorId);
+    if (!vendor) {
+      return { success: false, error: "Not found" };
+    }
+
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+
+    // Delete tiers first (cascade), then the cost model
+    await supabase.from("cost_model_tiers").delete().eq("cost_model_id", costModelId);
+    const { error } = await supabase.from("cost_models").delete().eq("id", costModelId);
+    if (error) throw error;
+
+    await logAudit(profile.id, "DELETE", "cost_model", costModelId, {}, orgId);
+
+    revalidatePath(`/vendors/${orgVendorId}`);
+    return { success: true, data: undefined };
+  } catch {
+    return { success: false, error: "Failed to delete cost model" };
+  }
+}
+
 // ── Add vendors from library ────────────────────────────────────────────────
 
 export async function addVendorsFromLibraryAction(

@@ -22,9 +22,20 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { changeRoleAction, removeMemberAction, inviteMemberAction } from "@/actions/members";
+import { changeRoleAction, removeMemberAction } from "@/actions/members";
 import { hasOrgPermission } from "@/lib/constants";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { UserMinus } from "lucide-react";
 import type { OrgMemberWithProfile, OrgRole } from "@/lib/types";
 
@@ -44,6 +55,7 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
   const [isPending, startTransition] = useTransition();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<OrgRole>("viewer");
+  const inviteDisabled = true; // Invite flow not yet implemented
 
   const currentMember = members.find((m) => m.user_id === currentUserId);
   const canManage = currentMember
@@ -74,15 +86,6 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
 
   function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      const result = await inviteMemberAction(inviteEmail, inviteRole);
-      if (result.success) {
-        toast.success(`Invitation recorded for ${inviteEmail}`);
-        setInviteEmail("");
-      } else {
-        toast.error(result.error);
-      }
-    });
   }
 
   const activeMembers = members.filter((m) => m.is_active);
@@ -125,13 +128,12 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "..." : "Invite"}
+              <Button type="submit" disabled={inviteDisabled}>
+                Invite
               </Button>
             </form>
             <p className="mt-2 text-xs text-muted-foreground">
-              Note: Email sending is not yet implemented. The invitation is
-              recorded in the audit log.
+              Team invitations coming soon.
             </p>
           </CardContent>
         </Card>
@@ -222,16 +224,36 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
                   {canManage && (
                     <TableCell className="text-right">
                       {member.user_id !== currentUserId && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={isPending}
-                          onClick={() =>
-                            handleRemove(member.user_id, member.display_name)
-                          }
-                        >
-                          <UserMinus className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isPending}
+                            >
+                              <UserMinus className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Remove <strong>{member.display_name || "this member"}</strong> from the organization? They will lose access to Stackteryx immediately. This cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() =>
+                                  handleRemove(member.user_id, member.display_name)
+                                }
+                              >
+                                Remove Member
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </TableCell>
                   )}

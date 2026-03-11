@@ -25,13 +25,13 @@ interface ServiceProfilePageProps {
 
 export default async function ServiceProfilePage({ params }: ServiceProfilePageProps) {
   const { id } = await params;
-  const profile = await getCurrentProfile();
+  const [profile, orgId, bundle] = await Promise.all([
+    getCurrentProfile(),
+    getActiveOrgId(),
+    getBundleById(id),
+  ]);
   if (!profile) redirect("/login");
-
-  const orgId = await getActiveOrgId();
   if (!orgId) redirect("/dashboard");
-
-  const bundle = await getBundleById(id);
   if (!bundle || bundle.org_id !== orgId) notFound();
 
   // Fetch all data in parallel

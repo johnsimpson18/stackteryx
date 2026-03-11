@@ -6,7 +6,7 @@ import {
   workspaceSettingsSchema,
   type WorkspaceSettingsFormValues,
 } from "@/lib/schemas/settings";
-import { updateSettingsAction } from "@/actions/settings";
+import { updateSettingsAction, resetOnboardingAction } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,6 +150,34 @@ export function SettingsForm({ settings, userRole }: SettingsFormProps) {
         <p className="text-sm text-muted-foreground text-center">
           Only the workspace owner can modify settings.
         </p>
+      )}
+
+      {canEdit && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Onboarding</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Re-run the guided setup to update your company profile, vendors, and services.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await resetOnboardingAction();
+                  if (!result.success) {
+                    toast.error(result.error);
+                  }
+                });
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "Resetting..." : "Re-run Onboarding"}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </form>
   );

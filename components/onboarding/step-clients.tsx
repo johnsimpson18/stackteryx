@@ -1,5 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+
 // ── Vertical definitions with simple geometric SVG icons ──────────────────
 
 const VERTICALS = [
@@ -152,25 +155,19 @@ export function StepClients({
     <div className="space-y-8">
       {/* Headline */}
       <div>
-        <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
-        >
+        <h1 className="font-display text-white text-4xl font-bold uppercase tracking-tight">
           WHO DO YOU PROTECT?
         </h1>
-        <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
-        >
+        <p className="mt-2 font-mono text-muted-foreground text-sm">
           Tell us about the clients you serve.
         </p>
       </div>
 
       {/* Verticals grid */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Verticals you service
-        </label>
+        </Label>
         <div className="grid grid-cols-3 gap-2">
           {VERTICALS.map((v) => {
             const selected = verticals.includes(v.name);
@@ -179,15 +176,15 @@ export function StepClients({
                 key={v.name}
                 type="button"
                 onClick={() => onVerticalsChange(toggle(verticals, v.name))}
-                className="flex items-center gap-2.5 rounded-lg border px-3 py-3 text-left text-sm transition-[border-color,background-color] duration-100"
-                style={{
-                  backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                  borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                  color: selected ? "#A8FF3E" : "#CCCCCC",
-                }}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-lg border px-3 py-3 text-left text-sm transition-[border-color,background-color] duration-100",
+                  selected
+                    ? "bg-primary/[0.06] border-primary text-primary"
+                    : "bg-[#111111] border-border text-[#CCCCCC]"
+                )}
               >
                 <VerticalIcon type={v.icon} />
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>
+                <span className="font-display font-bold text-[13px]">
                   {v.name}
                 </span>
               </button>
@@ -198,9 +195,9 @@ export function StepClients({
 
       {/* Client sizes */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Average client size
-        </label>
+        </Label>
         <div className="grid grid-cols-2 gap-3">
           {CLIENT_SIZES.map((cs) => {
             const selected = clientSizes.includes(cs.label);
@@ -209,16 +206,17 @@ export function StepClients({
                 key={cs.label}
                 type="button"
                 onClick={() => onClientSizesChange(toggle(clientSizes, cs.label))}
-                className="rounded-lg border px-4 py-3 text-left transition-[border-color,background-color] duration-100"
-                style={{
-                  backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                  borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                }}
+                className={cn(
+                  "rounded-lg border px-4 py-3 text-left transition-[border-color,background-color] duration-100",
+                  selected
+                    ? "bg-primary/[0.06] border-primary"
+                    : "bg-[#111111] border-border"
+                )}
               >
-                <p className="text-sm font-semibold" style={{ color: selected ? "#A8FF3E" : "#FFFFFF" }}>
+                <p className={cn("text-sm font-semibold", selected ? "text-primary" : "text-white")}>
                   {cs.label}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "#666666" }}>{cs.sub}</p>
+                <p className="text-xs mt-0.5 text-muted-foreground">{cs.sub}</p>
               </button>
             );
           })}
@@ -227,9 +225,9 @@ export function StepClients({
 
       {/* Buyer personas */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Primary buyer personas
-        </label>
+        </Label>
         <div className="flex flex-wrap gap-2">
           {PERSONAS.map((p) => {
             const selected = buyerPersonas.includes(p);
@@ -238,12 +236,12 @@ export function StepClients({
                 key={p}
                 type="button"
                 onClick={() => onBuyerPersonasChange(toggle(buyerPersonas, p))}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-[border-color,background-color,color] duration-100"
-                style={{
-                  backgroundColor: selected ? "#A8FF3E" : "#111111",
-                  color: selected ? "#0A0A0A" : "#CCCCCC",
-                  border: selected ? "1px solid #A8FF3E" : "1px solid #1E1E1E",
-                }}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium border transition-colors",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-[#111111] text-[#CCCCCC] border-border"
+                )}
               >
                 {p}
               </button>

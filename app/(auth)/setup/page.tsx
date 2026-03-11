@@ -49,12 +49,8 @@ export default function SetupPage() {
 
         {/* Logo */}
         <div className="text-center mb-6">
-          <span
-            className="text-sm font-bold uppercase tracking-wider"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-          >
-            STACKTERYX
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={32} style={{ height: 32, width: "auto", display: "inline-block" }} />
         </div>
 
         <div className="space-y-5">

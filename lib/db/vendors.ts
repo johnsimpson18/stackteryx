@@ -34,7 +34,7 @@ export async function getOrgVendors(
 ): Promise<OrgVendorWithMeta[]> {
   const supabase = await createClient();
 
-  // Fetch org_vendors with joined global vendor info
+  // TODO: implement cursor pagination when org data exceeds these limits
   const { data, error } = await supabase
     .from("org_vendors")
     .select(`
@@ -43,7 +43,8 @@ export async function getOrgVendors(
       cost_models ( id )
     `)
     .eq("org_id", orgId)
-    .order("display_name");
+    .order("display_name")
+    .limit(500);
 
   if (error) throw error;
 

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { workspaceSettingsSchema } from "@/lib/schemas/settings";
 import { upsertOrgSettings } from "@/lib/db/org-settings";
 import type { OrgSettings } from "@/lib/db/org-settings";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { logAudit } from "@/lib/db/audit";
 import { hasOrgPermission } from "@/lib/constants";
@@ -54,4 +56,28 @@ export async function updateSettingsAction(
   } catch {
     return { success: false, error: "Failed to update settings" };
   }
+}
+
+export async function resetOnboardingAction(): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { success: false, error: "Not authenticated" };
+
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to do this" };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("org_settings")
+      .update({ onboarding_complete: false })
+      .eq("org_id", orgId);
+
+    if (error) throw error;
+  } catch {
+    return { success: false, error: "Failed to reset onboarding" };
+  }
+
+  redirect("/onboarding");
 }

@@ -6,6 +6,7 @@ export async function getActiveActionCards(
   entityId: string
 ): Promise<AIActionCard[]> {
   const supabase = await createClient();
+  // TODO: implement cursor pagination when org data exceeds these limits
   const { data, error } = await supabase
     .from("ai_action_cards")
     .select("*")
@@ -14,7 +15,8 @@ export async function getActiveActionCards(
     .is("dismissed_at", null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order("severity", { ascending: true })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) throw error;
   return (data as AIActionCard[]) ?? [];

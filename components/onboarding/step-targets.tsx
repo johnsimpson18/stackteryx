@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 // ── Compliance frameworks ─────────────────────────────────────────────────────
 
@@ -69,11 +71,11 @@ function toggleArr(arr: string[], item: string): string[] {
 function ReviewRow({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
-    <div className="flex justify-between py-1.5 border-b" style={{ borderColor: "#1E1E1E" }}>
-      <span className="text-xs" style={{ color: "#666666" }}>
+    <div className="flex justify-between py-1.5 border-b border-border">
+      <span className="text-xs text-muted-foreground">
         {label}
       </span>
-      <span className="text-xs text-right max-w-[60%] truncate" style={{ color: "#CCCCCC" }}>
+      <span className="text-xs text-right max-w-[60%] truncate text-[#CCCCCC]">
         {value}
       </span>
     </div>
@@ -128,16 +130,10 @@ export function StepTargets({
 
       {/* Headline */}
       <div>
-        <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
-        >
+        <h1 className="font-display text-white text-4xl font-bold uppercase tracking-tight">
           SET YOUR TARGETS
         </h1>
-        <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
-        >
+        <p className="mt-2 font-mono text-muted-foreground text-sm">
           We&apos;ll use these to model your margins and evaluate your bundles.
         </p>
       </div>
@@ -145,20 +141,10 @@ export function StepTargets({
       {/* Target margin slider */}
       <div className="space-y-4">
         <div className="text-center">
-          <span
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 48,
-              fontWeight: 700,
-              color: "#A8FF3E",
-            }}
-          >
+          <span className="font-display text-5xl font-bold text-primary">
             {targetMarginPct}%
           </span>
-          <span
-            className="ml-2 text-sm"
-            style={{ fontFamily: "var(--font-display)", color: "#666666" }}
-          >
+          <span className="ml-2 text-sm font-display text-muted-foreground">
             target margin
           </span>
         </div>
@@ -178,9 +164,9 @@ export function StepTargets({
           }}
         />
 
-        <p className="text-center text-sm" style={{ color: "#666666" }}>
+        <p className="text-center text-sm text-muted-foreground">
           At {targetMarginPct}%, a ${exampleCost.toFixed(2)}/user/month stack sells for{" "}
-          <span style={{ color: "#A8FF3E", fontWeight: 600 }}>
+          <span className="text-primary font-semibold">
             ${exampleSell.toFixed(2)}/user/month
           </span>
         </p>
@@ -188,9 +174,9 @@ export function StepTargets({
 
       {/* Compliance frameworks */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Which frameworks do your clients need to comply with?
-        </label>
+        </Label>
         <div className="flex flex-wrap gap-2">
           {COMPLIANCE_FRAMEWORKS.map((fw) => {
             const selected = complianceTargets.includes(fw);
@@ -199,12 +185,12 @@ export function StepTargets({
                 key={fw}
                 type="button"
                 onClick={() => onComplianceTargetsChange(toggleArr(complianceTargets, fw))}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-[border-color,background-color,color] duration-100"
-                style={{
-                  backgroundColor: selected ? "#A8FF3E" : "#111111",
-                  color: selected ? "#0A0A0A" : "#CCCCCC",
-                  border: selected ? "1px solid #A8FF3E" : "1px solid #1E1E1E",
-                }}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium border transition-colors",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-[#111111] text-[#CCCCCC] border-border"
+                )}
               >
                 {fw}
               </button>
@@ -215,9 +201,9 @@ export function StepTargets({
 
       {/* Additional context */}
       <div className="space-y-2">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Anything else we should know?
-        </label>
+        </Label>
         <textarea
           value={additionalContext}
           onChange={(e) => {
@@ -227,29 +213,18 @@ export function StepTargets({
           }}
           rows={4}
           placeholder="Tell us about your niche, your competitive advantage, or anything unique about how you operate. This helps us write better bundle descriptions."
-          className="w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444] resize-none"
-          style={{
-            backgroundColor: "#111111",
-            borderColor: "#1E1E1E",
-            color: "#FFFFFF",
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = "#A8FF3E";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = "#1E1E1E";
-          }}
+          className="w-full rounded-lg border border-border bg-[#111111] text-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444] resize-none focus:border-primary"
         />
-        <p className="text-right text-xs" style={{ color: "#666666" }}>
+        <p className="text-right text-xs text-muted-foreground">
           {additionalContext.length}/500
         </p>
       </div>
 
       {/* Outcome targets */}
       <div className="space-y-3">
-        <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "#999999" }}>
+        <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Which outcome types do you want your portfolio to cover by end of year?
-        </label>
+        </Label>
         <div className="flex flex-wrap gap-2">
           {OUTCOME_TARGET_OPTIONS.map((ot) => {
             const selected = outcomeTargets.includes(ot);
@@ -258,12 +233,12 @@ export function StepTargets({
                 key={ot}
                 type="button"
                 onClick={() => onOutcomeTargetsChange(toggleArr(outcomeTargets, ot))}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-[border-color,background-color,color] duration-100"
-                style={{
-                  backgroundColor: selected ? "#A8FF3E" : "#111111",
-                  color: selected ? "#0A0A0A" : "#CCCCCC",
-                  border: selected ? "1px solid #A8FF3E" : "1px solid #1E1E1E",
-                }}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium border transition-colors",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-[#111111] text-[#CCCCCC] border-border"
+                )}
               >
                 {ot}
               </button>
@@ -273,18 +248,17 @@ export function StepTargets({
       </div>
 
       {/* Review section */}
-      <div className="rounded-lg border" style={{ borderColor: "#1E1E1E", backgroundColor: "#111111" }}>
+      <div className="rounded-lg border border-border bg-[#111111]">
         <button
           type="button"
           onClick={() => setReviewOpen(!reviewOpen)}
-          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
-          style={{ color: "#CCCCCC" }}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[#CCCCCC]"
         >
           Review Your Inputs
           {reviewOpen ? (
-            <ChevronUp className="h-4 w-4" style={{ color: "#666666" }} />
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4" style={{ color: "#666666" }} />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </button>
 
@@ -317,36 +291,12 @@ export function StepTargets({
           type="button"
           onClick={onLaunch}
           disabled={isLaunching}
-          className="w-full flex items-center justify-center gap-3 rounded-lg font-bold uppercase tracking-tight transition-all duration-150 disabled:cursor-not-allowed"
-          style={{
-            height: 56,
-            backgroundColor: isLaunching ? "#333333" : "#A8FF3E",
-            color: isLaunching ? "#666666" : "#0A0A0A",
-            fontFamily: "var(--font-display)",
-            fontSize: 24,
-          }}
-          onMouseEnter={(e) => {
-            if (!isLaunching) {
-              e.currentTarget.style.backgroundColor = "#BFFF5C";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isLaunching) {
-              e.currentTarget.style.backgroundColor = "#A8FF3E";
-              e.currentTarget.style.transform = "translateY(0)";
-            }
-          }}
-          onMouseDown={(e) => {
-            if (!isLaunching) {
-              e.currentTarget.style.transform = "scale(0.98)";
-            }
-          }}
-          onMouseUp={(e) => {
-            if (!isLaunching) {
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }
-          }}
+          className={cn(
+            "w-full flex items-center justify-center gap-3 rounded-lg font-display text-2xl font-bold uppercase tracking-tight transition-all duration-150 h-14 disabled:cursor-not-allowed",
+            isLaunching
+              ? "bg-[#333333] text-muted-foreground"
+              : "bg-primary text-primary-foreground hover:bg-[#BFFF5C] active:scale-[0.98]"
+          )}
         >
           {isLaunching ? (
             <>
@@ -357,10 +307,7 @@ export function StepTargets({
             "LAUNCH STACKTERYX →"
           )}
         </button>
-        <p
-          className="text-center text-xs"
-          style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-        >
+        <p className="text-center text-xs font-mono text-muted-foreground">
           This usually takes about 10 seconds. We&apos;ll build your first bundles automatically.
         </p>
       </div>

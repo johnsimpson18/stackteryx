@@ -9,10 +9,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
-  const profile = await getCurrentProfile();
+  const [profile, orgId] = await Promise.all([
+    getCurrentProfile(),
+    getActiveOrgId(),
+  ]);
   if (!profile) redirect("/login");
-
-  const orgId = await getActiveOrgId();
   if (!orgId) redirect("/login");
 
   const settings = await getOrgSettings(orgId);

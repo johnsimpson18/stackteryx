@@ -4,7 +4,8 @@ import type { Client, ClientStatus, ClientWithContracts } from "@/lib/types";
 export async function getClients(orgId?: string): Promise<ClientWithContracts[]> {
   const supabase = await createClient();
 
-  let query = supabase.from("clients").select("*").order("name");
+  // TODO: implement cursor pagination when org data exceeds these limits
+  let query = supabase.from("clients").select("*").order("name").limit(500);
 
   if (orgId) {
     query = query.eq("org_id", orgId);

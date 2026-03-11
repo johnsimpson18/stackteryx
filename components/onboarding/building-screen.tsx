@@ -94,16 +94,10 @@ export function BuildingScreen({ orgId }: { orgId: string }) {
     >
       <div className="w-full px-6" style={{ maxWidth: 600 }}>
         {/* Wordmark */}
-        <p
-          className="text-center font-bold tracking-tight mb-6"
-          style={{
-            fontFamily: "var(--font-display)",
-            color: "#A8FF3E",
-            fontSize: 24,
-          }}
-        >
-          STACKTERYX
-        </p>
+        <div className="text-center mb-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={36} style={{ height: 36, width: "auto", display: "inline-block" }} />
+        </div>
 
         {/* Headline */}
         <h1

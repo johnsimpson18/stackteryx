@@ -1,24 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { runDailyIntelligence } from "@/lib/ai/intelligence";
+import { NextResponse } from "next/server";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
-  // Verify cron secret or auth
+  // Only allow requests with valid CRON_SECRET — no user auth fallback
   const cronSecret = request.headers.get("x-cron-secret");
-
-  if (cronSecret) {
-    if (cronSecret !== process.env.CRON_SECRET) {
-      return Response.json({ error: "Invalid cron secret" }, { status: 401 });
-    }
-  } else {
-    // Fall back to user auth
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

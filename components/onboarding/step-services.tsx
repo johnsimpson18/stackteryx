@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 // ── Service categories ────────────────────────────────────────────────────────
 
@@ -58,16 +61,10 @@ export function StepServices({
     <div className="space-y-8">
       {/* Headline */}
       <div>
-        <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
-        >
+        <h1 className="font-display text-white text-4xl font-bold uppercase tracking-tight">
           WHAT OUTCOMES DO YOU DELIVER?
         </h1>
-        <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
-        >
+        <p className="mt-2 font-mono text-muted-foreground text-sm">
           Think about the business results your clients hire you to provide — not the tools you use to deliver them.
         </p>
       </div>
@@ -81,22 +78,22 @@ export function StepServices({
               key={outcome.value}
               type="button"
               onClick={() => onServicesChange(toggle(services, outcome.value))}
-              className="w-full rounded-lg border px-5 py-4 text-left transition-[border-color,background-color] duration-100"
-              style={{
-                backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-              }}
+              className={cn(
+                "w-full rounded-lg border px-5 py-4 text-left transition-colors",
+                selected
+                  ? "bg-primary/[0.06] border-primary"
+                  : "bg-[#111111] border-border"
+              )}
             >
               <span
-                className="text-sm font-bold"
-                style={{ color: selected ? "#A8FF3E" : "#FFFFFF" }}
+                className={cn(
+                  "text-sm font-bold",
+                  selected ? "text-primary" : "text-white"
+                )}
               >
                 {outcome.value}
               </span>
-              <p
-                className="mt-1 text-xs"
-                style={{ color: "#999999" }}
-              >
+              <p className="mt-1 text-xs text-muted-foreground">
                 {outcome.description}
               </p>
             </button>
@@ -106,12 +103,9 @@ export function StepServices({
 
       {/* Custom services */}
       <div className="space-y-3">
-        <label
-          className="text-xs font-medium uppercase tracking-wider"
-          style={{ color: "#999999" }}
-        >
+        <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Anything else?
-        </label>
+        </Label>
 
         {/* Tags */}
         {servicesCustom.length > 0 && (
@@ -119,8 +113,7 @@ export function StepServices({
             {servicesCustom.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
-                style={{ backgroundColor: "#A8FF3E", color: "#0A0A0A" }}
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground"
               >
                 {tag}
                 <button
@@ -138,7 +131,7 @@ export function StepServices({
 
         {/* Input */}
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
@@ -149,25 +142,13 @@ export function StepServices({
               }
             }}
             placeholder="Type a custom service and press Enter"
-            className="flex-1 rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444]"
-            style={{
-              backgroundColor: "#111111",
-              borderColor: "#1E1E1E",
-              color: "#FFFFFF",
-            }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "#A8FF3E"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; }}
+            className="flex-1 bg-[#111111] border-border text-white"
           />
           <button
             type="button"
             onClick={addCustom}
             disabled={!customInput.trim()}
-            className="rounded-lg border px-4 py-3 text-sm font-medium transition-colors disabled:opacity-30"
-            style={{
-              borderColor: "#1E1E1E",
-              color: "#A8FF3E",
-              backgroundColor: "#111111",
-            }}
+            className="rounded-lg border border-border px-4 py-3 text-sm font-medium text-primary bg-[#111111] transition-colors disabled:opacity-30"
           >
             Add
           </button>

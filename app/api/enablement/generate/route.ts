@@ -36,6 +36,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Verify user is a member of this org
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .single();
+
+  if (!membership) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // ── 3. API key check ────────────────────────────────────────────────────
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json(

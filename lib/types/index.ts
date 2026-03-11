@@ -717,6 +717,47 @@ export interface ServiceCompleteness {
   completeness_pct: number;
 }
 
+// ── Tier Packages ────────────────────────────────────────────────────────────
+
+export type TierPackageStatus = "draft" | "published" | "archived";
+
+export interface TierPackage {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string;
+  status: TierPackageStatus;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TierPackageItem {
+  id: string;
+  package_id: string;
+  bundle_id: string;
+  tier_label: string;
+  sort_order: number;
+  highlight: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TierPackageItemWithBundle extends TierPackageItem {
+  bundle_name: string;
+  bundle_type: BundleType;
+  bundle_status: BundleStatus;
+}
+
+export interface TierPackageWithItems extends TierPackage {
+  items: TierPackageItemWithBundle[];
+}
+
+export interface TierPackageWithMeta extends TierPackage {
+  item_count: number;
+}
+
 // Re-export recommendation types
 export type {
   ClientProfile,

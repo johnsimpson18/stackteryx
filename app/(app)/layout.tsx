@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/db/profiles";
-import { getOrgSettings } from "@/lib/db/org-settings";
+import { getOrgSettings, getOnboardingProfile } from "@/lib/db/org-settings";
 import { getUserOrgMemberships, getOrgMemberCount } from "@/lib/db/org-members";
 import { getActiveOrgId } from "@/lib/org-context";
+import { getOrgById } from "@/lib/db/orgs";
+import { getOnboardingTools } from "@/lib/db/onboarding-tools";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 
 export default async function AppLayout({
   children,
@@ -33,7 +36,40 @@ export default async function AppLayout({
     // Degrade gracefully — show single org mode
   }
 
-  return (
+  // ── Onboarding gate check ──────────────────────────────────────────────
+  // Fetch from org_settings table (not workspace_settings) where the
+  // onboarding_complete flag and wizard progress live.
+
+  let onboardingComplete = true; // Default: don't gate if data unavailable
+  let onboardingProfile = null as Awaited<ReturnType<typeof getOnboardingProfile>>;
+  let savedStep = 1;
+  let savedTools: Awaited<ReturnType<typeof getOnboardingTools>> = [];
+  let orgName = "";
+
+  if (orgId) {
+    try {
+      onboardingProfile = await getOnboardingProfile(orgId);
+      if (onboardingProfile) {
+        onboardingComplete = onboardingProfile.onboarding_complete;
+        savedStep = onboardingProfile.onboarding_step ?? 1;
+      }
+      // No row = no org_settings created yet = don't gate (first-time edge case)
+    } catch {
+      // Query failed — don't gate
+    }
+
+    if (!onboardingComplete) {
+      // Only fetch these when we need the gate
+      const [org, tools] = await Promise.all([
+        getOrgById(orgId).catch(() => null),
+        getOnboardingTools(orgId).catch(() => []),
+      ]);
+      orgName = org?.name ?? "";
+      savedTools = tools;
+    }
+  }
+
+  const appContent = (
     <div className="flex h-screen overflow-hidden">
       <Sidebar profile={profile} memberCount={memberCount} />
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -47,5 +83,19 @@ export default async function AppLayout({
         </main>
       </div>
     </div>
+  );
+
+  return (
+    <OnboardingGate
+      onboardingComplete={onboardingComplete}
+      orgId={orgId ?? ""}
+      defaultOrgName={orgName}
+      defaultDisplayName={profile.display_name ?? ""}
+      savedProfile={onboardingProfile}
+      savedStep={savedStep}
+      savedTools={savedTools}
+    >
+      {appContent}
+    </OnboardingGate>
   );
 }

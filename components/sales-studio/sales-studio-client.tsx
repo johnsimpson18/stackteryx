@@ -83,6 +83,7 @@ interface SalesStudioClientProps {
   orgName: string;
   orgTargetVerticals: string[];
   playbookStatus: Record<string, boolean>;
+  publishedPackages?: { id: string; name: string; item_count: number }[];
 }
 
 interface ServiceSelection {
@@ -123,6 +124,7 @@ export function SalesStudioClient({
   orgName,
   orgTargetVerticals,
   playbookStatus,
+  publishedPackages = [],
 }: SalesStudioClientProps) {
   const [, startTransition] = useTransition();
 
@@ -627,6 +629,26 @@ export function SalesStudioClient({
                         playbookStatus={playbookStatus}
                         onSwitchToEnablement={() => setMode("enablement")}
                       />
+                    )}
+
+                    {/* Published packages hint */}
+                    {publishedPackages.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border px-3 py-2">
+                        <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                        <span>
+                          {publishedPackages.length} published{" "}
+                          {publishedPackages.length === 1
+                            ? "package"
+                            : "packages"}{" "}
+                          available —{" "}
+                          <a
+                            href="/packages"
+                            className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                          >
+                            view packages
+                          </a>
+                        </span>
+                      </div>
                     )}
 
                     {/* Generate button */}

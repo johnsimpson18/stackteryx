@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { stripCodeFences } from "@/lib/ai/validate";
 import { getOnboardingProfile, markOnboardingComplete, saveGeneratedBundlesJson, upsertOrgSettings } from "@/lib/db/org-settings";
 import { getOnboardingTools } from "@/lib/db/onboarding-tools";
 import { createBundle } from "@/lib/db/bundles";
@@ -174,11 +175,12 @@ Return this exact JSON structure:
 
 // ── Response parsing ────────────────────────────────────────────────────────
 
-function parseAIResponse(text: string): AIResponse {
+function parseOnboardingAIResponse(text: string): AIResponse {
+  const cleaned = stripCodeFences(text);
   try {
-    return JSON.parse(text);
+    return JSON.parse(cleaned);
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]);
     throw new Error("Failed to parse AI response as JSON");
   }
@@ -346,7 +348,7 @@ export async function GET(request: Request) {
         emit({ step: 4, status: "active" });
         const responseText =
           aiResponse.content[0].type === "text" ? aiResponse.content[0].text : "";
-        const parsed = parseAIResponse(responseText);
+        const parsed = parseOnboardingAIResponse(responseText);
         if (!parsed.bundles || parsed.bundles.length === 0) {
           throw new Error("AI returned no bundles");
         }

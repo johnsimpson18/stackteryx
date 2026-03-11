@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 // ── Tool catalog by category ──────────────────────────────────────────────────
 
@@ -175,14 +178,12 @@ export function StepTools({
       {/* Headline */}
       <div>
         <h1
-          className="text-4xl font-bold uppercase tracking-tight"
-          style={{ fontFamily: "var(--font-display)", color: "#FFFFFF", fontSize: 36 }}
+          className="font-display text-white text-4xl font-bold uppercase tracking-tight"
         >
           BUILD YOUR STACK
         </h1>
         <p
-          className="mt-2 text-sm"
-          style={{ fontFamily: "var(--font-mono-alt)", color: "#666666", fontSize: 14 }}
+          className="mt-2 font-mono text-muted-foreground text-sm"
         >
           Select the security tools your team uses to deliver services. Organize them by the domains they cover.
         </p>
@@ -192,8 +193,7 @@ export function StepTools({
       {TOOL_CATEGORIES.map((cat) => (
         <div key={cat.label} className="space-y-2.5">
           <label
-            className="text-[10px] font-medium uppercase tracking-widest"
-            style={{ fontFamily: "var(--font-mono-alt)", color: "#A8FF3E" }}
+            className="font-mono text-primary text-[10px] font-medium uppercase tracking-widest"
           >
             {cat.label}
           </label>
@@ -205,15 +205,15 @@ export function StepTools({
                   key={tool.name}
                   type="button"
                   onClick={() => toggleTool(tool.name, tool.vendor, cat.label)}
-                  className="flex items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-[border-color,background-color] duration-100"
-                  style={{
-                    backgroundColor: selected ? "rgba(168, 255, 62, 0.06)" : "#111111",
-                    borderColor: selected ? "#A8FF3E" : "#1E1E1E",
-                    color: selected ? "#A8FF3E" : "#CCCCCC",
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-[border-color,background-color] duration-100",
+                    selected
+                      ? "bg-primary/[0.06] border-primary text-primary"
+                      : "bg-[#111111] border-border text-[#CCCCCC]"
+                  )}
                 >
-                  {selected && <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#A8FF3E" }} />}
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>
+                  {selected && <Check className="h-3.5 w-3.5 flex-shrink-0 text-primary" />}
+                  <span className="font-display font-bold text-[13px]">
                     {tool.name}
                   </span>
                 </button>
@@ -225,12 +225,11 @@ export function StepTools({
 
       {/* Custom tools */}
       <div className="space-y-3">
-        <label
-          className="text-xs font-medium uppercase tracking-wider"
-          style={{ color: "#999999" }}
+        <Label
+          className="text-muted-foreground text-xs font-medium uppercase tracking-wider"
         >
           Don&apos;t see a tool? Add it here.
-        </label>
+        </Label>
 
         {/* Custom tags */}
         {customTools.length > 0 && (
@@ -238,8 +237,7 @@ export function StepTools({
             {customTools.map((t) => (
               <span
                 key={t.tool_name}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
-                style={{ backgroundColor: "#A8FF3E", color: "#0A0A0A" }}
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground"
               >
                 {t.tool_name}
                 <span className="opacity-60">({t.category})</span>
@@ -258,7 +256,7 @@ export function StepTools({
 
         {/* Input row */}
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
@@ -269,25 +267,12 @@ export function StepTools({
               }
             }}
             placeholder="Tool name"
-            className="flex-1 rounded-lg border px-4 py-3 text-sm outline-none transition-colors placeholder:text-[#444]"
-            style={{
-              backgroundColor: "#111111",
-              borderColor: "#1E1E1E",
-              color: "#FFFFFF",
-            }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "#A8FF3E"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; }}
+            className="flex-1 bg-[#111111] border-border text-white rounded-lg px-4 py-3 text-sm placeholder:text-[#444]"
           />
           <select
             value={customCategory}
             onChange={(e) => setCustomCategory(e.target.value)}
-            className="rounded-lg border px-3 py-3 text-sm outline-none"
-            style={{
-              backgroundColor: "#111111",
-              borderColor: "#1E1E1E",
-              color: "#CCCCCC",
-              minWidth: 160,
-            }}
+            className="min-w-[160px] rounded-lg border border-border bg-[#111111] text-[#CCCCCC] px-3 py-3 text-sm outline-none"
           >
             {TOOL_CATEGORIES.map((cat) => (
               <option key={cat.label} value={cat.label}>
@@ -299,12 +284,7 @@ export function StepTools({
             type="button"
             onClick={addCustom}
             disabled={!customName.trim()}
-            className="rounded-lg border px-4 py-3 text-sm font-medium transition-colors disabled:opacity-30"
-            style={{
-              borderColor: "#1E1E1E",
-              color: "#A8FF3E",
-              backgroundColor: "#111111",
-            }}
+            className="rounded-lg border border-border px-4 py-3 text-sm font-medium text-primary bg-[#111111] transition-colors disabled:opacity-30"
           >
             Add
           </button>

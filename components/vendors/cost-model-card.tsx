@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Layers, Tag } from "lucide-react";
+import { Pencil, Layers, Tag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { CostModelForm } from "./cost-model-form";
-import { saveDiscountAction } from "@/actions/vendors";
+import { saveDiscountAction, deleteCostModelAction } from "@/actions/vendors";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/formatting";
 import {
@@ -46,8 +57,22 @@ export function CostModelCard({
   orgVendorId,
   discount,
 }: CostModelCardProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [isDeleting, startDeleteTransition] = useTransition();
+
+  function handleDelete() {
+    startDeleteTransition(async () => {
+      const result = await deleteCostModelAction(costModel.id, orgVendorId);
+      if (result.success) {
+        toast.success("Cost model deleted");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
 
   if (isEditing) {
     return (
@@ -101,6 +126,37 @@ export function CostModelCard({
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete cost model?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this pricing configuration.
+                    Services using this cost model will not be affected
+                    immediately but will lose the reference.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleDelete}
+                  >
+                    Delete Cost Model
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardHeader>

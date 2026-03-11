@@ -302,7 +302,7 @@ export function PricingAdvisor({ version, bundleName }: PricingAdvisorProps) {
               )}
             </div>
 
-            <div className="flex-shrink-0 border-t bg-white px-4 py-3">
+            <div className="flex-shrink-0 border-t bg-[#111111] px-4 py-3">
               <div className="flex gap-2">
                 <Textarea
                   ref={textareaRef}

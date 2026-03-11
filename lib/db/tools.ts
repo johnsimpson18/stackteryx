@@ -13,7 +13,8 @@ export async function getTools(
   filters?: ToolFilters
 ): Promise<Tool[]> {
   const supabase = await createClient();
-  let query = supabase.from("tools").select("*").order("name");
+  // TODO: implement cursor pagination when org data exceeds these limits
+  let query = supabase.from("tools").select("*").order("name").limit(500);
 
   if (orgId) {
     query = query.eq("org_id", orgId);
