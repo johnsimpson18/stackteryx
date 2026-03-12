@@ -74,7 +74,7 @@ export async function createContract(
   const version = await getVersionById(input.bundle_version_id);
   if (!version) throw new Error("Bundle version not found");
 
-  // Build pricing tools from the version
+  // Build pricing tools from the version (includes all v2 fields)
   const pricingTools: PricingToolInput[] = version.tools
     .filter((vt) => vt.tool)
     .map((vt) => ({
@@ -91,7 +91,24 @@ export async function createContract(
         ? Number(vt.tool!.labor_cost_per_seat)
         : null,
       quantity_multiplier: Number(vt.quantity_multiplier),
+      // v2 fields — now used by the canonical engine
+      annual_flat_cost: Number(vt.tool!.annual_flat_cost ?? 0),
+      per_user_cost: Number(vt.tool!.per_user_cost ?? 0),
+      per_org_cost: Number(vt.tool!.per_org_cost ?? 0),
+      percent_discount: Number(vt.tool!.percent_discount ?? 0),
+      flat_discount: Number(vt.tool!.flat_discount ?? 0),
+      min_monthly_commit: vt.tool!.min_monthly_commit
+        ? Number(vt.tool!.min_monthly_commit)
+        : null,
+      tier_metric: vt.tool!.tier_metric,
     }));
+
+  // Use version's stored assumptions or default to seat_count
+  const assumptions = (version.assumptions ?? {
+    endpoints: input.seat_count,
+    users: input.seat_count,
+    org_count: 1,
+  }) as PricingInput["assumptions"];
 
   const pricingInput: PricingInput = {
     tools: pricingTools,
@@ -104,6 +121,8 @@ export async function createContract(
     max_discount_no_approval_pct:
       input.workspace_settings.max_discount_no_approval_pct,
     contract_term_months: Number(version.contract_term_months),
+    assumptions,
+    sell_config: version.sell_config as PricingInput["sell_config"],
   };
 
   const pricing = calculatePricing(pricingInput);

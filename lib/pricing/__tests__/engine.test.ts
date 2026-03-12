@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculatePricing, computeBundleCost, computeSellPrice, normalizeToMonthly, annotateNormalization } from "../engine";
+import { calculatePricing, calculatePricingCanonical, computeBundleCost, computeSellPrice, normalizeToMonthly, annotateNormalization } from "../engine";
 import { resolveTieredCost, resolveMetricTier } from "../tiers";
 import type { PricingInput, PricingToolInput, TierRule, BundleAssumptions, SellConfig } from "@/lib/types";
+import type { PricingTool, PricingParameters } from "../types";
 
 // Helper to build a minimal input with defaults
 function makeInput(overrides: Partial<PricingInput> = {}): PricingInput {
@@ -747,5 +748,240 @@ describe("SMB full scenario — ESET MDR + Flare TEM tiered", () => {
     expect(flareMid).toBeCloseTo(200, 2);
     const bundle = computeBundleCost([ESET, FLARE_TEM_TIERED], MID);
     expect(bundle.totalMonthlyCost).toBeCloseTo(950, 2);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Canonical Engine: calculatePricingCanonical
+// ══════════════════════════════════════════════════════════════════════════════
+
+function makeCanonicalTool(overrides: Partial<PricingTool> = {}): PricingTool {
+  return {
+    tool_id: "tool-c1",
+    tool_name: "Canonical Tool",
+    pricing_model: "per_seat",
+    per_seat_cost: 5,
+    per_user_cost: 0,
+    flat_monthly_cost: 0,
+    per_org_cost: 0,
+    annual_flat_cost: 0,
+    tier_rules: [],
+    tier_metric: "endpoints",
+    vendor_minimum_monthly: null,
+    min_monthly_commit: null,
+    percent_discount: 0,
+    flat_discount: 0,
+    labor_cost_per_seat: null,
+    quantity_multiplier: 1,
+    renewal_uplift_pct: 0,
+    ...overrides,
+  };
+}
+
+function makeCanonicalParams(overrides: Partial<PricingParameters> = {}): PricingParameters {
+  return {
+    seat_count: 50,
+    target_margin_pct: 0.35,
+    overhead_pct: 0.1,
+    labor_pct: 0.15,
+    discount_pct: 0,
+    contract_term_months: 12,
+    sell_strategy: "cost_plus_margin",
+    sell_config: {},
+    red_zone_margin_pct: 0.15,
+    max_discount_no_approval_pct: 0.1,
+    assumptions: { endpoints: 50, users: 50, org_count: 1 },
+    ...overrides,
+  };
+}
+
+describe("calculatePricingCanonical", () => {
+  it("handles all 7 pricing models correctly", () => {
+    const tools: PricingTool[] = [
+      makeCanonicalTool({ tool_id: "ps", tool_name: "Per Seat", pricing_model: "per_seat", per_seat_cost: 5 }),
+      makeCanonicalTool({ tool_id: "pu", tool_name: "Per User", pricing_model: "per_user", per_user_cost: 4 }),
+      makeCanonicalTool({ tool_id: "fm", tool_name: "Flat Monthly", pricing_model: "flat_monthly", flat_monthly_cost: 200 }),
+      makeCanonicalTool({ tool_id: "po", tool_name: "Per Org", pricing_model: "per_org", per_org_cost: 100 }),
+      makeCanonicalTool({ tool_id: "af", tool_name: "Annual Flat", pricing_model: "annual_flat", annual_flat_cost: 1200 }),
+    ];
+
+    const params = makeCanonicalParams({ target_margin_pct: 0, overhead_pct: 0, labor_pct: 0 });
+    const result = calculatePricingCanonical(tools, params);
+
+    // per_seat: 5 * 50 = 250
+    expect(result.tool_breakdown[0].effective_monthly_cost).toBe(250);
+    // per_user: 4 * 50 = 200
+    expect(result.tool_breakdown[1].effective_monthly_cost).toBe(200);
+    // flat_monthly: 200 * 1 (org_count) = 200
+    expect(result.tool_breakdown[2].effective_monthly_cost).toBe(200);
+    // per_org: 100 * 1 = 100
+    expect(result.tool_breakdown[3].effective_monthly_cost).toBe(100);
+    // annual_flat: 1200/12 = 100
+    expect(result.tool_breakdown[4].effective_monthly_cost).toBe(100);
+
+    // Total: 250 + 200 + 200 + 100 + 100 = 850
+    expect(result.true_cost_per_seat).toBe(850 / 50); // 17
+  });
+
+  it("applies discount chain: percent → flat → min_monthly_commit", () => {
+    const tool = makeCanonicalTool({
+      per_seat_cost: 10,
+      percent_discount: 0.2,   // 20% off
+      flat_discount: 50,       // $50 flat off
+      min_monthly_commit: 200, // floor at $200
+    });
+    const params = makeCanonicalParams({ target_margin_pct: 0, overhead_pct: 0, labor_pct: 0 });
+    const result = calculatePricingCanonical([tool], params);
+
+    // raw: 10 * 50 = 500
+    // after 20%: 400
+    // after flat $50: 350
+    // min commit $200: max(350, 200) = 350 → no floor needed
+    expect(result.tool_breakdown[0].raw_monthly_cost).toBe(500);
+    expect(result.tool_breakdown[0].effective_monthly_cost).toBe(350);
+    expect(result.tool_breakdown[0].discount_applied).toBe(true);
+  });
+
+  it("applies min_monthly_commit floor when cost falls below it", () => {
+    const tool = makeCanonicalTool({
+      per_seat_cost: 2,
+      percent_discount: 0.5,
+      flat_discount: 10,
+      min_monthly_commit: 100,
+    });
+    const params = makeCanonicalParams({
+      seat_count: 10,
+      target_margin_pct: 0,
+      overhead_pct: 0,
+      labor_pct: 0,
+      assumptions: { endpoints: 10, users: 10, org_count: 1 },
+    });
+    const result = calculatePricingCanonical([tool], params);
+
+    // raw: 2 * 10 = 20
+    // after 50%: 10
+    // after flat $10: 0
+    // min commit $100: max(0, 100) = 100
+    expect(result.tool_breakdown[0].effective_monthly_cost).toBe(100);
+  });
+
+  it("computes renewal pricing from weighted renewal_uplift_pct", () => {
+    const tools: PricingTool[] = [
+      makeCanonicalTool({
+        tool_id: "t1", tool_name: "Tool A", per_seat_cost: 10,
+        renewal_uplift_pct: 0.10, // 10% uplift
+      }),
+      makeCanonicalTool({
+        tool_id: "t2", tool_name: "Tool B", per_seat_cost: 5,
+        renewal_uplift_pct: 0.05, // 5% uplift
+      }),
+    ];
+    const params = makeCanonicalParams({
+      seat_count: 10,
+      target_margin_pct: 0.3,
+      overhead_pct: 0,
+      labor_pct: 0,
+      discount_pct: 0,
+      assumptions: { endpoints: 10, users: 10, org_count: 1 },
+    });
+    const result = calculatePricingCanonical(tools, params);
+
+    // Tool A cost: 10 * 10 = 100
+    // Tool B cost: 5 * 10 = 50
+    // Total effective: 150
+    // Weighted uplift: (100/150)*0.10 + (50/150)*0.05 = 0.0667 + 0.0167 = 0.0833
+    const expectedUplift = (100 / 150) * 0.10 + (50 / 150) * 0.05;
+
+    // suggested_price_per_seat = trueCost/seat / (1-0.3) = 15 / 0.7 = 21.4286
+    const expectedRenewal = result.suggested_price_per_seat * (1 + expectedUplift);
+    expect(result.renewal_suggested_price_per_seat).toBeCloseTo(expectedRenewal, 3);
+    expect(result.renewal_suggested_price_per_seat).toBeGreaterThan(result.suggested_price_per_seat);
+  });
+
+  it("returns 0 renewal uplift when tools have no renewal_uplift_pct", () => {
+    const tool = makeCanonicalTool({ per_seat_cost: 10, renewal_uplift_pct: 0 });
+    const params = makeCanonicalParams({ discount_pct: 0 });
+    const result = calculatePricingCanonical([tool], params);
+    expect(result.renewal_suggested_price_per_seat).toBe(result.suggested_price_per_seat);
+  });
+
+  it("supports all 4 sell strategies", () => {
+    const tool = makeCanonicalTool({ per_seat_cost: 10 });
+    const baseParams = makeCanonicalParams({
+      seat_count: 10,
+      overhead_pct: 0,
+      labor_pct: 0,
+      discount_pct: 0,
+      assumptions: { endpoints: 10, users: 10, org_count: 1 },
+    });
+
+    // cost_plus_margin (default)
+    const r1 = calculatePricingCanonical([tool], { ...baseParams, sell_strategy: "cost_plus_margin", target_margin_pct: 0.3 });
+    expect(r1.suggested_price_per_seat).toBeCloseTo(100 / 10 / 0.7, 3);
+
+    // monthly_flat_rate
+    const r2 = calculatePricingCanonical([tool], {
+      ...baseParams, sell_strategy: "monthly_flat_rate",
+      sell_config: { monthly_flat_price: 200 },
+    });
+    expect(r2.suggested_price_per_seat).toBe(20); // 200 / 10 seats
+
+    // per_endpoint_monthly
+    const r3 = calculatePricingCanonical([tool], {
+      ...baseParams, sell_strategy: "per_endpoint_monthly",
+      sell_config: { per_endpoint_sell_price: 15 },
+    });
+    expect(r3.suggested_price_per_seat).toBe(15); // 15*10 / 10 seats
+
+    // per_user_monthly
+    const r4 = calculatePricingCanonical([tool], {
+      ...baseParams, sell_strategy: "per_user_monthly",
+      sell_config: { per_user_sell_price: 12 },
+    });
+    expect(r4.suggested_price_per_seat).toBe(12); // 12*10 / 10 seats
+  });
+
+  it("flags margin_below_red_zone on the canonical result", () => {
+    const tool = makeCanonicalTool({ per_seat_cost: 10 });
+    const params = makeCanonicalParams({
+      target_margin_pct: 0.15,
+      discount_pct: 0.05,
+      red_zone_margin_pct: 0.15,
+      overhead_pct: 0,
+      labor_pct: 0,
+    });
+    const result = calculatePricingCanonical([tool], params);
+    expect(result.pricing_flags.some((f) => f.type === "margin_below_red_zone")).toBe(true);
+  });
+
+  it("flags discount_requires_approval when discount exceeds max", () => {
+    const tool = makeCanonicalTool({ per_seat_cost: 10 });
+    const params = makeCanonicalParams({
+      discount_pct: 0.15,
+      max_discount_no_approval_pct: 0.1,
+    });
+    const result = calculatePricingCanonical([tool], params);
+    expect(result.pricing_flags.some((f) => f.type === "discount_requires_approval")).toBe(true);
+  });
+
+  it("flags zero_cost_tool for tools with no configured cost", () => {
+    const tool = makeCanonicalTool({ per_seat_cost: 0 });
+    const params = makeCanonicalParams({ target_margin_pct: 0, overhead_pct: 0, labor_pct: 0 });
+    const result = calculatePricingCanonical([tool], params);
+    expect(result.pricing_flags.some((f) => f.type === "zero_cost_tool")).toBe(true);
+  });
+
+  it("legacy wrapper produces renewal fields", () => {
+    const input = makeInput({
+      tools: [perSeatTool({ per_seat_cost: 10, labor_cost_per_seat: 0 })],
+      seat_count: 10,
+      target_margin_pct: 0.3,
+      overhead_pct: 0,
+      discount_pct: 0,
+    });
+    const result = calculatePricing(input);
+    // Legacy tools have renewal_uplift_pct: 0, so renewal price = suggested price
+    expect(result.renewal_suggested_price_per_seat).toBe(result.suggested_price_per_seat);
+    expect(result.renewal_margin_post_discount).toBe(result.margin_pct_post_discount);
   });
 });

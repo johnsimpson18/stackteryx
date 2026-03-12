@@ -64,6 +64,9 @@ export interface WizardFormData {
   labor_pct: number;
   discount_pct: number;
   selectedAdditionalServiceIds: Set<string>;
+  sell_strategy: "cost_plus_margin" | "monthly_flat_rate" | "per_endpoint_monthly" | "per_user_monthly";
+  sell_config: Record<string, unknown>;
+  assumptions: Record<string, unknown>;
   // Step 5: Enablement
   service_overview: string;
   whats_included: string;
@@ -85,7 +88,7 @@ const DEFAULTS: WizardFormData = {
   bundle_type: "custom",
   selectedToolIds: new Set(),
   toolQuantities: {},
-  seat_count: 30,
+  seat_count: 25,
   risk_tier: "medium",
   contract_term_months: 12,
   target_margin_pct: 0.35,
@@ -93,6 +96,9 @@ const DEFAULTS: WizardFormData = {
   labor_pct: 0.15,
   discount_pct: 0,
   selectedAdditionalServiceIds: new Set(),
+  sell_strategy: "cost_plus_margin",
+  sell_config: {},
+  assumptions: {},
   service_overview: "",
   whats_included: "",
   talking_points: "",
@@ -302,6 +308,9 @@ export function ServiceWizardShell({
               discount_pct: form.discount_pct,
               tools: toolsArr,
               additional_service_ids: Array.from(form.selectedAdditionalServiceIds),
+              sell_strategy: form.sell_strategy,
+              sell_config: form.sell_config,
+              assumptions: form.assumptions,
             });
             if (!result.success) {
               toast.error(result.error);
@@ -498,6 +507,10 @@ export function ServiceWizardShell({
                   return { ...prev, selectedAdditionalServiceIds: next };
                 });
               }}
+              sellStrategy={form.sell_strategy}
+              sellConfig={form.sell_config}
+              onSellStrategyChange={(v) => update("sell_strategy", v)}
+              onSellConfigChange={(v) => update("sell_config", v)}
             />
           )}
           {step === 5 && (

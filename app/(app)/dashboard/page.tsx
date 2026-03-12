@@ -10,6 +10,8 @@ import { getTools } from "@/lib/db/tools";
 import { getOrgVendors } from "@/lib/db/vendors";
 import { getOrgActionCards } from "@/lib/db/action-cards";
 import { getAllServiceCompleteness } from "@/lib/db/service-completeness";
+import { getStaleVersionsByOrgId } from "@/lib/db/bundle-versions";
+import { getPricingHealthSummary } from "@/lib/db/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import type { ToolCategory } from "@/lib/types";
@@ -40,6 +42,8 @@ export default async function DashboardPage() {
     inProgressResult,
     settingsResult,
     proposalCountResult,
+    staleVersionsResult,
+    pricingHealthResult,
   ] = await Promise.allSettled([
     getBundles(orgId ?? undefined),
     getClients(orgId ?? undefined),
@@ -50,6 +54,8 @@ export default async function DashboardPage() {
     orgId ? getInProgressBundle(orgId) : Promise.resolve(null),
     orgId ? getOrgSettings(orgId) : Promise.resolve(null),
     getProposalCount(orgId),
+    orgId ? getStaleVersionsByOrgId(orgId) : Promise.resolve([]),
+    orgId ? getPricingHealthSummary(orgId) : Promise.resolve(null),
   ]);
 
   const bundles = bundlesResult.status === "fulfilled" ? bundlesResult.value : [];
@@ -61,6 +67,9 @@ export default async function DashboardPage() {
   const inProgressBundle = inProgressResult.status === "fulfilled" ? inProgressResult.value : null;
   const settings = settingsResult.status === "fulfilled" ? settingsResult.value : null;
   const proposalCount = proposalCountResult.status === "fulfilled" ? proposalCountResult.value : 0;
+  const staleVersions = staleVersionsResult.status === "fulfilled" ? staleVersionsResult.value : [];
+  const stalePricingCount = staleVersions.length;
+  const pricingHealth = pricingHealthResult.status === "fulfilled" ? pricingHealthResult.value : null;
 
   // ── Compute stat card values ──────────────────────────────────────────────
 
@@ -154,6 +163,8 @@ export default async function DashboardPage() {
           : null
       }
       defaultTargetMargin={defaultTargetMargin}
+      stalePricingCount={stalePricingCount}
+      pricingHealth={pricingHealth}
     />
   );
 }

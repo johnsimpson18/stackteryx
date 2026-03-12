@@ -243,6 +243,19 @@ export interface BundleVersion {
   sell_strategy?: SellStrategy;
   sell_config?: SellConfig;
   assumptions?: BundleAssumptions;
+  // Additional services totals (migration 033)
+  computed_additional_services_mrr?: number;
+  computed_additional_services_cost_mrr?: number;
+  computed_total_mrr?: number;
+  computed_total_cost_mrr?: number;
+  computed_total_arr?: number;
+  // Renewal pricing (migration 033)
+  computed_renewal_price_per_seat?: number;
+  computed_renewal_margin?: number;
+  // Staleness tracking (migration 035)
+  pricing_last_computed_at?: string;
+  is_pricing_stale?: boolean;
+  stale_reason?: string | null;
 }
 
 // TODO: replace with generated type from types/supabase.ts
@@ -323,6 +336,9 @@ export interface PricingOutput {
   total_monthly_margin: number;
   contract_total_revenue: number;
   flags: PricingFlag[];
+  // Renewal pricing (from weighted renewal_uplift_pct across tools)
+  renewal_suggested_price_per_seat: number;
+  renewal_margin_post_discount: number;
   // v2 sell-strategy outputs (populated when sell_config provided)
   msp_sell_price_monthly: number;
   msp_gross_profit_monthly: number;

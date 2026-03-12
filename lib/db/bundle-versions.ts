@@ -183,7 +183,7 @@ export async function createVersion(
     }
   }
 
-  // 3. Build PricingInput
+  // 3. Build PricingInput (includes all v2 fields for canonical engine)
   const pricingTools: PricingToolInput[] = input.tools
     .filter((t) => toolDataMap.has(t.tool_id))
     .map((t) => {
@@ -202,8 +202,28 @@ export async function createVersion(
           ? Number(tool.labor_cost_per_seat)
           : null,
         quantity_multiplier: t.quantity_multiplier,
+        // v2 fields — now used by the canonical engine
+        annual_flat_cost: Number(tool.annual_flat_cost ?? 0),
+        per_user_cost: Number(tool.per_user_cost ?? 0),
+        per_org_cost: Number(tool.per_org_cost ?? 0),
+        percent_discount: Number(tool.percent_discount ?? 0),
+        flat_discount: Number(tool.flat_discount ?? 0),
+        min_monthly_commit: tool.min_monthly_commit
+          ? Number(tool.min_monthly_commit)
+          : null,
+        tier_metric: tool.tier_metric,
       };
     });
+
+  // Resolve assumptions: use explicit input or default to seat_count
+  const defaultAssumptions = {
+    endpoints: input.seat_count,
+    users: input.seat_count,
+    org_count: 1,
+  };
+  const assumptions = input.assumptions
+    ? (input.assumptions as unknown as PricingInput["assumptions"])
+    : defaultAssumptions;
 
   const pricingInput: PricingInput = {
     tools: pricingTools,
@@ -215,6 +235,8 @@ export async function createVersion(
     red_zone_margin_pct: input.red_zone_margin_pct,
     max_discount_no_approval_pct: input.max_discount_no_approval_pct,
     contract_term_months: input.contract_term_months,
+    assumptions,
+    sell_config: input.sell_config as PricingInput["sell_config"],
   };
 
   // 4. Run pricing engine server-side
@@ -242,6 +264,13 @@ export async function createVersion(
       computed_mrr: pricing.total_mrr,
       computed_arr: pricing.total_arr,
       pricing_flags: pricing.flags,
+      // Renewal pricing (FIX 7)
+      computed_renewal_price_per_seat: pricing.renewal_suggested_price_per_seat,
+      computed_renewal_margin: pricing.renewal_margin_post_discount,
+      // Staleness tracking (FIX 6)
+      pricing_last_computed_at: new Date().toISOString(),
+      is_pricing_stale: false,
+      stale_reason: null,
       created_by: input.created_by,
       // v2 sell-strategy fields
       ...(input.sell_strategy && { sell_strategy: input.sell_strategy }),
@@ -286,4 +315,43 @@ export async function createVersion(
     },
     pricing,
   };
+}
+
+/**
+ * Returns all bundle versions marked as pricing-stale for a given org.
+ * Used by the UI to surface warnings when tool costs have changed
+ * since a version's pricing was computed.
+ */
+export async function getStaleVersionsByOrgId(
+  orgId: string
+): Promise<BundleVersion[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bundle_versions")
+    .select("*, bundles!inner(org_id)")
+    .eq("bundles.org_id", orgId)
+    .eq("is_pricing_stale", true);
+
+  if (error) throw error;
+  return (data as unknown as BundleVersion[]) ?? [];
+}
+
+export async function getPreviousVersion(
+  bundleId: string,
+  versionNumber: number,
+): Promise<BundleVersion | null> {
+  if (versionNumber <= 1) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bundle_versions")
+    .select("*")
+    .eq("bundle_id", bundleId)
+    .eq("version_number", versionNumber - 1)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw error;
+  }
+  return data as BundleVersion;
 }

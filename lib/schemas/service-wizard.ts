@@ -42,7 +42,7 @@ export type StackStepValues = z.infer<typeof stackStepSchema>;
 // ── Step 4: Economics / Pricing ──────────────────────────────────────────────
 
 export const economicsStepSchema = z.object({
-  seat_count: z.coerce.number().int().min(1).default(30),
+  seat_count: z.coerce.number().int().min(1).default(25),
   risk_tier: z.enum(["low", "medium", "high"]).default("medium"),
   contract_term_months: z.coerce.number().int().min(1).default(12),
   target_margin_pct: z.coerce.number().min(0).max(0.99).default(0.35),
@@ -51,6 +51,13 @@ export const economicsStepSchema = z.object({
   discount_pct: z.coerce.number().min(0).max(0.99).default(0),
   tools: z.array(stackToolSchema).min(1, "At least one tool is required"),
   additional_service_ids: z.array(z.string().uuid()).default([]),
+  // v2 sell-strategy fields
+  sell_strategy: z
+    .enum(["cost_plus_margin", "monthly_flat_rate", "per_endpoint_monthly", "per_user_monthly"])
+    .optional()
+    .default("cost_plus_margin"),
+  sell_config: z.record(z.unknown()).optional(),
+  assumptions: z.record(z.unknown()).optional(),
 });
 
 export type EconomicsStepValues = z.infer<typeof economicsStepSchema>;

@@ -11,22 +11,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PricingFlags } from "./pricing-flags";
+import { CostBreakdown, mapPricingOutputToBreakdownProps } from "@/components/pricing/cost-breakdown";
+import { VersionDiff } from "./version-diff";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import { RISK_TIER_LABELS, CATEGORY_LABELS } from "@/lib/constants";
-import type { BundleVersionWithTools, PricingFlag } from "@/lib/types";
+import type { BundleVersionWithTools, BundleVersion, PricingFlag, PricingOutput } from "@/lib/types";
 
 interface VersionDetailProps {
   version: BundleVersionWithTools;
+  pricingOutput?: PricingOutput;
+  previousVersion?: BundleVersion | null;
 }
 
-function marginColor(margin: number): string {
-  if (margin >= 0.25) return "text-emerald-600";
-  if (margin >= 0.15) return "text-amber-600";
-  return "text-red-600";
-}
-
-export function VersionDetail({ version }: VersionDetailProps) {
-  const marginPost = Number(version.computed_margin_post_discount ?? 0);
+export function VersionDetail({ version, pricingOutput, previousVersion }: VersionDetailProps) {
   const flags = (version.pricing_flags ?? []) as PricingFlag[];
 
   return (
@@ -88,96 +85,115 @@ export function VersionDetail({ version }: VersionDetailProps) {
         </CardContent>
       </Card>
 
-      {/* Pricing Snapshot */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              True Cost/Seat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-xl font-bold">
-              {formatCurrency(Number(version.computed_true_cost_per_seat ?? 0))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Suggested Price/Seat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-xl font-bold">
-              {formatCurrency(Number(version.computed_suggested_price ?? 0))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Discounted Price/Seat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-xl font-bold">
-              {formatCurrency(Number(version.computed_discounted_price ?? 0))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Post-Discount Margin
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className={`text-xl font-bold ${marginColor(marginPost)}`}>
-              {formatPercent(marginPost)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Version Diff */}
+      {previousVersion !== undefined && (
+        <VersionDiff current={version} previous={previousVersion ?? null} />
+      )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {/* Pricing Snapshot — full breakdown if PricingOutput available */}
+      {pricingOutput ? (
         <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              MRR
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>Pricing Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-lg font-bold">
-              {formatCurrency(Number(version.computed_mrr ?? 0))}
-            </div>
+          <CardContent>
+            <CostBreakdown
+              pricing={mapPricingOutputToBreakdownProps(pricingOutput, version.seat_count)}
+              seatCount={version.seat_count}
+              mode="full"
+              defaultExpanded
+              discountPct={Number(version.discount_pct)}
+            />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              ARR
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-lg font-bold">
-              {formatCurrency(Number(version.computed_arr ?? 0))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1 pt-3 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Pre-Discount Margin
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="text-lg font-bold">
-              {formatPercent(Number(version.computed_margin_pre_discount ?? 0))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  True Cost/Seat
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-xl font-bold">
+                  {formatCurrency(Number(version.computed_true_cost_per_seat ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  Suggested Price/Seat
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-xl font-bold">
+                  {formatCurrency(Number(version.computed_suggested_price ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  Discounted Price/Seat
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-xl font-bold">
+                  {formatCurrency(Number(version.computed_discounted_price ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  Post-Discount Margin
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-xl font-bold">
+                  {formatPercent(Number(version.computed_margin_post_discount ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">MRR</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-lg font-bold">
+                  {formatCurrency(Number(version.computed_mrr ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">ARR</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-lg font-bold">
+                  {formatCurrency(Number(version.computed_arr ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">
+                  Pre-Discount Margin
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="text-lg font-bold">
+                  {formatPercent(Number(version.computed_margin_pre_discount ?? 0))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
 
       {/* Tools */}
       <Card>

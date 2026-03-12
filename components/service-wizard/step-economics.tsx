@@ -17,11 +17,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
+import { CostBreakdown, mapPricingOutputToBreakdownProps } from "@/components/pricing/cost-breakdown";
+import { validatePricing } from "@/lib/pricing/validate";
 import { cn } from "@/lib/utils";
 import { RISK_TIER_LABELS, RISK_TIERS } from "@/lib/constants";
 import { calculatePricing } from "@/lib/pricing/engine";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
-import { ChevronsUpDown, Briefcase, Check } from "lucide-react";
+import { ChevronsUpDown, Briefcase, Check, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import type {
   Tool,
   RiskTier,
@@ -50,6 +52,8 @@ const ADD_SVC_CATEGORY_COLORS: Record<AdditionalServiceCategory, string> = {
   compliance: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
 };
 
+type SellStrategyType = "cost_plus_margin" | "monthly_flat_rate" | "per_endpoint_monthly" | "per_user_monthly";
+
 interface StepEconomicsProps {
   tools: Tool[];
   selectedToolIds: Set<string>;
@@ -70,6 +74,10 @@ interface StepEconomicsProps {
   onLaborChange: (v: number) => void;
   onDiscountChange: (v: number) => void;
   onToggleAdditionalService: (id: string) => void;
+  sellStrategy?: SellStrategyType;
+  sellConfig?: Record<string, unknown>;
+  onSellStrategyChange?: (v: SellStrategyType) => void;
+  onSellConfigChange?: (v: Record<string, unknown>) => void;
 }
 
 const ADVANCED_KEY = "service-wizard-advanced-expanded";
@@ -93,9 +101,28 @@ export function StepEconomics({
   onOverheadChange,
   onLaborChange,
   onDiscountChange,
+  sellStrategy,
+  sellConfig,
+  onSellStrategyChange,
+  onSellConfigChange,
   onToggleAdditionalService,
 }: StepEconomicsProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [pricingMode, setPricingMode] = useState<"set_price" | "use_margin">(
+    sellStrategy && sellStrategy !== "cost_plus_margin" ? "set_price" : "use_margin"
+  );
+  const [directSellPrice, setDirectSellPrice] = useState<number>(
+    () => {
+      if (sellConfig && typeof sellConfig === "object") {
+        const perSeat = (sellConfig as Record<string, number>).per_user_sell_price ??
+          (sellConfig as Record<string, number>).per_endpoint_sell_price;
+        if (perSeat) return perSeat;
+        const flat = (sellConfig as Record<string, number>).monthly_flat_price;
+        if (flat && seatCount > 0) return flat / seatCount;
+      }
+      return 0;
+    }
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem(ADVANCED_KEY);
@@ -148,6 +175,14 @@ export function StepEconomics({
       red_zone_margin_pct: 0.15,
       max_discount_no_approval_pct: 0.1,
       contract_term_months: contractTermMonths,
+      ...(pricingMode === "set_price" && directSellPrice > 0
+        ? {
+            sell_config: {
+              strategy: "per_user_monthly" as const,
+              per_user_sell_price: directSellPrice,
+            },
+          }
+        : {}),
     };
 
     try {
@@ -155,7 +190,7 @@ export function StepEconomics({
     } catch {
       return null;
     }
-  }, [selectedTools, seatCount, targetMarginPct, overheadPct, laborPct, discountPct, contractTermMonths]);
+  }, [selectedTools, seatCount, targetMarginPct, overheadPct, laborPct, discountPct, contractTermMonths, pricingMode, directSellPrice]);
 
   const addSvcTotals = useMemo(() => {
     const selected = additionalServices.filter((s) =>
@@ -165,6 +200,16 @@ export function StepEconomics({
     const totalSell = selected.reduce((sum, s) => sum + Number(s.sell_price), 0);
     return { selected, totalCost, totalSell, count: selected.length };
   }, [additionalServices, selectedAdditionalServiceIds]);
+
+  const validationWarnings = useMemo(() => {
+    if (!pricing) return [];
+    return validatePricing(pricing, {
+      targetMarginPct,
+      redZoneMarginPct: 0.15,
+      maxDiscountNoApprovalPct: 0.1,
+      discountPct,
+    });
+  }, [pricing, targetMarginPct, discountPct]);
 
   return (
     <div className="space-y-6">
@@ -214,18 +259,122 @@ export function StepEconomics({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Target margin ({formatPercent(targetMarginPct)})</Label>
-            <input
-              type="range"
-              min={0}
-              max={0.6}
-              step={0.01}
-              value={targetMarginPct}
-              onChange={(e) => onTargetMarginChange(parseFloat(e.target.value))}
-              className="w-full accent-primary"
-            />
+          {/* Pricing mode toggle */}
+          <div className="space-y-3">
+            <Label>How do you set your price?</Label>
+            <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 w-fit">
+              <button
+                type="button"
+                onClick={() => {
+                  setPricingMode("set_price");
+                  onSellStrategyChange?.("per_user_monthly");
+                }}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  pricingMode === "set_price"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Set My Price
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPricingMode("use_margin");
+                  onSellStrategyChange?.("cost_plus_margin");
+                  onSellConfigChange?.({});
+                }}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  pricingMode === "use_margin"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Use Margin Target
+              </button>
+            </div>
           </div>
+
+          {pricingMode === "set_price" ? (
+            <div className="space-y-3">
+              <Label>Your sell price per seat / mo</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-mono text-muted-foreground">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={directSellPrice || ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setDirectSellPrice(val);
+                    onSellStrategyChange?.("per_user_monthly");
+                    onSellConfigChange?.({
+                      strategy: "per_user_monthly",
+                      per_user_sell_price: val,
+                    });
+                  }}
+                  placeholder="0.00"
+                  className="w-40 h-12 rounded-lg border border-border bg-background px-3 text-2xl font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-sm text-muted-foreground">/seat/mo</span>
+              </div>
+              {pricing && directSellPrice > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">Back-calculated margin:</span>
+                  <MarginHealthBadge margin={pricing.margin_pct_post_discount} />
+                </div>
+              )}
+              {pricing && directSellPrice > 0 && directSellPrice < pricing.true_cost_per_seat && (
+                <div className="flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-red-400">
+                    Sell price is below your cost floor of {formatCurrency(pricing.true_cost_per_seat)}/seat.
+                  </p>
+                </div>
+              )}
+              {pricing && (
+                <p className="text-xs text-muted-foreground">
+                  Cost floor: {formatCurrency(pricing.true_cost_per_seat)}/seat
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Target margin ({formatPercent(targetMarginPct)})</Label>
+              <input
+                type="range"
+                min={0}
+                max={0.6}
+                step={0.01}
+                value={targetMarginPct}
+                onChange={(e) => onTargetMarginChange(parseFloat(e.target.value))}
+                className="w-full accent-primary"
+              />
+              {pricing && pricing.suggested_price_per_seat > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Suggested price: {formatCurrency(pricing.suggested_price_per_seat)}/seat{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDirectSellPrice(pricing.suggested_price_per_seat);
+                      setPricingMode("set_price");
+                      onSellStrategyChange?.("per_user_monthly");
+                      onSellConfigChange?.({
+                        strategy: "per_user_monthly",
+                        per_user_sell_price: pricing.suggested_price_per_seat,
+                      });
+                    }}
+                    className="text-primary hover:underline ml-1"
+                  >
+                    lock this price
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
 
           <Collapsible open={advancedOpen} onOpenChange={toggleAdvanced}>
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-white/5 transition-colors">
@@ -359,59 +508,17 @@ export function StepEconomics({
           <h3 className="text-sm font-semibold text-foreground mb-4">Pricing Preview</h3>
           {pricing ? (
             <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Cost per seat</span>
-                <span className="font-mono font-medium">
-                  {formatCurrency(pricing.true_cost_per_seat)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Suggested price</span>
-                <span className="font-mono font-medium">
-                  {formatCurrency(pricing.suggested_price_per_seat)}
-                </span>
-              </div>
-              {discountPct > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">After discount</span>
-                  <span className="font-mono font-medium">
-                    {formatCurrency(pricing.discounted_price_per_seat)}
-                  </span>
-                </div>
-              )}
-              <div className="h-px bg-border my-2" />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tool MRR</span>
-                <span className="font-mono font-medium">
-                  {formatCurrency(pricing.total_mrr)}
-                </span>
-              </div>
-              {addSvcTotals.count > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Add-On MRR</span>
-                  <span className="font-mono font-medium">
-                    {formatCurrency(addSvcTotals.totalSell)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total MRR</span>
-                <span className="font-mono font-semibold text-foreground">
-                  {formatCurrency(pricing.total_mrr + addSvcTotals.totalSell)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">ARR</span>
-                <span className="font-mono font-medium">
-                  {formatCurrency((pricing.total_mrr + addSvcTotals.totalSell) * 12)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Margin</span>
-                <MarginHealthBadge
-                  margin={pricing.margin_pct_post_discount}
-                />
-              </div>
+              <CostBreakdown
+                pricing={mapPricingOutputToBreakdownProps(pricing, seatCount)}
+                seatCount={seatCount}
+                mode="full"
+                discountPct={discountPct}
+                additionalServices={addSvcTotals.selected.map((s) => ({
+                  name: s.name,
+                  sellPrice: Number(s.sell_price),
+                  costPrice: Number(s.cost),
+                }))}
+              />
               {pricing.flags.length > 0 && (
                 <div className="mt-3 space-y-1">
                   {pricing.flags.map((flag, i) => (
@@ -427,6 +534,23 @@ export function StepEconomics({
                       )}
                     >
                       {flag.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {validationWarnings.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {validationWarnings.map((w) => (
+                    <div
+                      key={w.code}
+                      className={cn(
+                        "text-xs px-2 py-1 rounded",
+                        w.severity === "error"
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-amber-500/10 text-amber-400"
+                      )}
+                    >
+                      {w.message}
                     </div>
                   ))}
                 </div>

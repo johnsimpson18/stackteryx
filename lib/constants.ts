@@ -11,6 +11,7 @@ import {
   FileText,
   PlusCircle,
   Briefcase,
+  DollarSign,
 } from "lucide-react";
 import type { UserRole, OrgRole, ToolCategory, PricingModel, BundleType, BundleStatus, RiskTier, ClientStatus, ApprovalStatus } from "@/lib/types";
 
@@ -50,6 +51,13 @@ export const NAV_ITEMS = [
     label: "Packages",
     href: "/packages",
     icon: Layers,
+    disabled: false,
+    group: "primary" as NavGroup,
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+    icon: DollarSign,
     disabled: false,
     group: "primary" as NavGroup,
   },

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Loader2, Sparkles, Search, Library, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Loader2, Sparkles, Search, Library, Plus, ChevronDown, ChevronUp, AlertTriangle, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import type { Tool, ToolCategory } from "@/lib/types";
 import {
@@ -22,7 +22,8 @@ import {
   LIBRARY_DOMAINS,
 } from "@/lib/data/tool-library";
 import type { LibraryDomain, BillingUnit } from "@/lib/data/tool-library";
-import { addToolsFromLibraryAction, createToolInlineAction } from "@/actions/tools";
+import { addToolsFromLibraryAction, createToolInlineAction, updateToolCostAction } from "@/actions/tools";
+import { PRICING_MODEL_LABELS } from "@/lib/constants";
 
 interface StepStackProps {
   tools: Tool[];
@@ -48,6 +49,12 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
 
   // Track tools added from the library during this session
   const [addedTools, setAddedTools] = useState<Tool[]>([]);
+
+  // Zero-cost tool prompt
+  const [zeroCostPromptToolId, setZeroCostPromptToolId] = useState<string | null>(null);
+  const [zeroCostValue, setZeroCostValue] = useState("");
+  const [zeroCostModel, setZeroCostModel] = useState("per_seat");
+  const [isSavingZeroCost, startZeroCostTransition] = useTransition();
 
   // Inline tool creation
   const [inlineOpen, setInlineOpen] = useState(false);
@@ -138,6 +145,74 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
       else next.add(id);
       return next;
     });
+  }
+
+  function isToolZeroCost(tool: Tool): boolean {
+    return (
+      Number(tool.per_seat_cost) === 0 &&
+      Number(tool.per_user_cost ?? 0) === 0 &&
+      Number(tool.per_org_cost ?? 0) === 0 &&
+      Number(tool.flat_monthly_cost) === 0 &&
+      Number(tool.annual_flat_cost ?? 0) === 0
+    );
+  }
+
+  function handleToolToggle(toolId: string) {
+    // If selecting (not deselecting), check if zero-cost
+    if (!selectedToolIds.has(toolId)) {
+      const tool = allTools.find((t) => t.id === toolId);
+      if (tool && isToolZeroCost(tool)) {
+        // Look up typical cost from TOOL_LIBRARY by name match
+        const libraryMatch = TOOL_LIBRARY.find(
+          (lt) => lt.name.toLowerCase() === tool.name.toLowerCase()
+        );
+        if (libraryMatch) {
+          setZeroCostValue(String(libraryMatch.typical_cost_per_user));
+        } else {
+          setZeroCostValue("");
+        }
+        setZeroCostModel(tool.pricing_model);
+        setZeroCostPromptToolId(toolId);
+        return;
+      }
+    }
+    onToggle(toolId);
+  }
+
+  function handleAddWithCost() {
+    if (!zeroCostPromptToolId) return;
+    const costFieldMap: Record<string, string> = {
+      per_seat: "per_seat_cost",
+      per_user: "per_user_cost",
+      per_org: "per_org_cost",
+      flat_monthly: "flat_monthly_cost",
+      annual_flat: "annual_flat_cost",
+    };
+    const field = costFieldMap[zeroCostModel] ?? "per_seat_cost";
+    const value = parseFloat(zeroCostValue) || 0;
+
+    startZeroCostTransition(async () => {
+      const result = await updateToolCostAction(zeroCostPromptToolId!, field, value);
+      if (result.success) {
+        // Update tool in local state
+        setAddedTools((prev) =>
+          prev.map((t) =>
+            t.id === zeroCostPromptToolId ? { ...t, [field]: value } : t
+          )
+        );
+        onToggle(zeroCostPromptToolId!);
+        toast.success("Cost set and tool selected");
+      } else {
+        toast.error(result.error);
+      }
+      setZeroCostPromptToolId(null);
+    });
+  }
+
+  function handleAddAnyway() {
+    if (!zeroCostPromptToolId) return;
+    onToggle(zeroCostPromptToolId);
+    setZeroCostPromptToolId(null);
   }
 
   function handleCreateInline() {
@@ -292,7 +367,7 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
                         <button
                           key={tool.id}
                           type="button"
-                          onClick={() => onToggle(tool.id)}
+                          onClick={() => handleToolToggle(tool.id)}
                           className={cn(
                             "relative text-left rounded-lg border px-3 py-2.5 transition-all duration-150",
                             "hover:border-primary/40 hover:bg-primary/5",
@@ -422,6 +497,87 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
           )}
         </div>
       )}
+
+      {/* Zero-cost tool prompt */}
+      {zeroCostPromptToolId && (() => {
+        const promptTool = allTools.find((t) => t.id === zeroCostPromptToolId);
+        return (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              <p className="text-sm font-medium text-foreground">
+                {promptTool?.name ?? "This tool"} has no cost configured
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Set a cost now for accurate margin calculations, or add it at $0.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Pricing Model</Label>
+                <Select value={zeroCostModel} onValueChange={setZeroCostModel}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="per_seat">{PRICING_MODEL_LABELS.per_seat}</SelectItem>
+                    <SelectItem value="per_user">{PRICING_MODEL_LABELS.per_user}</SelectItem>
+                    <SelectItem value="flat_monthly">{PRICING_MODEL_LABELS.flat_monthly}</SelectItem>
+                    <SelectItem value="per_org">{PRICING_MODEL_LABELS.per_org}</SelectItem>
+                    <SelectItem value="annual_flat">{PRICING_MODEL_LABELS.annual_flat}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cost ($)</Label>
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={zeroCostValue}
+                    onChange={(e) => setZeroCostValue(e.target.value)}
+                    className="h-8 font-mono"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleAddWithCost}
+                disabled={isSavingZeroCost}
+                className="h-7 text-xs"
+              >
+                {isSavingZeroCost ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <DollarSign className="h-3 w-3 mr-1" />
+                )}
+                Add with this cost
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddAnyway}
+                className="h-7 text-xs text-muted-foreground"
+              >
+                Add anyway at $0
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setZeroCostPromptToolId(null)}
+                className="h-7 text-xs text-muted-foreground ml-auto"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Inline tool creation */}
       <div className="border-t border-border pt-4">

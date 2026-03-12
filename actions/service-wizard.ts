@@ -250,6 +250,9 @@ export async function saveEconomicsStepAction(
       created_by: profile.id,
       red_zone_margin_pct: Number(settings.red_zone_margin_pct),
       max_discount_no_approval_pct: Number(settings.max_discount_no_approval_pct),
+      sell_strategy: parsed.data.sell_strategy,
+      sell_config: parsed.data.sell_config,
+      assumptions: parsed.data.assumptions,
     });
 
     // Attach selected additional services to the version

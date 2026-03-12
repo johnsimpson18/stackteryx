@@ -44,21 +44,55 @@ function marginColor(margin: number): string {
   return "text-red-600";
 }
 
+type SortField = "name" | "margin" | "mrr";
+type SortDir = "asc" | "desc";
+
 export function ClientList({ clients, userRole }: ClientListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "all">("all");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const canEdit = ["owner", "finance", "sales"].includes(userRole);
 
-  const filtered = clients.filter((c) => {
-    const matchesSearch =
-      !search ||
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.industry.toLowerCase().includes(search.toLowerCase()) ||
-      c.contact_name.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir(field === "name" ? "asc" : "desc");
+    }
+  }
+
+  const filtered = clients
+    .filter((c) => {
+      const matchesSearch =
+        !search ||
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.industry.toLowerCase().includes(search.toLowerCase()) ||
+        c.contact_name.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const ac = a.active_contract;
+      const bc = b.active_contract;
+
+      let cmp = 0;
+      if (sortField === "name") {
+        cmp = a.name.localeCompare(b.name);
+      } else if (sortField === "mrr") {
+        const aMrr = ac?.monthly_revenue ?? -Infinity;
+        const bMrr = bc?.monthly_revenue ?? -Infinity;
+        cmp = aMrr - bMrr;
+      } else {
+        const aMargin = ac?.margin_pct ?? -Infinity;
+        const bMargin = bc?.margin_pct ?? -Infinity;
+        cmp = aMargin - bMargin;
+      }
+
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   if (clients.length === 0) {
     return (
@@ -115,8 +149,30 @@ export function ClientList({ clients, userRole }: ClientListProps) {
                 <TableHead>Status</TableHead>
                 <TableHead>Active Service</TableHead>
                 <TableHead className="text-right">Seats</TableHead>
-                <TableHead className="text-right">MRR</TableHead>
-                <TableHead className="text-right">Margin</TableHead>
+                <TableHead className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("mrr")}
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    MRR
+                    {sortField === "mrr" && (
+                      <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </TableHead>
+                <TableHead className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("margin")}
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Margin
+                    {sortField === "margin" && (
+                      <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </TableHead>
                 <TableHead>Renewal</TableHead>
               </TableRow>
             </TableHeader>

@@ -26,12 +26,14 @@ import {
   X,
 } from "lucide-react";
 import { dismissActionCardAction } from "@/actions/service-profile";
+import { PricingHealthWidget } from "@/components/dashboard/pricing-health-widget";
 import type {
   AIActionCard,
   BundleWithMeta,
   ServiceCompleteness,
   ToolCategory,
 } from "@/lib/types";
+import type { PricingHealthSummary } from "@/lib/db/dashboard";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +62,8 @@ interface DashboardClientProps {
   toolsByCategory: Record<string, number>;
   inProgressBundle: { id: string; name: string; updatedAt: string } | null;
   defaultTargetMargin: number;
+  stalePricingCount?: number;
+  pricingHealth?: PricingHealthSummary | null;
 }
 
 // ── CTA route map for action card types ──────────────────────────────────────
@@ -99,6 +103,8 @@ export function DashboardClient({
   toolsByCategory,
   inProgressBundle,
   defaultTargetMargin,
+  stalePricingCount = 0,
+  pricingHealth,
 }: DashboardClientProps) {
   const [, startTransition] = useTransition();
   const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
@@ -239,6 +245,27 @@ export function DashboardClient({
         </div>
       )}
 
+      {/* Stale Pricing Alert */}
+      {stalePricingCount > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border-l-[3px] border-l-amber-500 border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-400" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {stalePricingCount} service{stalePricingCount !== 1 ? "s have" : " has"} stale pricing
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Tool costs have changed since these prices were last calculated.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" asChild className="h-7 text-xs shrink-0">
+            <Link href="/services?filter=stale">
+              Review
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Link>
+          </Button>
+        </div>
+      )}
+
       {/* 2. AI Action Cards */}
       <ActionCardsSection
         cards={sortedCards}
@@ -301,6 +328,11 @@ export function DashboardClient({
           active={filterNeedingAttention}
         />
       </div>
+
+      {/* Pricing Health Widget */}
+      {pricingHealth && (
+        <PricingHealthWidget data={pricingHealth} />
+      )}
 
       {/* 4. Build a Service hero CTA (zero services state) */}
       {!hasServices && (

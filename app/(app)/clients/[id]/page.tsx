@@ -36,6 +36,7 @@ import {
 } from "@/components/clients/client-detail-sections";
 import { findSoonestRenewal, calculateServiceFit } from "@/lib/client-utils";
 import { ClientComplianceSection } from "@/components/compliance/client-compliance-section";
+import { ClientProfitabilityCard } from "@/components/clients/client-profitability-card";
 import { createClient } from "@/lib/supabase/server";
 
 interface ClientDetailPageProps {
@@ -225,6 +226,9 @@ export default async function ClientDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Client Profitability */}
+      <ClientProfitabilityCard contracts={contracts} />
 
       {/* Contracts */}
       <Card>

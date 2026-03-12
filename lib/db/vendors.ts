@@ -452,6 +452,54 @@ export async function upsertOrgVendorDiscount(
   return created as OrgVendorDiscount;
 }
 
+export async function deleteOrgVendorDiscount(
+  orgVendorId: string,
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_vendor_discounts")
+    .delete()
+    .eq("org_vendor_id", orgVendorId);
+
+  if (error) throw error;
+}
+
+export async function getOrgVendorDiscounts(
+  orgId: string,
+): Promise<Array<{ org_vendor_id: string; org_vendor_display_name: string; discount: OrgVendorDiscount | null }>> {
+  const supabase = await createClient();
+
+  // Get all org vendors
+  const { data: vendors, error: vErr } = await supabase
+    .from("org_vendors")
+    .select("id, display_name")
+    .eq("org_id", orgId)
+    .order("display_name");
+
+  if (vErr) throw vErr;
+  if (!vendors || vendors.length === 0) return [];
+
+  // Get all discounts
+  const vendorIds = vendors.map((v) => v.id);
+  const { data: discounts, error: dErr } = await supabase
+    .from("org_vendor_discounts")
+    .select("*")
+    .in("org_vendor_id", vendorIds);
+
+  if (dErr) throw dErr;
+
+  const discountMap = new Map<string, OrgVendorDiscount>();
+  for (const d of discounts ?? []) {
+    discountMap.set(d.org_vendor_id, d as OrgVendorDiscount);
+  }
+
+  return vendors.map((v) => ({
+    org_vendor_id: v.id,
+    org_vendor_display_name: v.display_name,
+    discount: discountMap.get(v.id) ?? null,
+  }));
+}
+
 // ── Vendor imports ──────────────────────────────────────────────────────────
 
 export async function getVendorImports(orgId: string): Promise<VendorImport[]> {

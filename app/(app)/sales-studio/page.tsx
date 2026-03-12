@@ -44,7 +44,7 @@ export default async function SalesStudioPage({
   const activeBundles = bundles.filter((b) => b.status === "active");
   const bundleVersions: Record<
     string,
-    { id: string; suggested_price: number | null; seat_count: number }
+    { id: string; suggested_price: number | null; seat_count: number; cost_per_seat: number | null }
   > = {};
 
   if (activeBundles.length > 0) {
@@ -61,6 +61,9 @@ export default async function SalesStudioPage({
             ? Number(latest.computed_suggested_price)
             : null,
           seat_count: latest.seat_count,
+          cost_per_seat: latest.computed_true_cost_per_seat
+            ? Number(latest.computed_true_cost_per_seat)
+            : null,
         };
       }
     }

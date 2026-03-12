@@ -20,7 +20,9 @@ import { createContractAction } from "@/actions/clients";
 import { calculatePricing } from "@/lib/pricing/engine";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
+import { CostBreakdown, mapPricingOutputToBreakdownProps } from "@/components/pricing/cost-breakdown";
 import type {
   BundleWithMeta,
   BundleVersion,
@@ -56,7 +58,6 @@ export function ContractForm({
 }: ContractFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-
   const [selectedBundleId, setSelectedBundleId] = useState("");
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [seatCount, setSeatCount] = useState(25);
@@ -269,14 +270,7 @@ export function ContractForm({
                     </div>
                     <div className="rounded-lg bg-muted p-3 text-center">
                       <p className="text-xs text-muted-foreground">Margin</p>
-                      <p
-                        className={cn(
-                          "text-xl font-bold font-mono mt-0.5",
-                          marginColor(pricing.margin_pct_post_discount)
-                        )}
-                      >
-                        {formatPercent(pricing.margin_pct_post_discount)}
-                      </p>
+                      <MarginHealthBadge margin={pricing.margin_pct_post_discount} />
                     </div>
                     <div className="rounded-lg bg-muted p-3 text-center">
                       <p className="text-xs text-muted-foreground">
@@ -308,6 +302,27 @@ export function ContractForm({
                       <span className="font-mono">{seatCount}</span>
                     </div>
                   </div>
+
+                  {/* Seat count mismatch note */}
+                  {selectedVersionOption &&
+                    seatCount !== selectedVersionOption.version.seat_count && (
+                      <div className="flex items-start gap-2 rounded-md bg-amber-500/5 border border-amber-500/20 px-3 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+                        <p className="text-[11px] text-amber-400">
+                          Contract seats ({seatCount}) differ from configuration
+                          seats ({selectedVersionOption.version.seat_count}). Pricing
+                          has been recalculated for {seatCount} seats.
+                        </p>
+                      </div>
+                    )}
+
+                  {/* Cost breakdown + renewal */}
+                  <CostBreakdown
+                    pricing={mapPricingOutputToBreakdownProps(pricing, seatCount)}
+                    seatCount={seatCount}
+                    mode="full"
+                    discountPct={Number(selectedVersionOption?.version.discount_pct ?? 0)}
+                  />
 
                   <p className="text-[10px] text-muted-foreground text-center">
                     Pricing computed at {seatCount} seats using v

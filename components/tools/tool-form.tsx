@@ -28,6 +28,7 @@ import {
 } from "@/lib/constants";
 import type { TierMetric } from "@/lib/types";
 import { createToolAction, updateToolAction, deactivateToolAction } from "@/actions/tools";
+import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { formatCurrency } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,8 +58,7 @@ import type { Tool, PricingToolInput, ToolCategory } from "@/lib/types";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const PREVIEW_ASSUMPTIONS = { endpoints: 30, users: 30, headcount: 30, org_count: 1 };
-const PREVIEW_SELL_MONTHLY = 15 * 30; // $15/endpoint × 30 = $450 implied sell
+const PREVIEW_ASSUMPTIONS = { endpoints: 25, users: 25, headcount: 25, org_count: 1 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -165,35 +165,37 @@ function FieldLabel({
 // ── Live Preview Panel ────────────────────────────────────────────────────────
 
 function PreviewPanel({ values }: { values: ToolFormValues }) {
+  const [previewSellPrice, setPreviewSellPrice] = useState(15);
+  const [previewSeats, setPreviewSeats] = useState(25);
+
+  const previewAssumptions = {
+    ...PREVIEW_ASSUMPTIONS,
+    endpoints: previewSeats,
+    users: previewSeats,
+    headcount: previewSeats,
+  };
   const previewInput = formValuesToInput(values);
-  const monthlyCost = normalizeToMonthly(previewInput, PREVIEW_ASSUMPTIONS);
-  const annotation = annotateNormalization(previewInput, PREVIEW_ASSUMPTIONS);
+  const monthlyCost = normalizeToMonthly(previewInput, previewAssumptions);
+  const annotation = annotateNormalization(previewInput, previewAssumptions);
   const hasData = monthlyCost > 0;
 
+  const sellMonthly = previewSellPrice * previewSeats;
   const grossMarginPct =
-    PREVIEW_SELL_MONTHLY > 0
-      ? (PREVIEW_SELL_MONTHLY - monthlyCost) / PREVIEW_SELL_MONTHLY
-      : 0;
-  const marginColor =
-    grossMarginPct > 0.3
-      ? "emerald"
-      : grossMarginPct > 0.15
-        ? "amber"
-        : "red";
+    sellMonthly > 0 ? (sellMonthly - monthlyCost) / sellMonthly : 0;
 
   const perUnitLabel = (() => {
     if (!hasData) return null;
     switch (values.pricing_model) {
       case "per_seat":
-        return `${formatCurrency(monthlyCost / PREVIEW_ASSUMPTIONS.endpoints)} per endpoint`;
+        return `${formatCurrency(monthlyCost / previewAssumptions.endpoints)} per endpoint`;
       case "per_user":
-        return `${formatCurrency(monthlyCost / PREVIEW_ASSUMPTIONS.users)} per user`;
+        return `${formatCurrency(monthlyCost / previewAssumptions.users)} per user`;
       case "flat_monthly":
       case "per_org":
         return "flat — not per-unit";
       case "annual_flat":
       case "tiered_by_metric":
-        return null; // annotation handles this
+        return null;
       default:
         return null;
     }
@@ -214,7 +216,7 @@ function PreviewPanel({ values }: { values: ToolFormValues }) {
       {/* Main cost */}
       <div>
         <p className="text-[10px] text-muted-foreground/40 mb-1.5">
-          Monthly cost @ 30 endpoints / 30 users
+          Monthly cost @ {previewSeats} endpoints / {previewSeats} users
         </p>
         <p
           className={cn(
@@ -226,12 +228,10 @@ function PreviewPanel({ values }: { values: ToolFormValues }) {
           <span className="text-lg text-muted-foreground/40 font-normal">/mo</span>
         </p>
 
-        {/* Annotation for annual_flat */}
         {annotation && (
           <p className="text-xs font-mono text-primary/70 mt-1.5">{annotation}</p>
         )}
 
-        {/* Per-unit context */}
         {perUnitLabel && (
           <p className="text-[11px] text-muted-foreground/50 mt-1">{perUnitLabel}</p>
         )}
@@ -254,48 +254,49 @@ function PreviewPanel({ values }: { values: ToolFormValues }) {
           </div>
         )}
 
-      {/* Margin indicator */}
+      {/* Test sell price scratchpad */}
       {hasData && (
         <>
           <Separator className="bg-border/30" />
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
+              Test Sell Price
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground/40">$/seat/mo</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground/50">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={previewSellPrice}
+                    onChange={(e) => setPreviewSellPrice(Number(e.target.value) || 0)}
+                    className="w-full h-7 rounded-md border border-border/50 bg-white/[0.03] px-2 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground/40">Seats</p>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={previewSeats}
+                  onChange={(e) => setPreviewSeats(Number(e.target.value) || 1)}
+                  className="w-full h-7 rounded-md border border-border/50 bg-white/[0.03] px-2 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-muted-foreground/45">
-                Margin hint
+                Margin would be
               </span>
-              <span
-                className={cn(
-                  "text-xs font-mono font-semibold",
-                  marginColor === "emerald"
-                    ? "text-emerald-400"
-                    : marginColor === "amber"
-                      ? "text-amber-400"
-                      : "text-red-400"
-                )}
-              >
-                {grossMarginPct > 0
-                  ? `~${(grossMarginPct * 100).toFixed(0)}%`
-                  : "loss"}
-              </span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-white/8 overflow-hidden">
-              <motion.div
-                className={cn(
-                  "h-full rounded-full",
-                  marginColor === "emerald"
-                    ? "bg-emerald-500"
-                    : marginColor === "amber"
-                      ? "bg-amber-500"
-                      : "bg-red-500"
-                )}
-                animate={{
-                  width: `${Math.max(0, Math.min(grossMarginPct * 100, 100))}%`,
-                }}
-                transition={{ type: "spring", stiffness: 200, damping: 25 }}
-              />
+              <MarginHealthBadge margin={grossMarginPct} />
             </div>
             <p className="text-[9px] text-muted-foreground/30 leading-relaxed">
-              Hint: $15/endpoint × 30 endpoints = $450/mo assumed sell
+              Scratchpad only — not saved to tool
             </p>
           </div>
         </>

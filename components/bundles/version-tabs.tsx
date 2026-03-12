@@ -7,7 +7,7 @@ import { VersionDetail } from "./version-detail";
 import { PricingAdvisor } from "./pricing-advisor";
 import { EnablementStudio } from "./enablement-studio";
 import { Sparkles, ChevronRight } from "lucide-react";
-import type { BundleVersionWithTools, EnablementContent } from "@/lib/types";
+import type { BundleVersionWithTools, BundleVersion, EnablementContent, PricingOutput } from "@/lib/types";
 
 interface VersionTabsProps {
   version: BundleVersionWithTools;
@@ -16,6 +16,8 @@ interface VersionTabsProps {
   enablementContent: EnablementContent | null;
   enablementGeneratedAt: string | null;
   defaultTab?: string;
+  pricingOutput?: PricingOutput;
+  previousVersion?: BundleVersion | null;
 }
 
 export function VersionTabs({
@@ -25,6 +27,8 @@ export function VersionTabs({
   enablementContent,
   enablementGeneratedAt,
   defaultTab = "overview",
+  pricingOutput,
+  previousVersion,
 }: VersionTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -78,7 +82,7 @@ export function VersionTabs({
       )}
 
       <TabsContent value="overview" className="mt-4">
-        <VersionDetail version={version} />
+        <VersionDetail version={version} pricingOutput={pricingOutput} previousVersion={previousVersion} />
       </TabsContent>
 
       <TabsContent value="pricing" className="mt-4">

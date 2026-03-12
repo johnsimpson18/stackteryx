@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatting";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
@@ -67,6 +68,7 @@ interface BundleVersionInfo {
   id: string;
   suggested_price: number | null;
   seat_count: number;
+  cost_per_seat: number | null;
 }
 
 interface SalesStudioClientProps {
@@ -94,6 +96,8 @@ interface ServiceSelection {
   service_name: string;
   checked: boolean;
   suggested_price: number | null;
+  override_price: number | null;
+  cost_per_seat: number | null;
 }
 
 type StudioTab = "generate" | "past";
@@ -149,6 +153,8 @@ export function SalesStudioClient({
         checked: true,
         suggested_price:
           bundleVersions[c.bundle_id]?.suggested_price ?? null,
+        override_price: null,
+        cost_per_seat: bundleVersions[c.bundle_id]?.cost_per_seat ?? null,
       }))
   );
 
@@ -206,6 +212,8 @@ export function SalesStudioClient({
           checked: contracted.has(b.id),
           suggested_price:
             bundleVersions[b.id]?.suggested_price ?? null,
+          override_price: null,
+          cost_per_seat: bundleVersions[b.id]?.cost_per_seat ?? null,
         }))
         .filter((s) => s.pricing_version_id);
 
@@ -220,6 +228,8 @@ export function SalesStudioClient({
           service_name: client.active_contract.bundle_name,
           checked: true,
           suggested_price: null,
+          override_price: null,
+          cost_per_seat: null,
         });
       }
       setClientServices(services);
@@ -235,6 +245,8 @@ export function SalesStudioClient({
             checked: false,
             suggested_price:
               bundleVersions[b.id]?.suggested_price ?? null,
+            override_price: null,
+            cost_per_seat: bundleVersions[b.id]?.cost_per_seat ?? null,
           }))
       );
     }
@@ -266,6 +278,8 @@ export function SalesStudioClient({
             checked: true,
             suggested_price:
               bundleVersions[m.bundle_id]?.suggested_price ?? null,
+            override_price: null,
+            cost_per_seat: bundleVersions[m.bundle_id]?.cost_per_seat ?? null,
           })
         );
         setMatchedServices(matched.filter((m) => m.pricing_version_id));
@@ -296,7 +310,7 @@ export function SalesStudioClient({
       bundle_id: s.bundle_id,
       pricing_version_id: s.pricing_version_id,
       service_name: s.service_name,
-      suggested_price: s.suggested_price ?? undefined,
+      suggested_price: s.override_price ?? s.suggested_price ?? undefined,
       billing_unit: "per month",
     }));
 
@@ -403,7 +417,7 @@ export function SalesStudioClient({
         bundle_id: s.bundle_id,
         pricing_version_id: s.pricing_version_id,
         service_name: s.service_name,
-        suggested_price: s.suggested_price ?? undefined,
+        suggested_price: s.override_price ?? s.suggested_price ?? undefined,
         billing_unit: "per month",
       }));
 
@@ -623,6 +637,11 @@ export function SalesStudioClient({
                           };
                           setClientServices(updated);
                         }}
+                        onOverridePrice={(idx, price) => {
+                          const updated = [...clientServices];
+                          updated[idx] = { ...updated[idx], override_price: price };
+                          setClientServices(updated);
+                        }}
                         playbookStatus={playbookStatus}
                         bundleOutcomes={bundleOutcomes}
                         bundleVersions={bundleVersions}
@@ -647,6 +666,11 @@ export function SalesStudioClient({
                             ...updated[idx],
                             checked: !updated[idx].checked,
                           };
+                          setMatchedServices(updated);
+                        }}
+                        onOverridePrice={(idx, price) => {
+                          const updated = [...matchedServices];
+                          updated[idx] = { ...updated[idx], override_price: price };
                           setMatchedServices(updated);
                         }}
                         canMatch={!!prospectName.trim()}
@@ -814,6 +838,7 @@ function ClientInputPanel({
   onClientSelect,
   services,
   onToggleService,
+  onOverridePrice,
   playbookStatus,
   bundleOutcomes,
   bundleVersions,
@@ -826,6 +851,7 @@ function ClientInputPanel({
   onClientSelect: (id: string) => void;
   services: ServiceSelection[];
   onToggleService: (idx: number) => void;
+  onOverridePrice: (idx: number, price: number | null) => void;
   playbookStatus: Record<string, boolean>;
   bundleOutcomes: Record<string, boolean>;
   bundleVersions: Record<string, BundleVersionInfo>;
@@ -865,6 +891,7 @@ function ClientInputPanel({
         <ServiceChecklist
           services={services}
           onToggle={onToggleService}
+          onOverridePrice={onOverridePrice}
           playbookStatus={playbookStatus}
           bundleOutcomes={bundleOutcomes}
           bundleVersions={bundleVersions}
@@ -890,6 +917,7 @@ function ProspectInputPanel({
   onMatch,
   matchedServices,
   onToggleService,
+  onOverridePrice,
   canMatch,
   playbookStatus,
   bundleOutcomes,
@@ -908,6 +936,7 @@ function ProspectInputPanel({
   onMatch: () => void;
   matchedServices: ServiceSelection[];
   onToggleService: (idx: number) => void;
+  onOverridePrice: (idx: number, price: number | null) => void;
   canMatch: boolean;
   playbookStatus: Record<string, boolean>;
   bundleOutcomes: Record<string, boolean>;
@@ -985,6 +1014,7 @@ function ProspectInputPanel({
         <ServiceChecklist
           services={matchedServices}
           onToggle={onToggleService}
+          onOverridePrice={onOverridePrice}
           playbookStatus={playbookStatus}
           bundleOutcomes={bundleOutcomes}
           bundleVersions={bundleVersions}
@@ -1000,6 +1030,7 @@ function ProspectInputPanel({
 function ServiceChecklist({
   services,
   onToggle,
+  onOverridePrice,
   playbookStatus,
   bundleOutcomes = {},
   bundleVersions = {},
@@ -1007,6 +1038,7 @@ function ServiceChecklist({
 }: {
   services: ServiceSelection[];
   onToggle: (idx: number) => void;
+  onOverridePrice: (idx: number, price: number | null) => void;
   playbookStatus: Record<string, boolean>;
   bundleOutcomes?: Record<string, boolean>;
   bundleVersions?: Record<string, BundleVersionInfo>;
@@ -1097,7 +1129,41 @@ function ServiceChecklist({
                   </TooltipContent>
                 </Tooltip>
               )}
-              {s.suggested_price !== null && (
+              {s.suggested_price !== null && s.checked && (
+                <div className="flex items-center gap-1.5" onClick={(e) => e.preventDefault()}>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={s.override_price ?? s.suggested_price}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      onOverridePrice(i, isNaN(val) ? null : val);
+                    }}
+                    className="h-6 w-20 text-xs font-mono px-1.5"
+                  />
+                  {s.cost_per_seat != null && s.cost_per_seat > 0 && (() => {
+                    const price = s.override_price ?? s.suggested_price ?? 0;
+                    const margin = price > 0 ? (price - s.cost_per_seat) / price : 0;
+                    return <MarginHealthBadge margin={margin} showLabel={false} />;
+                  })()}
+                  {s.override_price !== null && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOverridePrice(i, null);
+                      }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                      title="Reset to suggested price"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              )}
+              {s.suggested_price !== null && !s.checked && (
                 <span className="text-xs text-muted-foreground font-mono">
                   {formatCurrency(s.suggested_price)}/mo
                 </span>

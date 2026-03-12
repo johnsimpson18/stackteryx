@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
+import { CostBreakdown } from "@/components/pricing/cost-breakdown";
 import { cn } from "@/lib/utils";
 import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
@@ -52,6 +53,8 @@ import {
   updateServiceStatusAction,
   dismissActionCardAction,
 } from "@/actions/service-profile";
+import { updateVersionSellPriceAction, recalculateVersionAction } from "@/actions/pricing";
+import { InlinePriceEditor } from "@/components/ui/inline-price-editor";
 import { OutcomeEditModal } from "./outcome-edit-modal";
 import { CapabilitiesEditModal } from "./capabilities-edit-modal";
 import { AssignClientModal } from "./assign-client-modal";
@@ -458,6 +461,100 @@ export function ServiceProfileClient({
         </Button>
       </div>
 
+      {/* 2a. Stale Pricing Banner */}
+      {latestVersion?.is_pricing_stale && (
+        <div className="flex items-start gap-3 rounded-lg bg-amber-500/5 border-l-[3px] border-amber-500 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Pricing is stale</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {latestVersion.stale_reason ?? "Tool costs have changed since this pricing was calculated."}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs shrink-0"
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                const result = await recalculateVersionAction(latestVersion.id);
+                if (result.success) {
+                  toast.success("Pricing recalculated");
+                  router.refresh();
+                } else {
+                  toast.error(result.error);
+                }
+              });
+            }}
+          >
+            Recalculate
+          </Button>
+        </div>
+      )}
+
+      {/* 2b. Key Pricing Metrics Row */}
+      {latestVersion && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
+              Sell Price
+            </p>
+            <InlinePriceEditor
+              value={Number(latestVersion.computed_suggested_price ?? 0)}
+              unit="/seat/mo"
+              onSave={async (value) => {
+                const result = await updateVersionSellPriceAction(latestVersion.id, value);
+                if (result.success) {
+                  router.refresh();
+                  return { success: true };
+                }
+                return { success: false, error: result.error };
+              }}
+            />
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
+              Cost Floor
+            </p>
+            <p className="text-xl font-bold font-mono text-foreground">
+              {formatCurrency(Number(latestVersion.computed_true_cost_per_seat ?? 0))}
+              <span className="text-sm text-muted-foreground font-normal">/seat</span>
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
+              Margin
+            </p>
+            <MarginHealthBadge
+              margin={Number(latestVersion.computed_margin_post_discount ?? 0)}
+              showLabel
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Compact cost breakdown */}
+      {latestVersion && (
+        <CostBreakdown
+          pricing={{
+            tool_costs: [],
+            blended_tool_cost_per_seat: 0,
+            total_labor_cost_per_seat: 0,
+            overhead_amount_per_seat: 0,
+            true_cost_per_seat: Number(latestVersion.computed_true_cost_per_seat ?? 0),
+            suggested_price_per_seat: Number(latestVersion.computed_suggested_price ?? 0),
+            discounted_price_per_seat: Number(latestVersion.computed_discounted_price ?? 0),
+            margin_pct_post_discount: Number(latestVersion.computed_margin_post_discount ?? 0),
+            total_mrr: Number(latestVersion.computed_mrr ?? 0),
+            total_arr: Number(latestVersion.computed_arr ?? 0),
+            total_monthly_margin: Number(latestVersion.computed_mrr ?? 0) - Number(latestVersion.computed_true_cost_per_seat ?? 0) * latestVersion.seat_count,
+          }}
+          seatCount={latestVersion.seat_count}
+          mode="compact"
+        />
+      )}
+
       {/* 3. Five Layer Summary Cards */}
       <div className="grid grid-cols-5 gap-3">
         <LayerCard
@@ -579,6 +676,11 @@ export function ServiceProfileClient({
                           >
                             v{v.version_number}
                           </Link>
+                          {v.stale_reason && (
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={v.stale_reason}>
+                              {v.stale_reason}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">{v.seat_count}</TableCell>
                         <TableCell className="text-right">

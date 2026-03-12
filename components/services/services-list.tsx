@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { PricingStatusBadge } from "@/components/shared/pricing-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Layers, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import type { BundleWithMeta, ServiceCompleteness } from "@/lib/types";
+import type { PricingStatus } from "@/lib/pricing/status";
 import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
 import type { BundleStatus } from "@/lib/types";
+import { batchRecalculateStaleAction } from "@/actions/pricing";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,6 +22,9 @@ interface ServicesListProps {
   bundles: BundleWithMeta[];
   completenessMap: Record<string, ServiceCompleteness>;
   outcomeTypeMap: Record<string, string>;
+  staleMap?: Record<string, boolean>;
+  pricingStatusMap?: Record<string, PricingStatus>;
+  initialFilter?: FilterTab;
 }
 
 // ── Layer bar constants (same as Dashboard PortfolioHealthGrid) ──────────────
@@ -51,7 +59,7 @@ function formatRelativeDate(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-type FilterTab = "all" | "active" | "draft";
+type FilterTab = "all" | "active" | "draft" | "stale";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -59,8 +67,12 @@ export function ServicesList({
   bundles,
   completenessMap,
   outcomeTypeMap,
+  staleMap = {},
+  pricingStatusMap = {},
+  initialFilter,
 }: ServicesListProps) {
-  const [filter, setFilter] = useState<FilterTab>("all");
+  const [filter, setFilter] = useState<FilterTab>(initialFilter ?? "all");
+  const [isRecalculating, startRecalcTransition] = useTransition();
 
   if (bundles.length === 0) {
     return (
@@ -74,21 +86,26 @@ export function ServicesList({
     );
   }
 
+  const staleCount = Object.values(staleMap).filter(Boolean).length;
+
   const filtered =
     filter === "all"
       ? bundles
-      : bundles.filter((b) => b.status === filter);
+      : filter === "stale"
+        ? bundles.filter((b) => staleMap[b.id])
+        : bundles.filter((b) => b.status === filter);
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: "all", label: "All" },
     { key: "active", label: "Active" },
     { key: "draft", label: "Draft" },
+    ...(staleCount > 0 ? [{ key: "stale" as FilterTab, label: `Stale (${staleCount})` }] : []),
   ];
 
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <div className="flex gap-1">
+      <div className="flex items-center gap-1">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -104,15 +121,37 @@ export function ServicesList({
             {t.label}
           </button>
         ))}
+        {staleCount > 0 && filter === "stale" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto h-7 text-xs gap-1.5"
+            disabled={isRecalculating}
+            onClick={() => {
+              startRecalcTransition(async () => {
+                const result = await batchRecalculateStaleAction();
+                if (result.success) {
+                  toast.success(`Recalculated ${result.data.recalculated} version(s)`);
+                } else {
+                  toast.error(result.error);
+                }
+              });
+            }}
+          >
+            <RefreshCw className={cn("h-3 w-3", isRecalculating && "animate-spin")} />
+            Recalculate All
+          </Button>
+        )}
       </div>
 
       {/* List */}
       <div className="rounded-lg border border-border overflow-hidden">
         {/* Header row */}
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-border bg-white/[0.02]">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-border bg-white/[0.02]">
           <span className="text-xs font-medium text-muted-foreground">Service</span>
           <span className="w-20 text-xs font-medium text-muted-foreground text-center">Status</span>
           <span className="w-24 text-xs font-medium text-muted-foreground text-center">Outcome</span>
+          <span className="w-20 text-xs font-medium text-muted-foreground text-center">Pricing</span>
           <span className="w-[200px] text-xs font-medium text-muted-foreground text-center">Completeness</span>
           <span className="w-12 text-xs font-medium text-muted-foreground text-right">Layers</span>
           <span className="w-20 text-xs font-medium text-muted-foreground text-right">Updated</span>
@@ -137,7 +176,7 @@ export function ServicesList({
             return (
               <div
                 key={bundle.id}
-                className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border last:border-b-0"
+                className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border last:border-b-0"
               >
                 {/* Name */}
                 <div className="min-w-0">
@@ -174,6 +213,11 @@ export function ServicesList({
                       No Outcome
                     </Badge>
                   )}
+                </div>
+
+                {/* Pricing status */}
+                <div className="w-20 flex justify-center">
+                  <PricingStatusBadge status={pricingStatusMap[bundle.id] ?? "NOT_SET"} />
                 </div>
 
                 {/* Five layer bar */}
