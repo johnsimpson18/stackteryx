@@ -50,6 +50,7 @@ export const economicsStepSchema = z.object({
   labor_pct: z.coerce.number().min(0).max(1).default(0.15),
   discount_pct: z.coerce.number().min(0).max(0.99).default(0),
   tools: z.array(stackToolSchema).min(1, "At least one tool is required"),
+  additional_service_ids: z.array(z.string().uuid()).default([]),
 });
 
 export type EconomicsStepValues = z.infer<typeof economicsStepSchema>;

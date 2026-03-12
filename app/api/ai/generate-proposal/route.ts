@@ -4,6 +4,7 @@ import { buildAIContext } from "@/lib/ai/context";
 import { callAI } from "@/lib/ai/validate";
 import { generateProposalPrompt } from "@/lib/ai/prompts";
 import { getPlaybookByBundleId } from "@/lib/db/enablement";
+import { getAdditionalServicesByVersionId } from "@/lib/db/additional-services";
 
 export const maxDuration = 60;
 
@@ -109,12 +110,21 @@ export async function POST(request: Request) {
       clientId: body.client_id,
     });
 
-    // ── Fetch playbook context for included services ──────────────────
+    // ── Fetch additional services + playbook context ──────────────────
     const playbookContextParts: string[] = [];
 
-    const playbookResults = await Promise.allSettled(
-      body.services.map((s) => getPlaybookByBundleId(orgId, s.bundle_id))
-    );
+    const [playbookResults, addSvcResults] = await Promise.all([
+      Promise.allSettled(
+        body.services.map((s) => getPlaybookByBundleId(orgId, s.bundle_id))
+      ),
+      Promise.allSettled(
+        body.services.map((s) =>
+          s.pricing_version_id
+            ? getAdditionalServicesByVersionId(s.pricing_version_id)
+            : Promise.resolve([])
+        )
+      ),
+    ]);
 
     for (let i = 0; i < body.services.length; i++) {
       const result = playbookResults[i];
@@ -132,21 +142,35 @@ export async function POST(request: Request) {
       }
     }
 
-    // Build the base prompt
+    // Build the base prompt — include additional services in each service's context
     let userPrompt = generateProposalPrompt({
       mode: body.mode,
       recipient_name: recipientName,
       prospect_industry: body.prospect_industry,
       prospect_size: body.prospect_size,
       primary_concern: body.primary_concern,
-      services: body.services.map((s) => ({
-        service_name: s.service_name,
-        outcome_type: s.outcome_type,
-        outcome_statement: s.outcome_statement,
-        service_capabilities: s.service_capabilities,
-        suggested_price: s.suggested_price,
-        billing_unit: s.billing_unit,
-      })),
+      services: body.services.map((s, i) => {
+        const addSvcResult = addSvcResults[i];
+        const addSvcs =
+          addSvcResult.status === "fulfilled" && addSvcResult.value.length > 0
+            ? addSvcResult.value.map((as) => ({
+                name: as.additional_service.name,
+                category: as.additional_service.category,
+                description: as.additional_service.description,
+                sell_price: as.effective_sell_price,
+              }))
+            : undefined;
+
+        return {
+          service_name: s.service_name,
+          outcome_type: s.outcome_type,
+          outcome_statement: s.outcome_statement,
+          service_capabilities: s.service_capabilities,
+          suggested_price: s.suggested_price,
+          billing_unit: s.billing_unit,
+          ...(addSvcs ? { additional_services: addSvcs } : {}),
+        };
+      }),
       org_context: context.org_context,
       client_context: context.client_context,
     });

@@ -37,6 +37,7 @@ import type {
   ServiceOutcome,
   BundleVersion,
   BundleEnablement,
+  AdditionalService,
 } from "@/lib/types";
 
 // ── Wizard form state ────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export interface WizardFormData {
   overhead_pct: number;
   labor_pct: number;
   discount_pct: number;
+  selectedAdditionalServiceIds: Set<string>;
   // Step 5: Enablement
   service_overview: string;
   whats_included: string;
@@ -90,6 +92,7 @@ const DEFAULTS: WizardFormData = {
   overhead_pct: 0.10,
   labor_pct: 0.15,
   discount_pct: 0,
+  selectedAdditionalServiceIds: new Set(),
   service_overview: "",
   whats_included: "",
   talking_points: "",
@@ -115,6 +118,7 @@ const STEP_LABELS = [
 
 interface ServiceWizardShellProps {
   tools: Tool[];
+  additionalServices: AdditionalService[];
   defaults: {
     target_margin_pct: number;
     overhead_pct: number;
@@ -133,6 +137,7 @@ interface ServiceWizardShellProps {
 
 export function ServiceWizardShell({
   tools,
+  additionalServices,
   defaults: pricingDefaults,
   initialData,
 }: ServiceWizardShellProps) {
@@ -296,6 +301,7 @@ export function ServiceWizardShell({
               labor_pct: form.labor_pct,
               discount_pct: form.discount_pct,
               tools: toolsArr,
+              additional_service_ids: Array.from(form.selectedAdditionalServiceIds),
             });
             if (!result.success) {
               toast.error(result.error);
@@ -468,6 +474,8 @@ export function ServiceWizardShell({
             <StepEconomics
               tools={tools}
               selectedToolIds={form.selectedToolIds}
+              additionalServices={additionalServices}
+              selectedAdditionalServiceIds={form.selectedAdditionalServiceIds}
               seatCount={form.seat_count}
               riskTier={form.risk_tier}
               contractTermMonths={form.contract_term_months}
@@ -482,6 +490,14 @@ export function ServiceWizardShell({
               onOverheadChange={(v) => update("overhead_pct", v)}
               onLaborChange={(v) => update("labor_pct", v)}
               onDiscountChange={(v) => update("discount_pct", v)}
+              onToggleAdditionalService={(id) => {
+                setForm((prev) => {
+                  const next = new Set(prev.selectedAdditionalServiceIds);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return { ...prev, selectedAdditionalServiceIds: next };
+                });
+              }}
             />
           )}
           {step === 5 && (

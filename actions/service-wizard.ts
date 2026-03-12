@@ -7,6 +7,7 @@ import {
   getBundleById,
 } from "@/lib/db/bundles";
 import { createVersion as dbCreateVersion } from "@/lib/db/bundle-versions";
+import { addAdditionalServiceToVersion } from "@/lib/db/additional-services";
 import { upsertServiceOutcome } from "@/lib/db/service-outcomes";
 import { upsertEnablement } from "@/lib/db/enablement";
 import { getCurrentProfile } from "@/lib/db/profiles";
@@ -251,6 +252,15 @@ export async function saveEconomicsStepAction(
       max_discount_no_approval_pct: Number(settings.max_discount_no_approval_pct),
     });
 
+    // Attach selected additional services to the version
+    if (parsed.data.additional_service_ids.length > 0) {
+      await Promise.all(
+        parsed.data.additional_service_ids.map((svcId) =>
+          addAdditionalServiceToVersion(result.version.id, svcId, orgId)
+        )
+      );
+    }
+
     await updateBundle(bundleId, {
       wizard_step_completed: Math.max(bundle.wizard_step_completed, 4),
       economics_layer_complete: true,
@@ -260,6 +270,7 @@ export async function saveEconomicsStepAction(
       via: "build_service_wizard",
       step: 4,
       version_id: result.version.id,
+      additional_service_count: parsed.data.additional_service_ids.length,
     }, orgId);
 
     revalidatePath("/bundles");

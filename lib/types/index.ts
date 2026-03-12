@@ -758,6 +758,70 @@ export interface TierPackageWithMeta extends TierPackage {
   item_count: number;
 }
 
+// ── Additional Services ──────────────────────────────────────────────────────
+
+export type AdditionalServiceCategory =
+  | "consulting"
+  | "help_desk"
+  | "retainer"
+  | "training"
+  | "project"
+  | "compliance";
+
+export type AdditionalServiceBillingType =
+  | "monthly"
+  | "per_user"
+  | "per_device"
+  | "per_site"
+  | "hourly"
+  | "one_time";
+
+export type AdditionalServiceCostType =
+  | "internal_labor"
+  | "subcontractor"
+  | "zero_cost";
+
+export type AdditionalServiceStatus = "active" | "draft" | "archived";
+
+export interface AdditionalService {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  category: AdditionalServiceCategory;
+  billing_type: AdditionalServiceBillingType;
+  cost_type: AdditionalServiceCostType;
+  cost: number;
+  cost_unit: string | null;
+  sell_price: number;
+  sell_unit: string | null;
+  margin_pct: number; // GENERATED column — never insert/update
+  status: AdditionalServiceStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BundleVersionAdditionalService {
+  id: string;
+  bundle_version_id: string;
+  additional_service_id: string;
+  org_id: string;
+  cost_override: number | null;
+  sell_price_override: number | null;
+  quantity: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface BundleVersionAdditionalServiceWithDetails
+  extends BundleVersionAdditionalService {
+  additional_service: AdditionalService;
+  effective_cost: number;
+  effective_sell_price: number;
+  effective_margin_pct: number;
+}
+
 // Re-export recommendation types
 export type {
   ClientProfile,

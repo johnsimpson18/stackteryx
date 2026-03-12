@@ -10,6 +10,7 @@ import {
   Users,
   FileText,
   PlusCircle,
+  Briefcase,
 } from "lucide-react";
 import type { UserRole, OrgRole, ToolCategory, PricingModel, BundleType, BundleStatus, RiskTier, ClientStatus, ApprovalStatus } from "@/lib/types";
 
@@ -35,6 +36,13 @@ export const NAV_ITEMS = [
     label: "Services",
     href: "/services",
     icon: Package,
+    disabled: false,
+    group: "primary" as NavGroup,
+  },
+  {
+    label: "Add-On Services",
+    href: "/additional-services",
+    icon: Briefcase,
     disabled: false,
     group: "primary" as NavGroup,
   },

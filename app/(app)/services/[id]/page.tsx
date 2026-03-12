@@ -16,6 +16,7 @@ import { getEnablementStatusByBundleId, getEnablementByVersionId } from "@/lib/d
 import { getActiveActionCards } from "@/lib/db/action-cards";
 import { getClients } from "@/lib/db/clients";
 import { getOrgSettings } from "@/lib/db/org-settings";
+import { getAdditionalServicesByVersionId } from "@/lib/db/additional-services";
 import { ServiceProfileClient } from "@/components/services/service-profile-client";
 import type { BundleEnablement } from "@/lib/types";
 
@@ -46,9 +47,12 @@ export default async function ServiceProfilePage({ params }: ServiceProfilePageP
       getOrgSettings(orgId),
     ]);
 
-  // Get enablement content for the latest version
+  // Get enablement content and additional services for the latest version
   const latestVersion = versions[0] ?? null;
   let enablement: BundleEnablement | null = null;
+  const versionAdditionalServices = latestVersion
+    ? await getAdditionalServicesByVersionId(latestVersion.id)
+    : [];
   if (latestVersion) {
     enablement = await getEnablementByVersionId(orgId, latestVersion.id);
   }
@@ -69,6 +73,7 @@ export default async function ServiceProfilePage({ params }: ServiceProfilePageP
       clients={clients}
       redZoneMarginPct={settings ? Number(settings.red_zone_margin_pct) : 0.15}
       latestVersionId={latestVersion?.id ?? null}
+      additionalServices={versionAdditionalServices}
     />
   );
 }

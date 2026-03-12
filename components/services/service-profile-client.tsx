@@ -45,6 +45,7 @@ import {
   Megaphone,
   X,
   UserPlus,
+  Briefcase,
 } from "lucide-react";
 import {
   updateServiceNameAction,
@@ -65,9 +66,29 @@ import type {
   ClientWithContracts,
   BundleEnablement,
   PricingFlag,
+  BundleVersionAdditionalServiceWithDetails,
+  AdditionalServiceCategory,
 } from "@/lib/types";
 
 // ── Props ────────────────────────────────────────────────────────────────────
+
+const ADD_SVC_CATEGORY_LABELS: Record<AdditionalServiceCategory, string> = {
+  consulting: "Consulting",
+  help_desk: "Help Desk",
+  retainer: "Retainer",
+  training: "Training",
+  project: "Project",
+  compliance: "Compliance",
+};
+
+const ADD_SVC_CATEGORY_COLORS: Record<AdditionalServiceCategory, string> = {
+  consulting: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  help_desk: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  retainer: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  training: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  project: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  compliance: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+};
 
 interface ServiceProfileClientProps {
   bundle: Bundle;
@@ -80,6 +101,7 @@ interface ServiceProfileClientProps {
   clients: ClientWithContracts[];
   redZoneMarginPct: number;
   latestVersionId: string | null;
+  additionalServices: BundleVersionAdditionalServiceWithDetails[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -111,6 +133,7 @@ export function ServiceProfileClient({
   clients,
   redZoneMarginPct,
   latestVersionId,
+  additionalServices,
 }: ServiceProfileClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -630,6 +653,113 @@ export function ServiceProfileClient({
           </Card>
         )}
       </div>
+
+      {/* 4b. Additional Services */}
+      {additionalServices.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              Add-On Services ({additionalServices.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead className="text-right">Sell Price</TableHead>
+                  <TableHead className="text-right">Margin</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {additionalServices.map((as) => (
+                  <TableRow key={as.id}>
+                    <TableCell className="font-medium">
+                      {as.additional_service.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px]",
+                          ADD_SVC_CATEGORY_COLORS[as.additional_service.category]
+                        )}
+                      >
+                        {ADD_SVC_CATEGORY_LABELS[as.additional_service.category]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(as.effective_cost)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(as.effective_sell_price)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <MarginHealthBadge margin={as.effective_margin_pct / 100} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Revenue layers bar */}
+            {latestVersion && (() => {
+              const toolMrr = Number(latestVersion.computed_mrr ?? 0);
+              const addOnMrr = additionalServices.reduce(
+                (sum, s) => sum + s.effective_sell_price * s.quantity,
+                0
+              );
+              const totalMrr = toolMrr + addOnMrr;
+              const toolPct = totalMrr > 0 ? (toolMrr / totalMrr) * 100 : 0;
+              const addOnPct = totalMrr > 0 ? (addOnMrr / totalMrr) * 100 : 0;
+
+              return (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                    <span>Revenue Layers</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {formatCurrency(totalMrr)}/mo
+                    </span>
+                  </div>
+                  <div className="flex h-3 rounded-full overflow-hidden bg-zinc-800">
+                    {toolPct > 0 && (
+                      <div
+                        className="bg-primary/70 transition-all duration-300"
+                        style={{ width: `${toolPct}%` }}
+                        title={`Tools: ${formatCurrency(toolMrr)}`}
+                      />
+                    )}
+                    {addOnPct > 0 && (
+                      <div
+                        className="bg-purple-500/70 transition-all duration-300"
+                        style={{ width: `${addOnPct}%` }}
+                        title={`Add-Ons: ${formatCurrency(addOnMrr)}`}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 mt-2 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-primary/70" />
+                      <span className="text-muted-foreground">
+                        Tools {formatCurrency(toolMrr)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-purple-500/70" />
+                      <span className="text-muted-foreground">
+                        Add-Ons {formatCurrency(addOnMrr)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 5. Sales Enablement Section */}
       <div id="enablement-section">

@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/lib/db/profiles";
 import { getTools } from "@/lib/db/tools";
 import { getOrgSettings } from "@/lib/db/org-settings";
 import { getActiveOrgId } from "@/lib/org-context";
+import { getAdditionalServicesByOrgId } from "@/lib/db/additional-services";
 import { getBundleById, getInProgressBundle } from "@/lib/db/bundles";
 import { getServiceOutcome } from "@/lib/db/service-outcomes";
 import { getVersionsByBundleId, getVersionById } from "@/lib/db/bundle-versions";
@@ -24,9 +25,10 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
   const orgId = await getActiveOrgId();
   if (!orgId) redirect("/dashboard");
 
-  const [tools, settings] = await Promise.all([
+  const [tools, settings, additionalServices] = await Promise.all([
     getTools(orgId, { is_active: true }),
     getOrgSettings(orgId),
+    getAdditionalServicesByOrgId(orgId, "active"),
   ]);
 
   const params = await searchParams;
@@ -74,6 +76,7 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
   return (
     <ServiceWizardShell
       tools={tools}
+      additionalServices={additionalServices}
       defaults={{
         target_margin_pct: settings?.default_target_margin_pct ?? 0.35,
         overhead_pct: settings?.default_overhead_pct ?? 0.1,

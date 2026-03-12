@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,22 +16,45 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { cn } from "@/lib/utils";
 import { RISK_TIER_LABELS, RISK_TIERS } from "@/lib/constants";
 import { calculatePricing } from "@/lib/pricing/engine";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, Briefcase, Check } from "lucide-react";
 import type {
   Tool,
   RiskTier,
   PricingInput,
   PricingToolInput,
   PricingOutput,
+  AdditionalService,
+  AdditionalServiceCategory,
 } from "@/lib/types";
+
+const ADD_SVC_CATEGORY_LABELS: Record<AdditionalServiceCategory, string> = {
+  consulting: "Consulting",
+  help_desk: "Help Desk",
+  retainer: "Retainer",
+  training: "Training",
+  project: "Project",
+  compliance: "Compliance",
+};
+
+const ADD_SVC_CATEGORY_COLORS: Record<AdditionalServiceCategory, string> = {
+  consulting: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  help_desk: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  retainer: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  training: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  project: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  compliance: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+};
 
 interface StepEconomicsProps {
   tools: Tool[];
   selectedToolIds: Set<string>;
+  additionalServices: AdditionalService[];
+  selectedAdditionalServiceIds: Set<string>;
   seatCount: number;
   riskTier: RiskTier;
   contractTermMonths: number;
@@ -45,6 +69,7 @@ interface StepEconomicsProps {
   onOverheadChange: (v: number) => void;
   onLaborChange: (v: number) => void;
   onDiscountChange: (v: number) => void;
+  onToggleAdditionalService: (id: string) => void;
 }
 
 const ADVANCED_KEY = "service-wizard-advanced-expanded";
@@ -52,6 +77,8 @@ const ADVANCED_KEY = "service-wizard-advanced-expanded";
 export function StepEconomics({
   tools,
   selectedToolIds,
+  additionalServices,
+  selectedAdditionalServiceIds,
   seatCount,
   riskTier,
   contractTermMonths,
@@ -66,6 +93,7 @@ export function StepEconomics({
   onOverheadChange,
   onLaborChange,
   onDiscountChange,
+  onToggleAdditionalService,
 }: StepEconomicsProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -128,6 +156,15 @@ export function StepEconomics({
       return null;
     }
   }, [selectedTools, seatCount, targetMarginPct, overheadPct, laborPct, discountPct, contractTermMonths]);
+
+  const addSvcTotals = useMemo(() => {
+    const selected = additionalServices.filter((s) =>
+      selectedAdditionalServiceIds.has(s.id)
+    );
+    const totalCost = selected.reduce((sum, s) => sum + Number(s.cost), 0);
+    const totalSell = selected.reduce((sum, s) => sum + Number(s.sell_price), 0);
+    return { selected, totalCost, totalSell, count: selected.length };
+  }, [additionalServices, selectedAdditionalServiceIds]);
 
   return (
     <div className="space-y-6">
@@ -241,6 +278,80 @@ export function StepEconomics({
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* Additional Services */}
+          {additionalServices.length > 0 && (
+            <Collapsible>
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-white/5 transition-colors">
+                <span className="flex items-center gap-2 font-medium text-foreground">
+                  <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+                  Additional Services
+                </span>
+                <span className="flex items-center gap-2">
+                  {addSvcTotals.count > 0 && (
+                    <Badge variant="secondary" className="text-[10px] h-5">
+                      {addSvcTotals.count} selected
+                    </Badge>
+                  )}
+                  <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1 pt-3">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Include consulting, retainers, or professional services.
+                </p>
+                {additionalServices.map((svc) => {
+                  const isSelected = selectedAdditionalServiceIds.has(svc.id);
+                  return (
+                    <button
+                      type="button"
+                      key={svc.id}
+                      onClick={() => onToggleAdditionalService(svc.id)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors text-left w-full",
+                        isSelected
+                          ? "border-primary/30 bg-primary/5"
+                          : "border-border hover:bg-white/5"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                          isSelected
+                            ? "border-primary bg-primary"
+                            : "border-muted-foreground/30"
+                        )}
+                      >
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {svc.name}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] shrink-0",
+                              ADD_SVC_CATEGORY_COLORS[svc.category]
+                            )}
+                          >
+                            {ADD_SVC_CATEGORY_LABELS[svc.category]}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-mono text-sm text-foreground">
+                          {formatCurrency(Number(svc.sell_price))}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1">/mo</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
         {/* Right: Live preview */}
@@ -270,31 +381,36 @@ export function StepEconomics({
               )}
               <div className="h-px bg-border my-2" />
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">MRR</span>
-                <span className="font-mono font-semibold text-foreground">
+                <span className="text-muted-foreground">Tool MRR</span>
+                <span className="font-mono font-medium">
                   {formatCurrency(pricing.total_mrr)}
+                </span>
+              </div>
+              {addSvcTotals.count > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Add-On MRR</span>
+                  <span className="font-mono font-medium">
+                    {formatCurrency(addSvcTotals.totalSell)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total MRR</span>
+                <span className="font-mono font-semibold text-foreground">
+                  {formatCurrency(pricing.total_mrr + addSvcTotals.totalSell)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">ARR</span>
                 <span className="font-mono font-medium">
-                  {formatCurrency(pricing.total_arr)}
+                  {formatCurrency((pricing.total_mrr + addSvcTotals.totalSell) * 12)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Margin</span>
-                <span
-                  className={cn(
-                    "font-mono font-medium",
-                    pricing.margin_pct_post_discount >= 0.25
-                      ? "text-emerald-400"
-                      : pricing.margin_pct_post_discount >= 0.15
-                        ? "text-amber-400"
-                        : "text-red-400"
-                  )}
-                >
-                  {formatPercent(pricing.margin_pct_post_discount)}
-                </span>
+                <MarginHealthBadge
+                  margin={pricing.margin_pct_post_discount}
+                />
               </div>
               {pricing.flags.length > 0 && (
                 <div className="mt-3 space-y-1">
