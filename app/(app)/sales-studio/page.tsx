@@ -12,6 +12,7 @@ import { getVersionsByBundleId } from "@/lib/db/bundle-versions";
 import { getOrgById } from "@/lib/db/orgs";
 import { getOnboardingProfile } from "@/lib/db/org-settings";
 import { getPlaybookStatusByBundleIds } from "@/lib/db/enablement";
+import { getServiceOutcomesByOrgId } from "@/lib/db/service-outcomes";
 import { getTierPackages } from "@/lib/db/tier-packages";
 import { SalesStudioClient } from "@/components/sales-studio/sales-studio-client";
 
@@ -74,6 +75,15 @@ export default async function SalesStudioPage({
         )
       : {};
 
+  // Fetch outcome existence for each active bundle
+  const bundleOutcomes: Record<string, boolean> = {};
+  if (activeBundles.length > 0) {
+    const outcomes = await getServiceOutcomesByOrgId(orgId);
+    for (const o of outcomes) {
+      bundleOutcomes[o.bundle_id] = true;
+    }
+  }
+
   // If client is pre-selected, fetch their contracts
   let preSelectedClientContracts: {
     bundle_id: string;
@@ -112,6 +122,7 @@ export default async function SalesStudioPage({
       orgName={org?.name ?? ""}
       orgTargetVerticals={onboarding?.target_verticals ?? []}
       playbookStatus={playbookStatus}
+      bundleOutcomes={bundleOutcomes}
       publishedPackages={tierPackages
         .filter((p) => p.status === "published")
         .map((p) => ({ id: p.id, name: p.name, item_count: p.item_count }))}

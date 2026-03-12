@@ -63,6 +63,17 @@ export function EnablementSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundle_id: bundleId }),
       });
+      if (res.status === 422) {
+        const err = await res.json();
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Add ${items.join(" and ").toLowerCase()} before generating`
+            : "Insufficient context to generate content"
+        );
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         setContent({

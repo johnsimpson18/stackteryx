@@ -46,6 +46,7 @@ import {
   exportProposalDocxAction,
 } from "@/actions/proposals";
 import { SalesEnablementPanel } from "./sales-enablement-panel";
+import { ContextQualityBadge } from "@/components/ui/context-quality-badge";
 import type {
   ClientWithContracts,
   Proposal,
@@ -83,6 +84,7 @@ interface SalesStudioClientProps {
   orgName: string;
   orgTargetVerticals: string[];
   playbookStatus: Record<string, boolean>;
+  bundleOutcomes?: Record<string, boolean>;
   publishedPackages?: { id: string; name: string; item_count: number }[];
 }
 
@@ -124,6 +126,7 @@ export function SalesStudioClient({
   orgName,
   orgTargetVerticals,
   playbookStatus,
+  bundleOutcomes = {},
   publishedPackages = [],
 }: SalesStudioClientProps) {
   const [, startTransition] = useTransition();
@@ -314,6 +317,17 @@ export function SalesStudioClient({
         }),
       });
 
+      if (res.status === 422) {
+        const err = await res.json().catch(() => ({}));
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Missing: ${items.join(", ")}`
+            : "Insufficient context to generate proposal"
+        );
+        return;
+      }
+
       if (!res.ok) {
         toast.error("Failed to generate proposal");
         return;
@@ -404,7 +418,15 @@ export function SalesStudioClient({
         }),
       });
 
-      if (res.ok) {
+      if (res.status === 422) {
+        const err = await res.json().catch(() => ({}));
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Missing: ${items.join(", ")}`
+            : "Insufficient context to regenerate"
+        );
+      } else if (res.ok) {
         const content: ProposalContent = await res.json();
         if (proposal && sectionKey in content) {
           updateSection(
@@ -602,6 +624,8 @@ export function SalesStudioClient({
                           setClientServices(updated);
                         }}
                         playbookStatus={playbookStatus}
+                        bundleOutcomes={bundleOutcomes}
+                        bundleVersions={bundleVersions}
                         onSwitchToEnablement={() => setMode("enablement")}
                       />
                     ) : (
@@ -627,6 +651,8 @@ export function SalesStudioClient({
                         }}
                         canMatch={!!prospectName.trim()}
                         playbookStatus={playbookStatus}
+                        bundleOutcomes={bundleOutcomes}
+                        bundleVersions={bundleVersions}
                         onSwitchToEnablement={() => setMode("enablement")}
                       />
                     )}
@@ -789,6 +815,8 @@ function ClientInputPanel({
   services,
   onToggleService,
   playbookStatus,
+  bundleOutcomes,
+  bundleVersions,
   onSwitchToEnablement,
 }: {
   clients: ClientWithContracts[];
@@ -799,6 +827,8 @@ function ClientInputPanel({
   services: ServiceSelection[];
   onToggleService: (idx: number) => void;
   playbookStatus: Record<string, boolean>;
+  bundleOutcomes: Record<string, boolean>;
+  bundleVersions: Record<string, BundleVersionInfo>;
   onSwitchToEnablement: (bundleId: string) => void;
 }) {
   return (
@@ -836,6 +866,8 @@ function ClientInputPanel({
           services={services}
           onToggle={onToggleService}
           playbookStatus={playbookStatus}
+          bundleOutcomes={bundleOutcomes}
+          bundleVersions={bundleVersions}
           onSwitchToEnablement={onSwitchToEnablement}
         />
       )}
@@ -860,6 +892,8 @@ function ProspectInputPanel({
   onToggleService,
   canMatch,
   playbookStatus,
+  bundleOutcomes,
+  bundleVersions,
   onSwitchToEnablement,
 }: {
   prospectName: string;
@@ -876,6 +910,8 @@ function ProspectInputPanel({
   onToggleService: (idx: number) => void;
   canMatch: boolean;
   playbookStatus: Record<string, boolean>;
+  bundleOutcomes: Record<string, boolean>;
+  bundleVersions: Record<string, BundleVersionInfo>;
   onSwitchToEnablement: (bundleId: string) => void;
 }) {
   return (
@@ -950,6 +986,8 @@ function ProspectInputPanel({
           services={matchedServices}
           onToggle={onToggleService}
           playbookStatus={playbookStatus}
+          bundleOutcomes={bundleOutcomes}
+          bundleVersions={bundleVersions}
           onSwitchToEnablement={onSwitchToEnablement}
         />
       )}
@@ -963,77 +1001,110 @@ function ServiceChecklist({
   services,
   onToggle,
   playbookStatus,
+  bundleOutcomes = {},
+  bundleVersions = {},
   onSwitchToEnablement,
 }: {
   services: ServiceSelection[];
   onToggle: (idx: number) => void;
   playbookStatus: Record<string, boolean>;
+  bundleOutcomes?: Record<string, boolean>;
+  bundleVersions?: Record<string, BundleVersionInfo>;
   onSwitchToEnablement: (bundleId: string) => void;
 }) {
+  function getContextQuality(bundleId: string): {
+    quality: "rich" | "partial" | "minimal";
+    missing: string[];
+  } {
+    const hasOutcome = !!bundleOutcomes[bundleId];
+    const hasVersion = !!bundleVersions[bundleId];
+    const hasPlaybook = !!playbookStatus[bundleId];
+    const missing: string[] = [];
+
+    if (!hasOutcome) missing.push("outcome");
+    if (!hasVersion) missing.push("pricing version");
+    if (!hasPlaybook) missing.push("playbook");
+
+    if (hasOutcome && hasVersion && hasPlaybook) {
+      return { quality: "rich", missing: [] };
+    }
+    if (missing.length >= 2) {
+      return { quality: "minimal", missing };
+    }
+    return { quality: "partial", missing };
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">
           Services to include
         </Label>
-        {services.map((s, i) => (
-          <label
-            key={s.bundle_id}
-            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
-          >
-            <input
-              type="checkbox"
-              checked={s.checked}
-              onChange={() => onToggle(i)}
-              className="rounded border-border"
-            />
-            <span className="text-sm text-foreground flex-1">
-              {s.service_name}
-            </span>
-            {playbookStatus[s.bundle_id] ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
-                    Playbook ready
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">
-                    A sales playbook exists for this service and will be used to
-                    strengthen this proposal
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onSwitchToEnablement(s.bundle_id);
-                    }}
-                    className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
-                  >
-                    No playbook
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">
-                    Build a playbook in Sales Enablement to improve proposals for
-                    this service
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {s.suggested_price !== null && (
-              <span className="text-xs text-muted-foreground font-mono">
-                {formatCurrency(s.suggested_price)}/mo
+        {services.map((s, i) => {
+          const ctx = getContextQuality(s.bundle_id);
+          return (
+            <label
+              key={s.bundle_id}
+              className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={s.checked}
+                onChange={() => onToggle(i)}
+                className="rounded border-border"
+              />
+              <span className="text-sm text-foreground flex-1">
+                {s.service_name}
               </span>
-            )}
-          </label>
-        ))}
+              <ContextQualityBadge
+                quality={ctx.quality}
+                missing={ctx.missing}
+              />
+              {playbookStatus[s.bundle_id] ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+                      Playbook ready
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">
+                      A sales playbook exists for this service and will be used to
+                      strengthen this proposal
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSwitchToEnablement(s.bundle_id);
+                      }}
+                      className="text-[10px] font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                    >
+                      No playbook
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">
+                      Build a playbook in Sales Enablement to improve proposals for
+                      this service
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {s.suggested_price !== null && (
+                <span className="text-xs text-muted-foreground font-mono">
+                  {formatCurrency(s.suggested_price)}/mo
+                </span>
+              )}
+            </label>
+          );
+        })}
       </div>
     </TooltipProvider>
   );

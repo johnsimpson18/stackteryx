@@ -103,12 +103,24 @@ export function EnablementStudio({
     abortRef.current = new AbortController();
 
     try {
-      const response = await fetch("/api/enablement/generate", {
+      const response = await fetch("/api/ai/generate-enablement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundle_version_id: bundleVersionId }),
         signal: abortRef.current.signal,
       });
+
+      if (response.status === 422) {
+        const err = await response.json().catch(() => ({}));
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Add ${items.join(" and ").toLowerCase()} before generating`
+            : "Insufficient context to generate enablement"
+        );
+        setIsGenerating(false);
+        return;
+      }
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -117,52 +129,14 @@ export function EnablementStudio({
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        toast.error("No response stream");
-        setIsGenerating(false);
-        return;
-      }
+      const data = await response.json();
 
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        let currentEvent = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith("data: ") && currentEvent) {
-            const data = line.slice(6);
-
-            if (currentEvent === "done") {
-              setIsGenerating(false);
-              break;
-            }
-
-            if (currentEvent === "error") {
-              toast.error(JSON.parse(data));
-              setIsGenerating(false);
-              break;
-            }
-
-            const sectionKey = currentEvent as SectionKey;
-            if (SECTIONS.some((s) => s.key === sectionKey)) {
-              const value = JSON.parse(data);
-              setContent((prev) => ({ ...prev, [sectionKey]: value }));
-              setActiveSection(sectionKey);
-              setGeneratingSection(sectionKey);
-            }
-
-            currentEvent = "";
-          }
+      // Update sections one by one for visual feedback
+      for (const section of SECTIONS) {
+        if (data[section.key]) {
+          setContent((prev) => ({ ...prev, [section.key]: data[section.key] }));
+          setActiveSection(section.key);
+          setGeneratingSection(section.key);
         }
       }
 
@@ -185,59 +159,39 @@ export function EnablementStudio({
     abortRef.current = new AbortController();
 
     try {
-      const response = await fetch("/api/enablement/generate", {
+      const response = await fetch("/api/ai/generate-enablement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundle_version_id: bundleVersionId }),
         signal: abortRef.current.signal,
       });
 
+      if (response.status === 422) {
+        const err = await response.json().catch(() => ({}));
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Add ${items.join(" and ").toLowerCase()} before generating`
+            : "Insufficient context to generate enablement"
+        );
+        setIsGenerating(false);
+        setGeneratingSection(null);
+        return;
+      }
+
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         toast.error(err.error ?? "Failed to regenerate");
         setIsGenerating(false);
+        setGeneratingSection(null);
         return;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        toast.error("No response stream");
-        setIsGenerating(false);
-        return;
-      }
+      const data = await response.json();
 
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        let currentEvent = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith("data: ") && currentEvent) {
-            const data = line.slice(6);
-
-            if (currentEvent === "done" || currentEvent === "error") {
-              if (currentEvent === "error") toast.error(JSON.parse(data));
-              break;
-            }
-
-            // Only update the active section, discard others
-            if (currentEvent === activeSection) {
-              const value = JSON.parse(data);
-              setContent((prev) => ({ ...prev, [activeSection]: value }));
-            }
-
-            currentEvent = "";
-          }
-        }
+      // Only update the active section
+      if (data[activeSection]) {
+        setContent((prev) => ({ ...prev, [activeSection]: data[activeSection] }));
       }
 
       setIsDirty(true);

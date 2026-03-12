@@ -75,6 +75,57 @@ export async function getVersionById(
   };
 }
 
+export async function getToolsByVersionIds(
+  versionIds: string[]
+): Promise<
+  Map<string, Array<{ tool_id: string; tool_name: string; category: string }>>
+> {
+  const result = new Map<
+    string,
+    Array<{ tool_id: string; tool_name: string; category: string }>
+  >();
+  if (versionIds.length === 0) return result;
+
+  const supabase = await createClient();
+
+  // Fetch all version-tool links for the given version IDs
+  const { data: versionTools, error: vtError } = await supabase
+    .from("bundle_version_tools")
+    .select("*")
+    .in("bundle_version_id", versionIds);
+
+  if (vtError) throw vtError;
+  if (!versionTools || versionTools.length === 0) return result;
+
+  // Batch-fetch tool details
+  const toolIds = [...new Set(versionTools.map((vt) => vt.tool_id))];
+  const { data: tools, error: toolsError } = await supabase
+    .from("tools")
+    .select("id, name, category")
+    .in("id", toolIds);
+
+  if (toolsError) throw toolsError;
+
+  const toolMap = new Map(
+    (tools ?? []).map((t) => [t.id, { name: t.name, category: t.category }])
+  );
+
+  // Group by version_id
+  for (const vt of versionTools) {
+    const tool = toolMap.get(vt.tool_id);
+    if (!tool) continue;
+    const list = result.get(vt.bundle_version_id) ?? [];
+    list.push({
+      tool_id: vt.tool_id,
+      tool_name: tool.name,
+      category: tool.category,
+    });
+    result.set(vt.bundle_version_id, list);
+  }
+
+  return result;
+}
+
 export async function getLatestVersionNumber(
   bundleId: string
 ): Promise<number> {

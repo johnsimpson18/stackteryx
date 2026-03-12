@@ -502,6 +502,7 @@ export function ServiceWizardShell({
           )}
           {step === 5 && (
             <StepEnablement
+              bundleId={form.bundleId}
               serviceOverview={form.service_overview}
               whatsIncluded={form.whats_included}
               talkingPoints={form.talking_points}

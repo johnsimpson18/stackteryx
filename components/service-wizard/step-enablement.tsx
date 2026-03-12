@@ -5,8 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 interface StepEnablementProps {
+  bundleId: string | null;
   serviceOverview: string;
   whatsIncluded: string;
   talkingPoints: string;
@@ -20,6 +22,7 @@ interface StepEnablementProps {
 }
 
 export function StepEnablement({
+  bundleId,
   serviceOverview,
   whatsIncluded,
   talkingPoints,
@@ -39,8 +42,20 @@ export function StepEnablement({
       const res = await fetch("/api/ai/generate-enablement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ bundle_id: bundleId }),
       });
+
+      if (res.status === 422) {
+        const err = await res.json();
+        const items = (err.missing as string[]) ?? [];
+        toast.error(
+          items.length > 0
+            ? `Add ${items.join(" and ").toLowerCase()} before generating`
+            : "Insufficient context to generate enablement"
+        );
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         if (data.service_overview) onServiceOverviewChange(data.service_overview);
@@ -48,9 +63,11 @@ export function StepEnablement({
         if (data.talking_points) onTalkingPointsChange(data.talking_points);
         if (data.pricing_narrative) onPricingNarrativeChange(data.pricing_narrative);
         if (data.why_us) onWhyUsChange(data.why_us);
+      } else {
+        toast.error("Failed to generate enablement content");
       }
     } catch {
-      // Non-blocking
+      toast.error("Failed to generate enablement content");
     } finally {
       setAiLoading(false);
     }

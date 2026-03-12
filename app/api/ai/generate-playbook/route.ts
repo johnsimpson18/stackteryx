@@ -9,6 +9,12 @@ import {
 } from "@/lib/db/bundle-versions";
 import { upsertPlaybookContent } from "@/lib/db/enablement";
 import { CATEGORY_LABELS } from "@/lib/constants";
+import { validatePlaybookContext } from "@/lib/ai/validate-context";
+import {
+  LANGUAGE_SAFETY_RULES,
+  COMPLIANCE_LANGUAGE_OVERRIDE,
+  isComplianceFocused,
+} from "@/lib/ai/language-rules";
 import type { ToolCategory } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -87,6 +93,19 @@ export async function POST(request: Request) {
     (c) => ({ name: c.name, description: c.description })
   );
 
+  // ── 5b. Validation gate ──────────────────────────────────────────────
+  const validation = validatePlaybookContext({
+    serviceName: serviceName,
+    outcomeStatement: outcomeStatement,
+    toolCount: assignedTools.length,
+  });
+  if (!validation.valid) {
+    return Response.json(
+      { error: "Insufficient context", missing: validation.missing },
+      { status: 422 }
+    );
+  }
+
   // ── 6. Build prompts ──────────────────────────────────────────────────
   const toolsList = assignedTools
     .map((t) => `- ${t.name} (${t.vendor}) — ${t.domain}`)
@@ -97,26 +116,50 @@ export async function POST(request: Request) {
     .join("\n");
 
   const verticalsList = (body.org_target_verticals ?? []).join(", ");
+  const orgName = body.org_name || "";
 
-  const systemPrompt = `You are a sales enablement strategist for managed service providers (MSPs). You produce vendor-agnostic, outcome-focused sales playbooks. Never mention specific vendor product names in customer-facing language — refer to capabilities and outcomes instead. Output valid JSON only, no markdown fences, no commentary.`;
+  const systemPrompt = `You are a sales enablement strategist for managed security service providers (MSSPs). You produce sales playbooks that help MSP sales reps have credible, honest conversations with business buyers.
 
-  const userPrompt = `Generate a complete sales playbook for the service described below.
+Your output must be grounded exclusively in the service data provided. You are not writing generic security marketing — you are writing specific, accurate content for a specific service with a defined outcome, named capabilities, and a real technology stack.
 
-SERVICE: ${serviceName}
-OUTCOME TYPE: ${outcomeType}
-OUTCOME STATEMENT: ${outcomeStatement}
+${LANGUAGE_SAFETY_RULES}
+
+PLAYBOOK-SPECIFIC RULES:
+- The ICP (ideal customer profile) must reflect the actual TARGET VERTICAL and TARGET PERSONA provided — do not substitute generic profiles
+- Buying triggers must reflect realistic events that would make a business seek this specific type of service
+- Objections must be real objections that buyers raise for this category of service — not generic "too expensive" responses
+- The talk track must open with the OUTCOME STATEMENT as the anchor — lead with the business result, not the technology
+- Email templates must be under 150 words each — business buyers do not read long emails
+- The cheat sheet one-liner must be derived from the OUTCOME STATEMENT — it should sound like something a rep would actually say in an elevator
+- stack_tools in the cheat_sheet must only list tool CATEGORIES (e.g. "Endpoint Detection", "SIEM") — never vendor names in customer-facing output
+
+Output valid JSON only. No markdown fences, no commentary.`;
+
+  let userPrompt = `Generate a complete sales playbook for the managed security service described below.
+
+IMPORTANT: Every claim you make must be traceable to the data below. If a section of data is empty, omit references to it rather than inventing content.
+
+---
+SERVICE NAME: ${serviceName}
+OUTCOME TYPE: ${outcomeType || "Not specified"}
+OUTCOME STATEMENT: ${outcomeStatement || "NOT PROVIDED — do not invent an outcome statement"}
 TARGET VERTICAL: ${targetVertical || "General"}
-TARGET PERSONA: ${targetPersona || "IT Decision Maker"}
-MSP NAME: ${body.org_name || ""}
+TARGET PERSONA: ${targetPersona || "IT Decision Maker / Business Owner"}
+MSP NAME: ${orgName || "This MSP"}
 MSP TARGET VERTICALS: ${verticalsList || "General"}
 
-CAPABILITIES:
-${capsList || "None specified"}
+CAPABILITIES DELIVERED BY THIS SERVICE:
+${capsList || "NOT PROVIDED — only reference capabilities if listed above"}
 
-TECHNOLOGY STACK (internal only — do not expose vendor names to prospects):
-${toolsList || "None specified"}
+TECHNOLOGY STACK (internal only — never expose vendor names in customer-facing content):
+${toolsList || "NOT PROVIDED — do not reference specific tools in customer-facing content"}
+---
 
-Return a JSON object with exactly these top-level keys in this order:
+${outcomeStatement
+    ? `The talk_track.opening_statement and cheat_sheet.one_liner must anchor to this outcome: "${outcomeStatement}"`
+    : "No outcome statement is provided. Keep content high-level and do not fabricate a specific outcome."}
+
+Return a JSON object with exactly these keys: icp, talk_track, objections (array of 4-6), emails (cold_outreach, follow_up, post_meeting), cheat_sheet.
 
 {
   "icp": {
@@ -128,10 +171,10 @@ Return a JSON object with exactly these top-level keys in this order:
     "qualification_questions": ["string array of 5-7 discovery questions"]
   },
   "talk_track": {
-    "opening_statement": "2-3 sentence opener that establishes credibility",
+    "opening_statement": "2-3 sentence opener anchored to the outcome statement",
     "problem_statement": "2-3 sentences describing the pain point",
     "solution_statement": "2-3 sentences positioning the service as the answer",
-    "proof_points": ["string array of 3-4 concrete proof points or statistics"],
+    "proof_points": ["string array of 3-4 concrete proof points grounded in the capabilities above"],
     "closing_question": "single question to advance the conversation"
   },
   "objections": [
@@ -143,21 +186,24 @@ Return a JSON object with exactly these top-level keys in this order:
     }
   ],
   "emails": {
-    "cold_outreach": { "subject": "string", "body": "string" },
-    "follow_up": { "subject": "string", "body": "string" },
-    "post_meeting": { "subject": "string", "body": "string" }
+    "cold_outreach": { "subject": "string", "body": "string — under 150 words" },
+    "follow_up": { "subject": "string", "body": "string — under 150 words" },
+    "post_meeting": { "subject": "string", "body": "string — under 150 words" }
   },
   "cheat_sheet": {
-    "one_liner": "single sentence elevator pitch",
+    "one_liner": "single sentence elevator pitch derived from the outcome statement",
     "top_verticals": ["3-4 best-fit verticals"],
-    "stack_tools": ["3-5 internal tool category names for quick reference"],
+    "stack_tools": ["3-5 tool CATEGORY names only, never vendor names"],
     "top_triggers": ["3-4 buying triggers"],
     "differentiators": ["3-4 key differentiators"],
     "price_anchor": "string describing how to position pricing"
   }
-}
+}`;
 
-Generate 4-6 objections. Emails should be professional, concise, and under 200 words each. All language must be vendor-agnostic in customer-facing sections.`;
+  // Append compliance guardrail if service is compliance-focused
+  if (isComplianceFocused(outcomeType, outcomeStatement)) {
+    userPrompt += COMPLIANCE_LANGUAGE_OVERRIDE;
+  }
 
   // ── 8. Stream from Anthropic ──────────────────────────────────────────
   try {

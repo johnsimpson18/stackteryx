@@ -3,7 +3,10 @@ import { getOrgSettings } from "@/lib/db/org-settings";
 import { getOnboardingProfile } from "@/lib/db/org-settings";
 import { getBundleById, getBundles } from "@/lib/db/bundles";
 import { getServiceOutcome } from "@/lib/db/service-outcomes";
-import { getVersionsByBundleId } from "@/lib/db/bundle-versions";
+import {
+  getVersionsByBundleId,
+  getToolsByVersionIds,
+} from "@/lib/db/bundle-versions";
 import { getClientById } from "@/lib/db/clients";
 import { getContractsByClientId } from "@/lib/db/client-contracts";
 import { getClients } from "@/lib/db/clients";
@@ -112,6 +115,12 @@ export async function buildAIContext(params: {
     ]);
 
     if (bundle) {
+      const top3 = versions.slice(0, 3);
+      const toolsMap =
+        top3.length > 0
+          ? await getToolsByVersionIds(top3.map((v) => v.id))
+          : new Map();
+
       context.service_context = {
         bundle_id: bundle.id,
         bundle_name: bundle.name,
@@ -121,12 +130,13 @@ export async function buildAIContext(params: {
         target_vertical: outcome?.target_vertical,
         target_persona: outcome?.target_persona,
         service_capabilities: outcome?.service_capabilities,
-        versions: versions.slice(0, 3).map((v) => ({
+        versions: top3.map((v) => ({
           version_number: v.version_number,
           seat_count: v.seat_count,
           computed_suggested_price: v.computed_suggested_price,
           computed_true_cost_per_seat: v.computed_true_cost_per_seat,
           computed_margin_post_discount: v.computed_margin_post_discount,
+          tools: toolsMap.get(v.id) ?? [],
         })),
       };
     }

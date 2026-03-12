@@ -40,9 +40,11 @@ export async function callAI<T>(params: {
   requiredFields: string[];
   temperature?: number;
   maxTokens?: number;
+  systemPrompt?: string;
 }): Promise<T> {
   const client = getAnthropicClient();
-  const { userPrompt, requiredFields, temperature = 0.4, maxTokens = 4096 } = params;
+  const { userPrompt, requiredFields, temperature = 0.4, maxTokens = 4096, systemPrompt } = params;
+  const activeSystemPrompt = systemPrompt ?? SYSTEM_PROMPT;
 
   const messages: Array<{ role: "user" | "assistant"; content: string }> = [
     { role: "user", content: userPrompt },
@@ -53,7 +55,7 @@ export async function callAI<T>(params: {
     model: "claude-sonnet-4-20250514",
     max_tokens: maxTokens,
     temperature,
-    system: SYSTEM_PROMPT,
+    system: activeSystemPrompt,
     messages,
   });
 
@@ -80,7 +82,7 @@ export async function callAI<T>(params: {
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
       temperature,
-      system: SYSTEM_PROMPT,
+      system: activeSystemPrompt,
       messages,
     });
 

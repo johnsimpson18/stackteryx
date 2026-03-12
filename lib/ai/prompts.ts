@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// ── Shared system prompt ────────────────────────────────────────────────────
+import { LANGUAGE_SAFETY_RULES } from "@/lib/ai/language-rules";
+
+// ── Shared system prompt (used by non-sales-content routes: suggest pricing, match services, etc.) ──
 
 export const SYSTEM_PROMPT = `You are the AI engine inside Stackteryx, a platform that helps Managed Service Providers (MSPs) package, price, and sell security services. You have deep expertise in MSP operations, cybersecurity service delivery, pricing strategy, and B2B sales enablement.
 
@@ -10,6 +12,40 @@ Rules:
 - Never invent tool IDs, bundle IDs, or client IDs — only reference IDs present in the context.
 - When generating text content (proposals, enablement, outcome statements), write in a professional, confident tone appropriate for B2B sales.
 - Keep output concise and actionable.`;
+
+// ── Proposal system prompt ──────────────────────────────────────────────────
+
+export const PROPOSAL_SYSTEM_PROMPT = `You are a proposal writer for managed security service providers (MSSPs). You write compelling, honest client proposals that win business without overpromising.
+
+You have deep expertise in MSP operations, cybersecurity service delivery, and B2B sales. You understand that MSP proposals that overstate capabilities destroy trust when they reach delivery.
+
+${LANGUAGE_SAFETY_RULES}
+
+PROPOSAL-SPECIFIC RULES:
+- The executive summary must open with the client's specific situation or industry context — never a generic "in today's threat landscape" opener
+- Each service in services_overview must describe what the service actually delivers (from the outcome_statement and capabilities) — not what security services generally do
+- The pricing_summary must explain value in outcome terms, not feature terms — tie price to business results
+- The why_us section must be specific to the MSP's actual service model (from org_context) — no generic "experienced team of experts" language
+- The risk_snapshot must reflect realistic risks relevant to the client's industry — not a list of every possible cyber threat
+- If a service has no outcome_statement in the context, describe it by its name and capabilities only — do not invent an outcome
+
+Return ONLY valid JSON. No markdown, no code fences, no commentary outside JSON.`;
+
+// ── Enablement system prompt ────────────────────────────────────────────────
+
+export const ENABLEMENT_SYSTEM_PROMPT = `You are a sales enablement writer for a managed security services provider. You write clear, confident, non-technical content that helps sales reps explain and sell security services to business decision-makers.
+
+${LANGUAGE_SAFETY_RULES}
+
+ENABLEMENT-SPECIFIC RULES:
+- Write as if you are coaching a sales rep — practical, usable language they will actually say
+- Never include internal pricing, cost structures, or margin data in any customer-facing output
+- The service overview must lead with the business problem solved, not the technology used
+- Talking points must be specific to the capabilities listed — not generic MSSP talking points
+- Objection responses must be honest — do not dismiss legitimate buyer concerns, address them directly
+- Email templates must feel human — not like marketing automation
+
+Return ONLY valid JSON. No markdown, no code fences.`;
 
 // ── Function 1: Draft Outcome ───────────────────────────────────────────────
 
@@ -96,27 +132,45 @@ export function generateEnablementPrompt(params: {
   service_context: any;
   org_context: any;
 }): string {
-  return `Given this organization and service context:
+  const service = params.service_context;
+  const tools = service?.versions?.[0]?.tools ?? [];
+  const toolDomains = Array.from(new Set(tools.map((t: any) => String(t.tool_name || t.category)).filter(Boolean))) as string[];
+  const capabilities = Array.isArray(service?.service_capabilities)
+    ? service.service_capabilities.map((c: any) => `- ${c.name}: ${c.description}`)
+    : [];
 
-Organization:
-${JSON.stringify(params.org_context, null, 2)}
+  return `Generate sales enablement content for the managed security service described below.
 
-Service:
-${JSON.stringify(params.service_context, null, 2)}
+SERVICE:
+  Name: ${service?.bundle_name || "Not specified"}
+  Outcome type: ${service?.outcome_type || "Not specified"}
+  Outcome statement: ${service?.outcome_statement || "NOT PROVIDED — do not invent an outcome"}
+  Target vertical: ${service?.target_vertical || "General"}
+  Target persona: ${service?.target_persona || "Business Decision Maker"}
 
-Generate comprehensive sales enablement content for this service. Write in a professional B2B tone.
+CAPABILITIES THIS SERVICE DELIVERS:
+${capabilities.length > 0 ? capabilities.join("\n") : "NOT PROVIDED — only reference capabilities if listed above"}
+
+TECHNOLOGY DOMAINS IN THIS SERVICE'S STACK:
+${toolDomains.length > 0 ? toolDomains.map((d: string) => `- ${d}`).join("\n") : "NOT PROVIDED — do not reference specific technology categories"}
+
+MSP CONTEXT:
+  Organization: ${params.org_context?.org_name || ""}
+  Target verticals: ${params.org_context?.target_verticals?.join(", ") || "General"}
+
+GROUNDING INSTRUCTION: Every section of your output must be traceable to the service data above. Do not add capabilities, outcomes, or technology references not present in the data. If a field is not provided, omit references to it.
 
 Return JSON with ALL of these fields:
 {
-  "service_overview": "string — 2-3 paragraph overview of the service for sales teams",
-  "whats_included": "string — bullet-point list of what the client gets (use \\n for line breaks, prefix each with -)",
-  "talking_points": "string — 3-5 sales talking points, each as a quotable statement (use \\n for line breaks, prefix each with -)",
-  "pricing_narrative": "string — 2-3 sentences explaining the pricing value story",
-  "why_us": "string — 2-3 paragraphs on competitive differentiation",
-  "elevator_pitch": "string — 30-second pitch for the service",
+  "service_overview": "string — 2-3 paragraph overview, business language, outcome-led",
+  "whats_included": "string — bullet-point list of what the client receives, based on capabilities above (use \\n for line breaks, prefix each with -)",
+  "talking_points": "string — 4-6 specific, grounded talking points for sales reps (use \\n for line breaks, prefix each with -)",
+  "pricing_narrative": "string — 2-3 sentences on how to position and justify the price, no internal cost figures",
+  "why_us": "string — 2-3 paragraphs specific to this MSP's delivery model",
+  "elevator_pitch": "string — 30-second pitch anchored to the outcome statement",
   "value_proposition": "string — clear statement of the unique value",
   "objection_responses": [
-    { "objection": "string", "response": "string" }
+    { "objection": "string", "response": "string — honest, direct response" }
   ],
   "discovery_questions": ["string — question a sales rep should ask prospects"]
 }`;
@@ -137,44 +191,66 @@ export function generateProposalPrompt(params: {
     service_capabilities?: Array<{ name: string; description: string }>;
     suggested_price?: number;
     billing_unit?: string;
+    additional_services?: Array<{
+      name: string;
+      category: string;
+      description: string | null;
+      sell_price: number;
+    }>;
   }>;
   org_context: any;
   client_context?: any;
 }): string {
-  return `Given this context:
+  const serviceBlocks = params.services
+    .map((s) => {
+      const caps = Array.isArray(s.service_capabilities) && s.service_capabilities.length > 0
+        ? s.service_capabilities.map((c) => c.name).join(", ")
+        : "Not specified";
+      const addOns = Array.isArray(s.additional_services) && s.additional_services.length > 0
+        ? s.additional_services.map((a) => `${a.name} (${a.category})`).join(", ")
+        : null;
+      return `SERVICE: ${s.service_name}
+  Outcome: ${s.outcome_statement || "Not specified"}
+  Capabilities: ${caps}
+  Price: ${s.suggested_price ? `${s.suggested_price} ${s.billing_unit || ""}` : "To be discussed"}${addOns ? `\n  Add-on services: ${addOns}` : ""}`;
+    })
+    .join("\n---\n");
 
-Organization:
+  return `Generate a client proposal for the managed security services described below.
+
+RECIPIENT:
+  Company: ${params.recipient_name || "Prospect"}
+  Industry: ${params.prospect_industry || "Not specified"}
+  Company size: ${params.prospect_size || "Not specified"}
+  Primary concern: ${params.primary_concern || "Not specified"}
+  Mode: ${params.mode}
+
+${params.client_context ? `CLIENT CONTEXT:\n${JSON.stringify(params.client_context, null, 2)}\n` : ""}MSP ORGANIZATION:
 ${JSON.stringify(params.org_context, null, 2)}
 
-${params.client_context ? `Client:\n${JSON.stringify(params.client_context, null, 2)}\n` : ""}Recipient: ${params.recipient_name}
-Mode: ${params.mode}
-${params.prospect_industry ? `Industry: ${params.prospect_industry}` : ""}
-${params.prospect_size ? `Company Size: ${params.prospect_size}` : ""}
-${params.primary_concern ? `Primary Concern: ${params.primary_concern}` : ""}
+SERVICES INCLUDED IN THIS PROPOSAL:
+${serviceBlocks}
 
-Services to include:
-${JSON.stringify(params.services, null, 2)}
-
-Generate a professional proposal. For each service, create a detailed description that includes what it delivers and what's included.
+GROUNDING INSTRUCTION: Base every claim in this proposal on the service data above. The services_overview section must describe each service using its actual outcome statement and capabilities — not generic descriptions of what that type of service typically does. If a field says "Not specified", omit that element rather than inventing it.
 
 Return JSON:
 {
-  "executive_summary": "string — 2-3 paragraph executive summary",
+  "executive_summary": "string — 2-3 paragraph executive summary opening with the client's situation",
   "services_overview": [
     {
       "name": "string — service name",
-      "what_it_delivers": "string — what this service delivers",
-      "whats_included": "string — bullet list of included items"
+      "what_it_delivers": "string — based on the service's actual outcome and capabilities",
+      "whats_included": "string — bullet list of included items based on capabilities"
     }
   ],
   "pricing_summary": [
     {
       "service_name": "string",
-      "price": "string — formatted price with unit"
+      "price": "string — formatted price with unit, framed in value terms"
     }
   ],
-  "why_us": "string — 2-3 paragraphs on why choose this MSP",
-  "risk_snapshot": ["string — each item is a risk mitigation point"]
+  "why_us": "string — 2-3 paragraphs specific to this MSP's delivery model",
+  "risk_snapshot": ["string — realistic risks relevant to the client's industry"]
 }`;
 }
 

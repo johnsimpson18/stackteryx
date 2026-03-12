@@ -2,9 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { buildAIContext } from "@/lib/ai/context";
 import { callAI } from "@/lib/ai/validate";
-import { generateProposalPrompt } from "@/lib/ai/prompts";
+import { generateProposalPrompt, PROPOSAL_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import { getPlaybookByBundleId } from "@/lib/db/enablement";
 import { getAdditionalServicesByVersionId } from "@/lib/db/additional-services";
+import { getBundleById } from "@/lib/db/bundles";
+import { getServiceOutcome } from "@/lib/db/service-outcomes";
+import { validateProposalContext } from "@/lib/ai/validate-context";
+import {
+  COMPLIANCE_LANGUAGE_OVERRIDE,
+  isComplianceFocused,
+} from "@/lib/ai/language-rules";
 
 export const maxDuration = 60;
 
@@ -105,20 +112,77 @@ export async function POST(request: Request) {
     body.mode === "client" ? "your client" : body.prospect_name || "the prospect";
 
   try {
+    // Server-side verification: fetch real service data instead of trusting client
+    const uniqueBundleIds = [
+      ...new Set(body.services.map((s) => s.bundle_id)),
+    ];
+
+    const [bundleResults, outcomeResults] = await Promise.all([
+      Promise.all(uniqueBundleIds.map((id) => getBundleById(id))),
+      Promise.all(uniqueBundleIds.map((id) => getServiceOutcome(id))),
+    ]);
+
+    const bundleMap = new Map(
+      bundleResults
+        .filter((b): b is NonNullable<typeof b> => b !== null)
+        .map((b) => [b.id, b])
+    );
+    const outcomeMap = new Map(
+      outcomeResults
+        .filter((o): o is NonNullable<typeof o> => o !== null)
+        .map((o) => [o.bundle_id, o])
+    );
+
+    // Verify all bundles belong to this org
+    for (const bundleId of uniqueBundleIds) {
+      const bundle = bundleMap.get(bundleId);
+      if (!bundle || bundle.org_id !== orgId) {
+        return Response.json(
+          { error: "Service not found or unauthorized" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Enrich services with server-fetched data
+    const verifiedServices = body.services.map((s) => {
+      const bundle = bundleMap.get(s.bundle_id);
+      const outcome = outcomeMap.get(s.bundle_id);
+      return {
+        ...s,
+        service_name: bundle?.name ?? s.service_name,
+        outcome_type: outcome?.outcome_type ?? undefined,
+        outcome_statement: outcome?.outcome_statement ?? undefined,
+        service_capabilities: outcome?.service_capabilities ?? undefined,
+      };
+    });
+
     const context = await buildAIContext({
       orgId,
       clientId: body.client_id,
     });
+
+    // Validation gate
+    const validation = validateProposalContext(
+      context,
+      verifiedServices.length
+    );
+    if (!validation.valid) {
+      return Response.json(
+        { error: "Insufficient context", missing: validation.missing },
+        { status: 422 }
+      );
+    }
 
     // ── Fetch additional services + playbook context ──────────────────
     const playbookContextParts: string[] = [];
 
     const [playbookResults, addSvcResults] = await Promise.all([
       Promise.allSettled(
-        body.services.map((s) => getPlaybookByBundleId(orgId, s.bundle_id))
+        verifiedServices.map((s) => getPlaybookByBundleId(orgId, s.bundle_id))
       ),
       Promise.allSettled(
-        body.services.map((s) =>
+        verifiedServices.map((s) =>
           s.pricing_version_id
             ? getAdditionalServicesByVersionId(s.pricing_version_id)
             : Promise.resolve([])
@@ -126,14 +190,14 @@ export async function POST(request: Request) {
       ),
     ]);
 
-    for (let i = 0; i < body.services.length; i++) {
+    for (let i = 0; i < verifiedServices.length; i++) {
       const result = playbookResults[i];
       if (
         result.status === "fulfilled" &&
         result.value?.playbook_content
       ) {
         const extracted = extractPlaybookContext(
-          body.services[i].service_name,
+          verifiedServices[i].service_name,
           result.value.playbook_content
         );
         if (extracted) {
@@ -149,7 +213,7 @@ export async function POST(request: Request) {
       prospect_industry: body.prospect_industry,
       prospect_size: body.prospect_size,
       primary_concern: body.primary_concern,
-      services: body.services.map((s, i) => {
+      services: verifiedServices.map((s, i) => {
         const addSvcResult = addSvcResults[i];
         const addSvcs =
           addSvcResult.status === "fulfilled" && addSvcResult.value.length > 0
@@ -189,6 +253,14 @@ Apply this intelligence as follows:
 - Use objections to inform the Risk Snapshot — address the most relevant ones preemptively`;
     }
 
+    // ── Append compliance guardrail if any service is compliance-focused ──
+    const hasComplianceService = verifiedServices.some((s) =>
+      isComplianceFocused(s.outcome_type, s.outcome_statement)
+    );
+    if (hasComplianceService) {
+      userPrompt += COMPLIANCE_LANGUAGE_OVERRIDE;
+    }
+
     const aiResult = await callAI<{
       executive_summary: string;
       services_overview: Array<{
@@ -212,6 +284,7 @@ Apply this intelligence as follows:
         "risk_snapshot",
       ],
       temperature: 0.7,
+      systemPrompt: PROPOSAL_SYSTEM_PROMPT,
     });
 
     // Transform structured AI output into flat ProposalContent shape
