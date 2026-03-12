@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 030: Additional Services
+-- Migration 031: Additional Services
 -- Consulting, retainers, and professional services that exist
 -- independently AND compose into service packages.
 -- ============================================================
@@ -63,11 +63,13 @@ CREATE TABLE IF NOT EXISTS bundle_version_additional_services (
 ALTER TABLE additional_services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bundle_version_additional_services ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "org_isolation" ON additional_services;
 CREATE POLICY "org_isolation" ON additional_services
   USING (org_id = (SELECT active_org_id FROM profiles WHERE id = auth.uid()));
+DROP POLICY IF EXISTS "org_isolation" ON bundle_version_additional_services;
 CREATE POLICY "org_isolation" ON bundle_version_additional_services
   USING (org_id = (SELECT active_org_id FROM profiles WHERE id = auth.uid()));
 
-CREATE INDEX idx_additional_services_org_id ON additional_services(org_id);
-CREATE INDEX idx_additional_services_category ON additional_services(org_id, category);
-CREATE INDEX idx_bvas_bundle_version_id ON bundle_version_additional_services(bundle_version_id);
+CREATE INDEX IF NOT EXISTS idx_additional_services_org_id ON additional_services(org_id);
+CREATE INDEX IF NOT EXISTS idx_additional_services_category ON additional_services(org_id, category);
+CREATE INDEX IF NOT EXISTS idx_bvas_bundle_version_id ON bundle_version_additional_services(bundle_version_id);

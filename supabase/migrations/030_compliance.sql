@@ -31,47 +31,55 @@ CREATE TABLE IF NOT EXISTS client_compliance_scores (
 ALTER TABLE org_compliance_targets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE client_compliance_scores ENABLE ROW LEVEL SECURITY;
 
--- RLS via org_members
+-- RLS via org_members (idempotent: drop then create)
+DROP POLICY IF EXISTS "oct_org_read" ON org_compliance_targets;
 CREATE POLICY "oct_org_read" ON org_compliance_targets
   FOR SELECT USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "oct_org_insert" ON org_compliance_targets;
 CREATE POLICY "oct_org_insert" ON org_compliance_targets
   FOR INSERT WITH CHECK (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "oct_org_update" ON org_compliance_targets;
 CREATE POLICY "oct_org_update" ON org_compliance_targets
   FOR UPDATE USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "oct_org_delete" ON org_compliance_targets;
 CREATE POLICY "oct_org_delete" ON org_compliance_targets
   FOR DELETE USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ccs_org_read" ON client_compliance_scores;
 CREATE POLICY "ccs_org_read" ON client_compliance_scores
   FOR SELECT USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ccs_org_insert" ON client_compliance_scores;
 CREATE POLICY "ccs_org_insert" ON client_compliance_scores
   FOR INSERT WITH CHECK (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ccs_org_update" ON client_compliance_scores;
 CREATE POLICY "ccs_org_update" ON client_compliance_scores
   FOR UPDATE USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "ccs_org_delete" ON client_compliance_scores;
 CREATE POLICY "ccs_org_delete" ON client_compliance_scores
   FOR DELETE USING (
     org_id IN (SELECT om.org_id FROM org_members om WHERE om.user_id = auth.uid())
   );
 
-CREATE INDEX idx_client_compliance_scores_client_id ON client_compliance_scores(client_id);
-CREATE INDEX idx_client_compliance_scores_org_id ON client_compliance_scores(org_id);
-CREATE INDEX idx_org_compliance_targets_org_id ON org_compliance_targets(org_id);
+CREATE INDEX IF NOT EXISTS idx_client_compliance_scores_client_id ON client_compliance_scores(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_compliance_scores_org_id ON client_compliance_scores(org_id);
+CREATE INDEX IF NOT EXISTS idx_org_compliance_targets_org_id ON org_compliance_targets(org_id);
