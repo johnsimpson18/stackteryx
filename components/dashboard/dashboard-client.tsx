@@ -376,7 +376,7 @@ function GettingStartedChecklist({ steps }: { steps: ChecklistSteps }) {
   const items = [
     { label: "Add your first vendor", complete: steps.hasVendors, href: "/vendors" },
     { label: "Build your first service", complete: steps.hasServices, href: "/services/new" },
-    { label: "Generate your first proposal", complete: steps.hasProposals, href: "/bundles" },
+    { label: "Generate your first proposal", complete: steps.hasProposals, href: "/services" },
     { label: "Add your first client", complete: steps.hasClients, href: "/clients" },
   ];
   const completedCount = items.filter((s) => s.complete).length;

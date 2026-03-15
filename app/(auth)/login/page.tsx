@@ -11,7 +11,7 @@ import {
   resendConfirmation,
 } from "@/actions/auth";
 import { toast } from "sonner";
-import { Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft, Brain } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
    STACKTERYX LANDING PAGE
@@ -989,6 +989,25 @@ export default function LoginPage() {
 
         <div className="flex items-center gap-3">
           <a
+            href="/fractional-cto"
+            className="h-8 px-4 flex items-center gap-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
+            style={{
+              color: "#A8FF3E",
+              border: "1px solid #A8FF3E40",
+              fontFamily: "var(--font-display)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#A8FF3E";
+              e.currentTarget.style.background = "#A8FF3E10";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#A8FF3E40";
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            Free CTO Brief
+          </a>
+          <a
             href="#login"
             onClick={scrollToLogin}
             className="h-8 px-4 flex items-center rounded text-xs font-bold uppercase tracking-wider transition-all"
@@ -1121,6 +1140,55 @@ export default function LoginPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Free CTO Brief CTA */}
+              <a
+                href="/fractional-cto"
+                className="landing-fade-in block max-w-lg rounded-lg p-4 transition-all group"
+                style={{
+                  animationDelay: "650ms",
+                  background: "#A8FF3E08",
+                  border: "1px solid #A8FF3E20",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#A8FF3E50";
+                  e.currentTarget.style.background = "#A8FF3E12";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#A8FF3E20";
+                  e.currentTarget.style.background = "#A8FF3E08";
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center mt-0.5"
+                    style={{ background: "#A8FF3E15" }}
+                  >
+                    <Brain className="h-4 w-4" style={{ color: "#A8FF3E" }} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                    >
+                      Generate a free Technology Strategy Brief for your clients
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+                    >
+                      A client-ready executive advisory report — powered by AI, ready in seconds. No login required.
+                    </p>
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider"
+                      style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
+                    >
+                      Try the Free CTO Brief
+                      <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
+                </div>
+              </a>
             </div>
 
             {/* Right — Login Card */}

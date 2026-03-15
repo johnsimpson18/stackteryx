@@ -20,6 +20,21 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/bundles/:id/edit",
+        destination: "/services/:id/edit",
+        permanent: true,
+      },
+      {
+        source: "/bundles/:id/versions/new",
+        destination: "/services/:id/versions/new",
+        permanent: true,
+      },
+      {
+        source: "/bundles/:id/versions/:versionId",
+        destination: "/services/:id/versions/:versionId",
+        permanent: true,
+      },
+      {
         source: "/recommend",
         destination: "/sales-studio",
         permanent: true,

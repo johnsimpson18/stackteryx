@@ -20,14 +20,12 @@ import {
   saveServiceStepAction,
   saveStackStepAction,
   saveEconomicsStepAction,
-  saveEnablementStepAction,
   launchServiceAction,
 } from "@/actions/service-wizard";
 import { StepOutcome } from "./step-outcome";
 import { StepService } from "./step-service";
 import { StepStack } from "./step-stack";
 import { StepEconomics } from "./step-economics";
-import { StepEnablement } from "./step-enablement";
 import { StepReview } from "./step-review";
 import { StepLaunch } from "./step-launch";
 import type {
@@ -36,7 +34,6 @@ import type {
   RiskTier,
   ServiceOutcome,
   BundleVersion,
-  BundleEnablement,
   AdditionalService,
 } from "@/lib/types";
 
@@ -64,15 +61,11 @@ export interface WizardFormData {
   labor_pct: number;
   discount_pct: number;
   selectedAdditionalServiceIds: Set<string>;
+  additionalServiceOverrides: Record<string, { cost?: number; sell_price?: number }>;
+  toolCostOverrides: Record<string, number>;
   sell_strategy: "cost_plus_margin" | "monthly_flat_rate" | "per_endpoint_monthly" | "per_user_monthly";
   sell_config: Record<string, unknown>;
   assumptions: Record<string, unknown>;
-  // Step 5: Enablement
-  service_overview: string;
-  whats_included: string;
-  talking_points: string;
-  pricing_narrative: string;
-  why_us: string;
   // Tracked IDs
   bundleId: string | null;
   versionId: string | null;
@@ -96,26 +89,22 @@ const DEFAULTS: WizardFormData = {
   labor_pct: 0.15,
   discount_pct: 0,
   selectedAdditionalServiceIds: new Set(),
+  additionalServiceOverrides: {},
+  toolCostOverrides: {},
   sell_strategy: "cost_plus_margin",
   sell_config: {},
   assumptions: {},
-  service_overview: "",
-  whats_included: "",
-  talking_points: "",
-  pricing_narrative: "",
-  why_us: "",
   bundleId: null,
   versionId: null,
 };
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const STEP_LABELS = [
   "Outcome",
   "Service",
   "Stack",
   "Economics",
-  "Enablement",
   "Review",
   "Launch",
 ];
@@ -129,6 +118,8 @@ interface ServiceWizardShellProps {
     target_margin_pct: number;
     overhead_pct: number;
     labor_pct: number;
+    red_zone_margin_pct: number;
+    max_discount_no_approval_pct: number;
   };
   initialData?: {
     bundleId: string;
@@ -136,7 +127,6 @@ interface ServiceWizardShellProps {
     outcome: ServiceOutcome | null;
     version: BundleVersion | null;
     versionToolIds: string[];
-    enablement: BundleEnablement | null;
     bundleType: BundleType;
   };
 }
@@ -192,12 +182,10 @@ export function ServiceWizardShell({
         d.versionId = initialData.version.id;
       }
 
-      if (initialData.enablement) {
-        d.service_overview = initialData.enablement.service_overview ?? "";
-        d.whats_included = initialData.enablement.whats_included ?? "";
-        d.talking_points = initialData.enablement.talking_points ?? "";
-        d.pricing_narrative = initialData.enablement.pricing_narrative ?? "";
-        d.why_us = initialData.enablement.why_us ?? "";
+      // Restore sell_strategy/sell_config on resume (Bug 4 fix)
+      if (initialData.version?.sell_strategy) {
+        d.sell_strategy = initialData.version.sell_strategy as WizardFormData["sell_strategy"];
+        d.sell_config = (initialData.version.sell_config as unknown as Record<string, unknown>) ?? {};
       }
     }
 
@@ -221,10 +209,8 @@ export function ServiceWizardShell({
       case 4:
         return form.seat_count > 0 && form.selectedToolIds.size > 0;
       case 5:
-        return true; // enablement fields are optional
-      case 6:
         return true; // review is read-only
-      case 7:
+      case 6:
         return true;
       default:
         return true;
@@ -308,9 +294,11 @@ export function ServiceWizardShell({
               discount_pct: form.discount_pct,
               tools: toolsArr,
               additional_service_ids: Array.from(form.selectedAdditionalServiceIds),
+              additional_service_overrides: form.additionalServiceOverrides,
               sell_strategy: form.sell_strategy,
               sell_config: form.sell_config,
               assumptions: form.assumptions,
+              tool_cost_overrides: form.toolCostOverrides,
             });
             if (!result.success) {
               toast.error(result.error);
@@ -320,24 +308,8 @@ export function ServiceWizardShell({
             break;
           }
 
-          case 5: {
-            if (!form.bundleId || !form.versionId) return;
-            const result = await saveEnablementStepAction(form.bundleId, form.versionId, {
-              service_overview: form.service_overview,
-              whats_included: form.whats_included,
-              talking_points: form.talking_points,
-              pricing_narrative: form.pricing_narrative,
-              why_us: form.why_us,
-            });
-            if (!result.success) {
-              toast.error(result.error);
-              return;
-            }
-            break;
-          }
-
-          // Step 6 (Review) — no save, just advance
-          case 6:
+          // Step 5 (Review) — no save, just advance
+          case 5:
             break;
         }
       } catch {
@@ -492,6 +464,9 @@ export function ServiceWizardShell({
               overheadPct={form.overhead_pct}
               laborPct={form.labor_pct}
               discountPct={form.discount_pct}
+              redZoneMarginPct={pricingDefaults.red_zone_margin_pct}
+              maxDiscountNoApprovalPct={pricingDefaults.max_discount_no_approval_pct}
+              toolQuantities={form.toolQuantities}
               onSeatCountChange={(v) => update("seat_count", v)}
               onRiskTierChange={(v) => update("risk_tier", v)}
               onContractTermChange={(v) => update("contract_term_months", v)}
@@ -499,43 +474,31 @@ export function ServiceWizardShell({
               onOverheadChange={(v) => update("overhead_pct", v)}
               onLaborChange={(v) => update("labor_pct", v)}
               onDiscountChange={(v) => update("discount_pct", v)}
-              onToggleAdditionalService={(id) => {
-                setForm((prev) => {
-                  const next = new Set(prev.selectedAdditionalServiceIds);
-                  if (next.has(id)) next.delete(id);
-                  else next.add(id);
-                  return { ...prev, selectedAdditionalServiceIds: next };
-                });
+              additionalServiceOverrides={form.additionalServiceOverrides}
+              onAdditionalServicesChange={(ids) => {
+                setForm((prev) => ({ ...prev, selectedAdditionalServiceIds: ids }));
+              }}
+              onAdditionalServiceOverridesChange={(overrides) => {
+                setForm((prev) => ({ ...prev, additionalServiceOverrides: overrides }));
               }}
               sellStrategy={form.sell_strategy}
               sellConfig={form.sell_config}
               onSellStrategyChange={(v) => update("sell_strategy", v)}
               onSellConfigChange={(v) => update("sell_config", v)}
+              toolCostOverrides={form.toolCostOverrides}
+              onToolCostOverridesChange={(overrides) => update("toolCostOverrides", overrides)}
             />
           )}
           {step === 5 && (
-            <StepEnablement
-              bundleId={form.bundleId}
-              serviceOverview={form.service_overview}
-              whatsIncluded={form.whats_included}
-              talkingPoints={form.talking_points}
-              pricingNarrative={form.pricing_narrative}
-              whyUs={form.why_us}
-              onServiceOverviewChange={(v) => update("service_overview", v)}
-              onWhatsIncludedChange={(v) => update("whats_included", v)}
-              onTalkingPointsChange={(v) => update("talking_points", v)}
-              onPricingNarrativeChange={(v) => update("pricing_narrative", v)}
-              onWhyUsChange={(v) => update("why_us", v)}
-            />
-          )}
-          {step === 6 && (
             <StepReview
               form={form}
               tools={tools}
+              additionalServices={additionalServices}
+              launched={launched}
               onEditStep={handleJumpToStep}
             />
           )}
-          {step === 7 && (
+          {step === 6 && (
             <StepLaunch
               launched={launched}
               isPending={isPending}
@@ -550,7 +513,7 @@ export function ServiceWizardShell({
       </main>
 
       {/* ── Bottom bar ────────────────────────────────────────────────────── */}
-      {step < 7 && (
+      {step < 6 && (
         <footer className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-between px-6 bg-background border-t border-border">
           {step > 1 ? (
             <button
@@ -582,7 +545,7 @@ export function ServiceWizardShell({
               </>
             ) : (
               <>
-                {step === 6 ? "Continue to Launch" : "Continue"}
+                {step === 5 ? "Continue to Launch" : "Continue"}
                 <ChevronRight className="h-4 w-4" />
               </>
             )}

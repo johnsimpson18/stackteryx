@@ -411,7 +411,19 @@ export function CompliancePortfolio({
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        {clientScore && (
+                        {clientScore && clientScore.score_pct < 50 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="h-7 px-2 text-xs"
+                          >
+                            <Link href={`/clients/${client.id}`}>
+                              Fix Gaps →
+                            </Link>
+                          </Button>
+                        )}
+                        {clientScore && clientScore.score_pct >= 50 && (
                           <Button
                             variant="ghost"
                             size="sm"

@@ -7,6 +7,7 @@ import { getOrgById } from "@/lib/db/orgs";
 import { getOnboardingTools } from "@/lib/db/onboarding-tools";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 
 export default async function AppLayout({
@@ -79,10 +80,11 @@ export default async function AppLayout({
           activeOrgId={orgId ?? undefined}
           userOrgs={userOrgs}
         />
-        <main className="flex-1 overflow-y-auto app-grid-bg p-6">
+        <main className="flex-1 overflow-y-auto app-grid-bg p-6 pb-20 md:pb-6">
           {children}
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 

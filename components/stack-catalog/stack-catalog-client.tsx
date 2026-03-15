@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ToolForm } from "@/components/tools/tool-form";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -12,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RoleGate } from "@/components/shared/role-gate";
 import {
@@ -72,12 +79,16 @@ export function StackCatalogClient({
   gaps,
   userRole,
 }: StackCatalogClientProps) {
+  const router = useRouter();
   const [view, setView] = useState<"category" | "list">("category");
   const [search, setSearch] = useState("");
   const [showGaps, setShowGaps] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [editingTool, setEditingTool] = useState<ToolWithAssignments | null>(null);
   const [, startTransition] = useTransition();
+
+  const handleEditTool = (tool: ToolWithAssignments) => setEditingTool(tool);
 
   const existingToolNames = useMemo(
     () => new Set(tools.map((t) => t.name.toLowerCase())),
@@ -116,32 +127,27 @@ export function StackCatalogClient({
 
   return (
     <div className="space-y-6">
-      {/* ── Page Header ── */}
-      <PageHeader
-        title="Stack Catalog"
-        description="Portfolio coverage of your security tool stack"
-      >
-        <RoleGate role={userRole} permission="create_tools">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/tools/upload">
-                <Upload className="h-4 w-4 mr-2" />
-                Import from Spreadsheet
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={() => setLibraryOpen(true)}>
-              <Library className="h-4 w-4 mr-2" />
-              Add from Library
-            </Button>
-            <Button asChild>
-              <Link href="/tools/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Tool Manually
-              </Link>
-            </Button>
-          </div>
-        </RoleGate>
-      </PageHeader>
+      {/* ── Actions ── */}
+      <RoleGate role={userRole} permission="create_tools">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/tools/upload">
+              <Upload className="h-4 w-4 mr-2" />
+              Import from Spreadsheet
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => setLibraryOpen(true)}>
+            <Library className="h-4 w-4 mr-2" />
+            Add from Library
+          </Button>
+          <Button asChild>
+            <Link href="/tools/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Tool Manually
+            </Link>
+          </Button>
+        </div>
+      </RoleGate>
 
       {/* ── Coverage Score ── */}
       <CoverageScoreCard
@@ -223,6 +229,7 @@ export function StackCatalogClient({
           redundantToolIds={redundantToolIds}
           userRole={userRole}
           onDeactivate={handleDeactivate}
+          onEdit={handleEditTool}
         />
       ) : (
         <ListView
@@ -232,6 +239,7 @@ export function StackCatalogClient({
           redundantToolIds={redundantToolIds}
           userRole={userRole}
           onDeactivate={handleDeactivate}
+          onEdit={handleEditTool}
         />
       )}
 
@@ -241,6 +249,24 @@ export function StackCatalogClient({
         onOpenChange={setLibraryOpen}
         existingToolNames={existingToolNames}
       />
+
+      {/* Tool Edit Sheet */}
+      <Sheet open={!!editingTool} onOpenChange={(open) => !open && setEditingTool(null)}>
+        <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Tool</SheetTitle>
+          </SheetHeader>
+          {editingTool && (
+            <ToolForm
+              tool={editingTool}
+              onSuccess={() => {
+                setEditingTool(null);
+                router.refresh();
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -433,6 +459,7 @@ function CategoryView({
   redundantToolIds,
   userRole,
   onDeactivate,
+  onEdit,
 }: {
   coverage: DomainCoverage[];
   search: string;
@@ -441,6 +468,7 @@ function CategoryView({
   redundantToolIds: Set<string>;
   userRole: UserRole;
   onDeactivate: (id: string, name: string) => void;
+  onEdit: (tool: ToolWithAssignments) => void;
 }) {
   // Categorized tools = tools with matching categories.
   // "Other" / uncategorized tools go into a virtual "Other" domain.
@@ -468,6 +496,7 @@ function CategoryView({
             redundantToolIds={redundantToolIds}
             userRole={userRole}
             onDeactivate={onDeactivate}
+            onEdit={onEdit}
           />
         );
       })}
@@ -484,6 +513,7 @@ function CategoryView({
             redundantToolIds={redundantToolIds}
             userRole={userRole}
             onDeactivate={onDeactivate}
+            onEdit={onEdit}
           />
         );
       })()}
@@ -517,6 +547,7 @@ function DomainSection({
   redundantToolIds,
   userRole,
   onDeactivate,
+  onEdit,
 }: {
   label: string;
   covered: boolean;
@@ -524,6 +555,7 @@ function DomainSection({
   redundantToolIds: Set<string>;
   userRole: UserRole;
   onDeactivate: (id: string, name: string) => void;
+  onEdit: (tool: ToolWithAssignments) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -574,6 +606,7 @@ function DomainSection({
                   isRedundant={redundantToolIds.has(tool.id)}
                   userRole={userRole}
                   onDeactivate={onDeactivate}
+                  onEdit={onEdit}
                 />
               ))}
             </div>
@@ -591,11 +624,13 @@ function ToolCard({
   isRedundant,
   userRole,
   onDeactivate,
+  onEdit,
 }: {
   tool: ToolWithAssignments;
   isRedundant: boolean;
   userRole: UserRole;
   onDeactivate: (id: string, name: string) => void;
+  onEdit: (tool: ToolWithAssignments) => void;
 }) {
   const canEdit = hasPermission(userRole, "edit_tools");
   const canDeactivate = hasPermission(userRole, "deactivate_tools");
@@ -626,11 +661,9 @@ function ToolCard({
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              asChild
+              onClick={() => onEdit(tool)}
             >
-              <Link href={`/tools/${tool.id}/edit`}>
-                <Pencil className="h-3 w-3" />
-              </Link>
+              <Pencil className="h-3 w-3" />
             </Button>
           )}
           {canDeactivate && tool.is_active && (
@@ -696,6 +729,7 @@ function ListView({
   redundantToolIds,
   userRole,
   onDeactivate,
+  onEdit,
 }: {
   tools: ToolWithAssignments[];
   search: string;
@@ -703,6 +737,7 @@ function ListView({
   redundantToolIds: Set<string>;
   userRole: UserRole;
   onDeactivate: (id: string, name: string) => void;
+  onEdit: (tool: ToolWithAssignments) => void;
 }) {
   const filtered = tools.filter((t) => {
     if (!showInactive && !t.is_active) return false;
@@ -799,11 +834,9 @@ function ListView({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      asChild
+                      onClick={() => onEdit(tool)}
                     >
-                      <Link href={`/tools/${tool.id}/edit`}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Link>
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   )}
                   {canDeactivate && tool.is_active && (

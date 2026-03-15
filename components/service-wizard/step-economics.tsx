@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -16,14 +18,46 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { CostBreakdown, mapPricingOutputToBreakdownProps } from "@/components/pricing/cost-breakdown";
 import { validatePricing } from "@/lib/pricing/validate";
+import { calculateAdditionalServicesMrr } from "@/lib/pricing/additional-services";
 import { cn } from "@/lib/utils";
 import { RISK_TIER_LABELS, RISK_TIERS } from "@/lib/constants";
 import { calculatePricing } from "@/lib/pricing/engine";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
-import { ChevronsUpDown, Briefcase, Check, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ChevronsUpDown,
+  Briefcase,
+  AlertTriangle,
+  Plus,
+  X,
+  Pencil,
+  Headphones,
+  Shield,
+  GraduationCap,
+  FolderKanban,
+} from "lucide-react";
+import {
+  createAdditionalServiceAction,
+} from "@/actions/additional-services";
 import type {
   Tool,
   RiskTier,
@@ -32,7 +66,11 @@ import type {
   PricingOutput,
   AdditionalService,
   AdditionalServiceCategory,
+  AdditionalServiceBillingType,
+  AdditionalServiceCostType,
 } from "@/lib/types";
+
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const ADD_SVC_CATEGORY_LABELS: Record<AdditionalServiceCategory, string> = {
   consulting: "Consulting",
@@ -52,7 +90,59 @@ const ADD_SVC_CATEGORY_COLORS: Record<AdditionalServiceCategory, string> = {
   compliance: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
 };
 
+const BILLING_TYPE_LABELS: Record<AdditionalServiceBillingType, string> = {
+  monthly: "Monthly",
+  per_user: "Per User",
+  per_device: "Per Device",
+  per_site: "Per Site",
+  hourly: "Hourly",
+  one_time: "One-Time",
+};
+
+const COST_TYPE_LABELS: Record<AdditionalServiceCostType, string> = {
+  internal_labor: "Internal Labor",
+  subcontractor: "Subcontractor",
+  zero_cost: "Zero Cost",
+};
+
+const CATEGORY_ICONS: Record<AdditionalServiceCategory, typeof Briefcase> = {
+  consulting: Briefcase,
+  help_desk: Headphones,
+  retainer: Shield,
+  training: GraduationCap,
+  project: FolderKanban,
+  compliance: Shield,
+};
+
 type SellStrategyType = "cost_plus_margin" | "monthly_flat_rate" | "per_endpoint_monthly" | "per_user_monthly";
+
+const SELL_STRATEGY_OPTIONS: { value: SellStrategyType; label: string; unitLabel: string }[] = [
+  { value: "per_user_monthly", label: "Per User", unitLabel: "/user/mo" },
+  { value: "per_endpoint_monthly", label: "Per Endpoint", unitLabel: "/endpoint/mo" },
+  { value: "monthly_flat_rate", label: "Flat Monthly", unitLabel: "/mo" },
+];
+
+// ── Service templates (for empty catalog) ────────────────────────────────────
+
+interface ServiceTemplate {
+  name: string;
+  category: AdditionalServiceCategory;
+  billing_type: AdditionalServiceBillingType;
+  cost: number;
+  sell_price: number;
+}
+
+const TEMPLATES: ServiceTemplate[] = [
+  { name: "Fractional vCISO", category: "consulting", billing_type: "monthly", cost: 0, sell_price: 1500 },
+  { name: "Fractional CTO", category: "consulting", billing_type: "monthly", cost: 0, sell_price: 2000 },
+  { name: "Compliance Advisory", category: "compliance", billing_type: "monthly", cost: 0, sell_price: 800 },
+  { name: "IR Retainer", category: "retainer", billing_type: "monthly", cost: 0, sell_price: 500 },
+  { name: "Help Desk", category: "help_desk", billing_type: "per_user", cost: 8, sell_price: 22 },
+  { name: "Security Training", category: "training", billing_type: "per_user", cost: 2, sell_price: 6 },
+  { name: "Project Work", category: "project", billing_type: "one_time", cost: 150, sell_price: 250 },
+];
+
+// ── Props ────────────────────────────────────────────────────────────────────
 
 interface StepEconomicsProps {
   tools: Tool[];
@@ -66,6 +156,9 @@ interface StepEconomicsProps {
   overheadPct: number;
   laborPct: number;
   discountPct: number;
+  redZoneMarginPct: number;
+  maxDiscountNoApprovalPct: number;
+  toolQuantities: Record<string, number>;
   onSeatCountChange: (v: number) => void;
   onRiskTierChange: (v: RiskTier) => void;
   onContractTermChange: (v: number) => void;
@@ -73,11 +166,15 @@ interface StepEconomicsProps {
   onOverheadChange: (v: number) => void;
   onLaborChange: (v: number) => void;
   onDiscountChange: (v: number) => void;
-  onToggleAdditionalService: (id: string) => void;
+  additionalServiceOverrides: Record<string, { cost?: number; sell_price?: number }>;
+  onAdditionalServicesChange: (ids: Set<string>) => void;
+  onAdditionalServiceOverridesChange: (overrides: Record<string, { cost?: number; sell_price?: number }>) => void;
   sellStrategy?: SellStrategyType;
   sellConfig?: Record<string, unknown>;
   onSellStrategyChange?: (v: SellStrategyType) => void;
   onSellConfigChange?: (v: Record<string, unknown>) => void;
+  toolCostOverrides: Record<string, number>;
+  onToolCostOverridesChange: (overrides: Record<string, number>) => void;
 }
 
 const ADVANCED_KEY = "service-wizard-advanced-expanded";
@@ -94,6 +191,9 @@ export function StepEconomics({
   overheadPct,
   laborPct,
   discountPct,
+  redZoneMarginPct,
+  maxDiscountNoApprovalPct,
+  toolQuantities,
   onSeatCountChange,
   onRiskTierChange,
   onContractTermChange,
@@ -101,28 +201,54 @@ export function StepEconomics({
   onOverheadChange,
   onLaborChange,
   onDiscountChange,
+  additionalServiceOverrides,
+  onAdditionalServicesChange,
+  onAdditionalServiceOverridesChange,
   sellStrategy,
   sellConfig,
   onSellStrategyChange,
   onSellConfigChange,
-  onToggleAdditionalService,
+  toolCostOverrides,
+  onToolCostOverridesChange,
 }: StepEconomicsProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [pricingMode, setPricingMode] = useState<"set_price" | "use_margin">(
     sellStrategy && sellStrategy !== "cost_plus_margin" ? "set_price" : "use_margin"
   );
+
+  // Bug 6 fix: Track sell strategy type for "Set My Price" mode
+  const [directSellStrategy, setDirectSellStrategy] = useState<SellStrategyType>(
+    sellStrategy && sellStrategy !== "cost_plus_margin" ? sellStrategy : "per_user_monthly"
+  );
+
   const [directSellPrice, setDirectSellPrice] = useState<number>(
     () => {
       if (sellConfig && typeof sellConfig === "object") {
-        const perSeat = (sellConfig as Record<string, number>).per_user_sell_price ??
-          (sellConfig as Record<string, number>).per_endpoint_sell_price;
-        if (perSeat) return perSeat;
-        const flat = (sellConfig as Record<string, number>).monthly_flat_price;
-        if (flat && seatCount > 0) return flat / seatCount;
+        const cfg = sellConfig as Record<string, number>;
+        return cfg.per_user_sell_price ?? cfg.per_endpoint_sell_price ?? cfg.monthly_flat_price ?? 0;
       }
       return 0;
     }
   );
+
+  // Bug 5 fix: Sync directSellPrice when sellConfig prop changes (e.g. on resume)
+  useEffect(() => {
+    if (sellConfig && typeof sellConfig === "object") {
+      const cfg = sellConfig as Record<string, number>;
+      const val = cfg.per_user_sell_price ?? cfg.per_endpoint_sell_price ?? cfg.monthly_flat_price;
+      if (val !== undefined && val > 0) {
+        setDirectSellPrice(val);
+      }
+    }
+  }, [sellConfig]);
+
+  // Additional services sheet state
+  const [addSvcSheetOpen, setAddSvcSheetOpen] = useState(false);
+  const [addSvcTab, setAddSvcTab] = useState<"catalog" | "create">("catalog");
+  const [templateForCreateState, setTemplateForCreate] = useState<ServiceTemplate | null>(null);
+
+  // Price overrides for additional services (bundle-level, lifted to wizard shell)
+  const priceOverrides = additionalServiceOverrides;
 
   useEffect(() => {
     const stored = localStorage.getItem(ADVANCED_KEY);
@@ -139,31 +265,37 @@ export function StepEconomics({
     [tools, selectedToolIds]
   );
 
+  // Bug 3 fix: Use toolQuantities for quantity_multiplier
+  // Bug 1 fix: Use org settings for red_zone and max_discount
+  // Bug 6 fix: Use directSellStrategy instead of hardcoded per_user_monthly
   const pricing = useMemo((): PricingOutput | null => {
     if (selectedTools.length === 0) return null;
 
-    const pricingTools: PricingToolInput[] = selectedTools.map((tool) => ({
-      id: tool.id,
-      name: tool.name,
-      pricing_model: tool.pricing_model,
-      per_seat_cost: Number(tool.per_seat_cost),
-      flat_monthly_cost: Number(tool.flat_monthly_cost),
-      tier_rules: tool.tier_rules ?? [],
-      vendor_minimum_monthly: tool.vendor_minimum_monthly
-        ? Number(tool.vendor_minimum_monthly)
-        : null,
-      labor_cost_per_seat: tool.labor_cost_per_seat
-        ? Number(tool.labor_cost_per_seat)
-        : null,
-      quantity_multiplier: 1,
-      annual_flat_cost: tool.annual_flat_cost,
-      per_user_cost: tool.per_user_cost,
-      per_org_cost: tool.per_org_cost,
-      percent_discount: tool.percent_discount,
-      flat_discount: tool.flat_discount,
-      min_monthly_commit: tool.min_monthly_commit,
-      tier_metric: tool.tier_metric,
-    }));
+    const pricingTools: PricingToolInput[] = selectedTools.map((tool) => {
+      const override = toolCostOverrides[tool.id];
+      return {
+        id: tool.id,
+        name: tool.name,
+        pricing_model: override != null ? "per_seat" as const : tool.pricing_model,
+        per_seat_cost: override != null ? override : Number(tool.per_seat_cost),
+        flat_monthly_cost: override != null ? 0 : Number(tool.flat_monthly_cost),
+        tier_rules: override != null ? [] : (tool.tier_rules ?? []),
+        vendor_minimum_monthly: override != null ? null : (tool.vendor_minimum_monthly
+          ? Number(tool.vendor_minimum_monthly)
+          : null),
+        labor_cost_per_seat: tool.labor_cost_per_seat
+          ? Number(tool.labor_cost_per_seat)
+          : null,
+        quantity_multiplier: toolQuantities[tool.id] ?? 1,
+        annual_flat_cost: override != null ? 0 : tool.annual_flat_cost,
+        per_user_cost: override != null ? 0 : tool.per_user_cost,
+        per_org_cost: override != null ? 0 : tool.per_org_cost,
+        percent_discount: override != null ? 0 : tool.percent_discount,
+        flat_discount: override != null ? 0 : tool.flat_discount,
+        min_monthly_commit: override != null ? null : tool.min_monthly_commit,
+        tier_metric: override != null ? undefined : tool.tier_metric,
+      };
+    });
 
     const input: PricingInput = {
       tools: pricingTools,
@@ -172,14 +304,16 @@ export function StepEconomics({
       overhead_pct: overheadPct,
       labor_pct: laborPct,
       discount_pct: discountPct,
-      red_zone_margin_pct: 0.15,
-      max_discount_no_approval_pct: 0.1,
+      red_zone_margin_pct: redZoneMarginPct,
+      max_discount_no_approval_pct: maxDiscountNoApprovalPct,
       contract_term_months: contractTermMonths,
       ...(pricingMode === "set_price" && directSellPrice > 0
         ? {
             sell_config: {
-              strategy: "per_user_monthly" as const,
-              per_user_sell_price: directSellPrice,
+              strategy: directSellStrategy,
+              ...(directSellStrategy === "per_user_monthly" ? { per_user_sell_price: directSellPrice } : {}),
+              ...(directSellStrategy === "per_endpoint_monthly" ? { per_endpoint_sell_price: directSellPrice } : {}),
+              ...(directSellStrategy === "monthly_flat_rate" ? { monthly_flat_price: directSellPrice } : {}),
             },
           }
         : {}),
@@ -190,26 +324,104 @@ export function StepEconomics({
     } catch {
       return null;
     }
-  }, [selectedTools, seatCount, targetMarginPct, overheadPct, laborPct, discountPct, contractTermMonths, pricingMode, directSellPrice]);
+  }, [selectedTools, seatCount, targetMarginPct, overheadPct, laborPct, discountPct, contractTermMonths, pricingMode, directSellPrice, directSellStrategy, toolQuantities, redZoneMarginPct, maxDiscountNoApprovalPct, toolCostOverrides]);
+
+  // Bug 2 fix: Use calculateAdditionalServicesMrr instead of naive reduce
+  const selectedAddSvcs = useMemo(
+    () => additionalServices.filter((s) => selectedAdditionalServiceIds.has(s.id)),
+    [additionalServices, selectedAdditionalServiceIds]
+  );
 
   const addSvcTotals = useMemo(() => {
-    const selected = additionalServices.filter((s) =>
-      selectedAdditionalServiceIds.has(s.id)
+    if (selectedAddSvcs.length === 0) {
+      return { total_mrr: 0, total_cost_mrr: 0, breakdown: [], count: 0 };
+    }
+    const result = calculateAdditionalServicesMrr(
+      selectedAddSvcs.map((s) => ({
+        service_id: s.id,
+        service_name: s.name,
+        billing_type: s.billing_type,
+        cost: Number(s.cost),
+        sell_price: Number(s.sell_price),
+        cost_override: priceOverrides[s.id]?.cost ?? null,
+        sell_price_override: priceOverrides[s.id]?.sell_price ?? null,
+        quantity: 1,
+      })),
+      { endpoints: seatCount, users: seatCount, org_count: 1 }
     );
-    const totalCost = selected.reduce((sum, s) => sum + Number(s.cost), 0);
-    const totalSell = selected.reduce((sum, s) => sum + Number(s.sell_price), 0);
-    return { selected, totalCost, totalSell, count: selected.length };
-  }, [additionalServices, selectedAdditionalServiceIds]);
+    return { ...result, count: selectedAddSvcs.length };
+  }, [selectedAddSvcs, seatCount, priceOverrides]);
 
+  // Bug 1 fix: Use org settings instead of hardcoded values
   const validationWarnings = useMemo(() => {
     if (!pricing) return [];
     return validatePricing(pricing, {
       targetMarginPct,
-      redZoneMarginPct: 0.15,
-      maxDiscountNoApprovalPct: 0.1,
+      redZoneMarginPct,
+      maxDiscountNoApprovalPct,
       discountPct,
     });
-  }, [pricing, targetMarginPct, discountPct]);
+  }, [pricing, targetMarginPct, discountPct, redZoneMarginPct, maxDiscountNoApprovalPct]);
+
+  function handleAddService(svc: AdditionalService) {
+    const next = new Set(selectedAdditionalServiceIds);
+    next.add(svc.id);
+    onAdditionalServicesChange(next);
+    setAddSvcSheetOpen(false);
+  }
+
+  function handleRemoveService(id: string) {
+    const next = new Set(selectedAdditionalServiceIds);
+    next.delete(id);
+    onAdditionalServicesChange(next);
+    // Clean up any overrides
+    const copy = { ...priceOverrides };
+    delete copy[id];
+    onAdditionalServiceOverridesChange(copy);
+  }
+
+  function handlePriceOverride(serviceId: string, field: "cost" | "sell_price", value: number) {
+    onAdditionalServiceOverridesChange({
+      ...priceOverrides,
+      [serviceId]: { ...priceOverrides[serviceId], [field]: value },
+    });
+  }
+
+  // Bug 6 fix: Build the correct sell_config based on selected strategy
+  function buildSellConfig(strategy: SellStrategyType, price: number): Record<string, unknown> {
+    switch (strategy) {
+      case "per_user_monthly":
+        return { strategy: "per_user_monthly", per_user_sell_price: price };
+      case "per_endpoint_monthly":
+        return { strategy: "per_endpoint_monthly", per_endpoint_sell_price: price };
+      case "monthly_flat_rate":
+        return { strategy: "monthly_flat_rate", monthly_flat_price: price };
+      default:
+        return {};
+    }
+  }
+
+  function handleDirectSellStrategyChange(strategy: SellStrategyType) {
+    setDirectSellStrategy(strategy);
+    onSellStrategyChange?.(strategy);
+    if (directSellPrice > 0) {
+      onSellConfigChange?.(buildSellConfig(strategy, directSellPrice));
+    }
+  }
+
+  function handleDirectSellPriceChange(val: number) {
+    setDirectSellPrice(val);
+    onSellStrategyChange?.(directSellStrategy);
+    onSellConfigChange?.(buildSellConfig(directSellStrategy, val));
+  }
+
+  const currentUnitLabel = SELL_STRATEGY_OPTIONS.find((o) => o.value === directSellStrategy)?.unitLabel ?? "/user/mo";
+
+  // Services available in catalog but not yet selected
+  const availableServices = useMemo(
+    () => additionalServices.filter((s) => !selectedAdditionalServiceIds.has(s.id)),
+    [additionalServices, selectedAdditionalServiceIds]
+  );
 
   return (
     <div className="space-y-6">
@@ -267,7 +479,7 @@ export function StepEconomics({
                 type="button"
                 onClick={() => {
                   setPricingMode("set_price");
-                  onSellStrategyChange?.("per_user_monthly");
+                  onSellStrategyChange?.(directSellStrategy);
                 }}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
@@ -299,7 +511,35 @@ export function StepEconomics({
 
           {pricingMode === "set_price" ? (
             <div className="space-y-3">
-              <Label>Your sell price per seat / mo</Label>
+              {/* Bug 6 fix: Strategy selector for "Set My Price" */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">How do you price this service?</Label>
+                <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 w-fit">
+                  {SELL_STRATEGY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleDirectSellStrategyChange(opt.value)}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                        directSellStrategy === opt.value
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Label>
+                {directSellStrategy === "monthly_flat_rate"
+                  ? "Your monthly flat price"
+                  : directSellStrategy === "per_endpoint_monthly"
+                    ? "Your price per endpoint / mo"
+                    : "Your sell price per seat / mo"}
+              </Label>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-mono text-muted-foreground">$</span>
                 <input
@@ -309,17 +549,12 @@ export function StepEconomics({
                   value={directSellPrice || ""}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value) || 0;
-                    setDirectSellPrice(val);
-                    onSellStrategyChange?.("per_user_monthly");
-                    onSellConfigChange?.({
-                      strategy: "per_user_monthly",
-                      per_user_sell_price: val,
-                    });
+                    handleDirectSellPriceChange(val);
                   }}
                   placeholder="0.00"
                   className="w-40 h-12 rounded-lg border border-border bg-background px-3 text-2xl font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-sm text-muted-foreground">/seat/mo</span>
+                <span className="text-sm text-muted-foreground">{currentUnitLabel}</span>
               </div>
               {pricing && directSellPrice > 0 && (
                 <div className="flex items-center gap-3">
@@ -327,7 +562,7 @@ export function StepEconomics({
                   <MarginHealthBadge margin={pricing.margin_pct_post_discount} />
                 </div>
               )}
-              {pricing && directSellPrice > 0 && directSellPrice < pricing.true_cost_per_seat && (
+              {pricing && directSellPrice > 0 && directSellStrategy !== "monthly_flat_rate" && directSellPrice < pricing.true_cost_per_seat && (
                 <div className="flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
                   <p className="text-[11px] text-red-400">
@@ -361,6 +596,7 @@ export function StepEconomics({
                     onClick={() => {
                       setDirectSellPrice(pricing.suggested_price_per_seat);
                       setPricingMode("set_price");
+                      setDirectSellStrategy("per_user_monthly");
                       onSellStrategyChange?.("per_user_monthly");
                       onSellConfigChange?.({
                         strategy: "per_user_monthly",
@@ -428,79 +664,121 @@ export function StepEconomics({
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Additional Services */}
-          {additionalServices.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-white/5 transition-colors">
-                <span className="flex items-center gap-2 font-medium text-foreground">
-                  <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                  Additional Services
-                </span>
-                <span className="flex items-center gap-2">
-                  {addSvcTotals.count > 0 && (
-                    <Badge variant="secondary" className="text-[10px] h-5">
-                      {addSvcTotals.count} selected
-                    </Badge>
-                  )}
-                  <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                </span>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1 pt-3">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Include consulting, retainers, or professional services.
+          {/* ── Additional Services (Part 3) ──────────────────────────────── */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Additional Services</span>
+                {addSvcTotals.count > 0 && (
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {addSvcTotals.count}
+                  </Badge>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  setAddSvcTab("catalog");
+                  setAddSvcSheetOpen(true);
+                }}
+              >
+                <Plus className="h-3 w-3" />
+                Add Service
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Services bundled into this package alongside your technical stack
+            </p>
+
+            {selectedAddSvcs.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-4 text-center">
+                <p className="text-sm text-muted-foreground">No additional services added.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add consulting, retainers, or advisory services that are delivered as part of this offering.
                 </p>
-                {additionalServices.map((svc) => {
-                  const isSelected = selectedAdditionalServiceIds.has(svc.id);
-                  return (
-                    <button
-                      type="button"
-                      key={svc.id}
-                      onClick={() => onToggleAdditionalService(svc.id)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors text-left w-full",
-                        isSelected
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border hover:bg-white/5"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
-                          isSelected
-                            ? "border-primary bg-primary"
-                            : "border-muted-foreground/30"
-                        )}
-                      >
-                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground truncate">
-                            {svc.name}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px] shrink-0",
-                              ADD_SVC_CATEGORY_COLORS[svc.category]
-                            )}
-                          >
-                            {ADD_SVC_CATEGORY_LABELS[svc.category]}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-mono text-sm text-foreground">
-                          {formatCurrency(Number(svc.sell_price))}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground ml-1">/mo</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border/50">
+                      <TableHead className="text-xs">Name</TableHead>
+                      <TableHead className="text-xs">Billing</TableHead>
+                      <TableHead className="text-xs">Sell Price</TableHead>
+                      <TableHead className="text-xs">Margin</TableHead>
+                      <TableHead className="text-xs w-8"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedAddSvcs.map((svc) => {
+                      const override = priceOverrides[svc.id];
+                      const effectiveSellPrice = override?.sell_price ?? Number(svc.sell_price);
+                      const effectiveCost = override?.cost ?? Number(svc.cost);
+                      const margin = effectiveSellPrice > 0
+                        ? (effectiveSellPrice - effectiveCost) / effectiveSellPrice
+                        : 0;
+                      const isPerUnit = svc.billing_type === "per_user" || svc.billing_type === "per_device";
+                      const mrrForService = isPerUnit ? effectiveSellPrice * seatCount : effectiveSellPrice;
+                      const hasOverride = override?.sell_price !== undefined && override.sell_price !== Number(svc.sell_price);
+
+                      return (
+                        <TableRow key={svc.id} className="border-border/30">
+                          <TableCell>
+                            <span className="text-sm font-medium text-foreground/90">{svc.name}</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {BILLING_TYPE_LABELS[svc.billing_type]}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-0.5">
+                              <WizardInlinePriceEditor
+                                value={effectiveSellPrice}
+                                unit={isPerUnit ? `/${svc.billing_type === "per_user" ? "user" : "device"}` : "/mo"}
+                                onSave={(val) => handlePriceOverride(svc.id, "sell_price", val)}
+                              />
+                              {isPerUnit && (
+                                <span className="text-[10px] text-muted-foreground block">
+                                  ({formatCurrency(mrrForService)}/mo)
+                                </span>
+                              )}
+                              {hasOverride && (
+                                <span className="text-[10px] text-muted-foreground/60 block">
+                                  catalog: {formatCurrency(Number(svc.sell_price))}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <MarginHealthBadge margin={margin} showLabel={false} />
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveService(svc.id)}
+                              className="p-1 rounded hover:bg-destructive/10 transition-colors"
+                            >
+                              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/10">
+                  <span className="text-xs font-medium text-muted-foreground">Additional Services MRR</span>
+                  <span className="text-sm font-bold font-mono text-foreground">
+                    {formatCurrency(addSvcTotals.total_mrr)}/mo
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Live preview */}
@@ -513,11 +791,21 @@ export function StepEconomics({
                 seatCount={seatCount}
                 mode="full"
                 discountPct={discountPct}
-                additionalServices={addSvcTotals.selected.map((s) => ({
+                additionalServices={selectedAddSvcs.map((s) => ({
                   name: s.name,
-                  sellPrice: Number(s.sell_price),
-                  costPrice: Number(s.cost),
+                  sellPrice: addSvcTotals.breakdown.find((b) => b.service_id === s.id)?.monthly_revenue ?? Number(s.sell_price),
+                  costPrice: addSvcTotals.breakdown.find((b) => b.service_id === s.id)?.monthly_cost ?? Number(s.cost),
                 }))}
+                toolCostOverrides={toolCostOverrides}
+                onToolCostOverride={(toolId, cost) => {
+                  if (cost === null) {
+                    const next = { ...toolCostOverrides };
+                    delete next[toolId];
+                    onToolCostOverridesChange(next);
+                  } else {
+                    onToolCostOverridesChange({ ...toolCostOverrides, [toolId]: cost });
+                  }
+                }}
               />
               {pricing.flags.length > 0 && (
                 <div className="mt-3 space-y-1">
@@ -551,8 +839,34 @@ export function StepEconomics({
                       )}
                     >
                       {w.message}
+                      {w.code === "discount_requires_approval" && (
+                        <a
+                          href="/approvals"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1 underline hover:no-underline"
+                        >
+                          Review pending approvals &rarr;
+                        </a>
+                      )}
                     </div>
                   ))}
+                </div>
+              )}
+              {addSvcTotals.total_mrr > 0 && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Tool Stack MRR</span>
+                    <span className="font-mono">{formatCurrency(pricing.total_mrr)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-muted-foreground">Additional Services MRR</span>
+                    <span className="font-mono">{formatCurrency(addSvcTotals.total_mrr)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t border-border/30">
+                    <span>Total MRR</span>
+                    <span className="font-mono">{formatCurrency(pricing.total_mrr + addSvcTotals.total_mrr)}</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -561,6 +875,421 @@ export function StepEconomics({
           )}
         </div>
       </div>
+
+      {/* ── Additional Services Sheet (Part 3) ──────────────────────────── */}
+      <Sheet open={addSvcSheetOpen} onOpenChange={setAddSvcSheetOpen}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Add Service</SheetTitle>
+            <SheetDescription>
+              Select from your catalog or create a new service.
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Tab switcher */}
+          <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 w-fit mt-4">
+            <button
+              type="button"
+              onClick={() => setAddSvcTab("catalog")}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                addSvcTab === "catalog"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              From Catalog
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddSvcTab("create")}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                addSvcTab === "create"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Create New
+            </button>
+          </div>
+
+          {addSvcTab === "catalog" ? (
+            <div className="mt-4 space-y-2">
+              {availableServices.length > 0 ? (
+                availableServices.map((svc) => {
+                  const margin = Number(svc.sell_price) > 0
+                    ? (Number(svc.sell_price) - Number(svc.cost)) / Number(svc.sell_price)
+                    : 0;
+                  return (
+                    <div
+                      key={svc.id}
+                      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-all"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {svc.name}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={cn("text-[10px] shrink-0", ADD_SVC_CATEGORY_COLORS[svc.category])}
+                          >
+                            {ADD_SVC_CATEGORY_LABELS[svc.category]}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                          <span>{BILLING_TYPE_LABELS[svc.billing_type]}</span>
+                          <span className="font-mono">{formatCurrency(Number(svc.sell_price))}</span>
+                          <MarginHealthBadge margin={margin} showLabel={false} />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs shrink-0"
+                        onClick={() => handleAddService(svc)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                  );
+                })
+              ) : additionalServices.length === 0 ? (
+                // No services in catalog at all — show templates
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    No services in your catalog yet. Start from a template — these will be added to your catalog and included in this package.
+                  </p>
+                  <div className="grid gap-2 grid-cols-1">
+                    {TEMPLATES.map((tmpl) => {
+                      const Icon = CATEGORY_ICONS[tmpl.category];
+                      const margin = tmpl.sell_price > 0
+                        ? (tmpl.sell_price - tmpl.cost) / tmpl.sell_price
+                        : 0;
+                      return (
+                        <TemplateCard
+                          key={tmpl.name}
+                          template={tmpl}
+                          Icon={Icon}
+                          margin={margin}
+                          onSelect={() => {
+                            setAddSvcTab("create");
+                            // Pre-populate form with template
+                            setTemplateForCreate(tmpl);
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border p-4 text-center">
+                  <p className="text-sm text-muted-foreground">All catalog services have been added.</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs"
+                    onClick={() => setAddSvcTab("create")}
+                  >
+                    Create a new service
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <WizardServiceForm
+              template={templateForCreateState}
+              onSuccess={(newService) => {
+                handleAddService(newService);
+                setTemplateForCreate(null);
+              }}
+              onCancel={() => {
+                setAddSvcTab("catalog");
+                setTemplateForCreate(null);
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+
+}
+
+// ── Inline price editor for wizard (does NOT call server action) ─────────────
+
+function WizardInlinePriceEditor({
+  value,
+  unit,
+  onSave,
+}: {
+  value: number;
+  unit: string;
+  onSave: (value: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    if (!editing) setDraft(String(value));
+  }, [value, editing]);
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-baseline gap-0.5">
+        <span className="text-muted-foreground font-mono text-sm">$</span>
+        <input
+          type="number"
+          step="0.01"
+          min={0}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            const n = parseFloat(draft);
+            if (!isNaN(n) && n >= 0 && n !== value) onSave(n);
+            setEditing(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const n = parseFloat(draft);
+              if (!isNaN(n) && n >= 0 && n !== value) onSave(n);
+              setEditing(false);
+            }
+            if (e.key === "Escape") setEditing(false);
+          }}
+          autoFocus
+          className="bg-transparent font-mono text-sm text-foreground outline-none border-b border-[#A8FF3E] appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none w-16"
+        />
+        {unit && <span className="text-muted-foreground text-[10px]">{unit}</span>}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => { setDraft(String(value)); setEditing(true); }}
+      className="group inline-flex items-baseline gap-0.5 cursor-pointer text-left"
+    >
+      <span className="font-mono text-sm">{formatCurrency(value)}</span>
+      {unit && <span className="text-muted-foreground text-[10px]">{unit}</span>}
+      <Pencil className="h-2.5 w-2.5 ml-0.5 opacity-0 group-hover:opacity-40 transition-opacity text-[#A8FF3E]" />
+    </button>
+  );
+}
+
+// ── Template card ────────────────────────────────────────────────────────────
+
+function TemplateCard({
+  template,
+  Icon,
+  margin,
+  onSelect,
+}: {
+  template: ServiceTemplate;
+  Icon: typeof Briefcase;
+  margin: number;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="rounded-lg border border-border p-3 text-left hover:border-primary/40 hover:bg-primary/5 transition-all w-full"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">{template.name}</span>
+      </div>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Badge variant="outline" className="text-[10px]">
+          {ADD_SVC_CATEGORY_LABELS[template.category]}
+        </Badge>
+        <span>{BILLING_TYPE_LABELS[template.billing_type]}</span>
+        <span className="ml-auto font-mono">{formatCurrency(template.sell_price)}</span>
+        <MarginHealthBadge margin={margin} showLabel={false} />
+      </div>
+    </button>
+  );
+}
+
+// ── Wizard Service Form (creates in catalog + adds to wizard) ────────────────
+
+function WizardServiceForm({
+  template,
+  onSuccess,
+  onCancel,
+}: {
+  template: ServiceTemplate | null;
+  onSuccess: (service: AdditionalService) => void;
+  onCancel: () => void;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const [name, setName] = useState(template?.name ?? "");
+  const [category, setCategory] = useState<AdditionalServiceCategory>(template?.category ?? "consulting");
+  const [description, setDescription] = useState("");
+  const [billingType, setBillingType] = useState<AdditionalServiceBillingType>(template?.billing_type ?? "monthly");
+  const [costType, setCostType] = useState<AdditionalServiceCostType>(
+    template && template.cost === 0 ? "zero_cost" : "internal_labor"
+  );
+  const [cost, setCost] = useState(String(template?.cost ?? 0));
+  const [sellPrice, setSellPrice] = useState(String(template?.sell_price ?? 0));
+  const [notes, setNotes] = useState("");
+
+  const costNum = parseFloat(cost) || 0;
+  const sellNum = parseFloat(sellPrice) || 0;
+  const liveMargin = sellNum > 0
+    ? (sellNum - (costType === "zero_cost" ? 0 : costNum)) / sellNum
+    : 0;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const formData = {
+      name: name.trim(),
+      category,
+      description: description.trim() || null,
+      billing_type: billingType,
+      cost_type: costType,
+      cost: costType === "zero_cost" ? 0 : costNum,
+      sell_price: sellNum,
+      notes: notes.trim() || null,
+    };
+
+    startTransition(async () => {
+      const result = await createAdditionalServiceAction(formData);
+      if (result.success) {
+        toast.success("Service created and added");
+        router.refresh();
+        onSuccess(result.data);
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+      <div className="space-y-2">
+        <Label>Name *</Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} required />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Category</Label>
+        <Select value={category} onValueChange={(v) => setCategory(v as AdditionalServiceCategory)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {(Object.keys(ADD_SVC_CATEGORY_LABELS) as AdditionalServiceCategory[]).map((c) => (
+              <SelectItem key={c} value={c}>{ADD_SVC_CATEGORY_LABELS[c]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          placeholder="Optional description"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Billing Type</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.keys(BILLING_TYPE_LABELS) as AdditionalServiceBillingType[]).map((bt) => (
+            <Button
+              key={bt}
+              type="button"
+              variant={billingType === bt ? "secondary" : "outline"}
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => setBillingType(bt)}
+            >
+              {BILLING_TYPE_LABELS[bt]}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Cost Type</Label>
+        <div className="flex gap-3">
+          {(Object.keys(COST_TYPE_LABELS) as AdditionalServiceCostType[]).map((ct) => (
+            <label key={ct} className="flex items-center gap-1.5 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name="cost_type"
+                value={ct}
+                checked={costType === ct}
+                onChange={() => setCostType(ct)}
+                className="accent-primary"
+              />
+              {COST_TYPE_LABELS[ct]}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {costType !== "zero_cost" && (
+        <div className="space-y-2">
+          <Label>Cost ($)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+          />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label>Sell Price ($) *</Label>
+        <Input
+          type="number"
+          step="0.01"
+          min={0}
+          value={sellPrice}
+          onChange={(e) => setSellPrice(e.target.value)}
+          required
+        />
+      </div>
+
+      {/* Live margin preview */}
+      <div className="rounded-lg border border-border p-3 bg-muted/20">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Estimated Margin</span>
+          <MarginHealthBadge margin={liveMargin} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Internal Notes</Label>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          placeholder="Internal notes (not visible to clients)"
+        />
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Button type="submit" disabled={isPending} className="flex-1">
+          {isPending ? "Creating..." : "Create & Add"}
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

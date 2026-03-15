@@ -7,12 +7,9 @@ import { getAllServiceCompleteness } from "@/lib/db/service-completeness";
 import { getServiceOutcomesByOrgId } from "@/lib/db/service-outcomes";
 import { getStaleVersionsByOrgId } from "@/lib/db/bundle-versions";
 import { computePricingStatus } from "@/lib/pricing/status";
-import { PageHeader } from "@/components/shared/page-header";
-import { RoleGate } from "@/components/shared/role-gate";
-import { ServicesList } from "@/components/services/services-list";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+import { getTierPackages } from "@/lib/db/tier-packages";
+import { getAdditionalServicesByOrgId, getAdditionalServiceUsages } from "@/lib/db/additional-services";
+import { ServicesTabs } from "@/components/services/services-tabs";
 import type { PricingStatus } from "@/lib/pricing/status";
 
 export const metadata: Metadata = { title: "Services" };
@@ -20,7 +17,7 @@ export const metadata: Metadata = { title: "Services" };
 export default async function ServicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; tab?: string }>;
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
@@ -28,12 +25,23 @@ export default async function ServicesPage({
   const orgId = await getActiveOrgId();
   const params = await searchParams;
 
-  const [bundles, completeness, outcomes, staleVersions] = await Promise.all([
-    getBundles(orgId ?? undefined),
-    orgId ? getAllServiceCompleteness(orgId) : [],
-    orgId ? getServiceOutcomesByOrgId(orgId) : [],
-    orgId ? getStaleVersionsByOrgId(orgId) : [],
-  ]);
+  const [bundles, completeness, outcomes, staleVersions, packages, additionalServices, addSvcUsages] =
+    await Promise.all([
+      getBundles(orgId ?? undefined),
+      orgId ? getAllServiceCompleteness(orgId) : [],
+      orgId ? getServiceOutcomesByOrgId(orgId) : [],
+      orgId ? getStaleVersionsByOrgId(orgId) : [],
+      orgId ? getTierPackages(orgId) : [],
+      orgId ? getAdditionalServicesByOrgId(orgId) : [],
+      orgId ? getAdditionalServiceUsages(orgId) : [],
+    ]);
+
+  // Build usage map for additional services
+  const additionalServiceUsageMap: Record<string, { bundle_id: string; bundle_name: string }[]> = {};
+  for (const u of addSvcUsages) {
+    if (!additionalServiceUsageMap[u.additional_service_id]) additionalServiceUsageMap[u.additional_service_id] = [];
+    additionalServiceUsageMap[u.additional_service_id].push({ bundle_id: u.bundle_id, bundle_name: u.bundle_name });
+  }
 
   // Sort newest first
   const sorted = [...bundles].sort(
@@ -58,7 +66,7 @@ export default async function ServicesPage({
   const pricingStatusMap: Record<string, PricingStatus> = {};
   for (const bundle of sorted) {
     const isStale = staleMap[bundle.id] ?? false;
-    const hasZeroCost = false; // basic heuristic: stale already covers most cases
+    const hasZeroCost = false;
     const latestVersion = bundle.latest_mrr != null ? {
       computed_suggested_price: bundle.latest_mrr,
       is_pricing_stale: isStale,
@@ -70,29 +78,18 @@ export default async function ServicesPage({
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Services"
-        description="Build and manage your security service portfolio"
-      >
-        <RoleGate role={profile.role} permission="create_bundles">
-          <Button asChild>
-            <Link href="/services/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Build a Service
-            </Link>
-          </Button>
-        </RoleGate>
-      </PageHeader>
-
-      <ServicesList
-        bundles={sorted}
-        completenessMap={completenessMap}
-        outcomeTypeMap={outcomeTypeMap}
-        staleMap={staleMap}
-        pricingStatusMap={pricingStatusMap}
-        initialFilter={params.filter as "all" | "active" | "draft" | "stale" | undefined}
-      />
-    </div>
+    <ServicesTabs
+      bundles={sorted}
+      completenessMap={completenessMap}
+      outcomeTypeMap={outcomeTypeMap}
+      staleMap={staleMap}
+      pricingStatusMap={pricingStatusMap}
+      initialFilter={params.filter as "all" | "active" | "draft" | "stale" | undefined}
+      packages={packages}
+      additionalServices={additionalServices}
+      additionalServiceUsageMap={additionalServiceUsageMap}
+      userRole={profile.role}
+      initialTab={params.tab ?? "services"}
+    />
   );
 }

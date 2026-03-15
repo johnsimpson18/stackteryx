@@ -40,11 +40,12 @@ type VendorFormValues = z.infer<typeof vendorFormSchema>;
 interface OrgVendorFormProps {
   vendor?: OrgVendor;
   globalVendors?: GlobalVendor[];
+  onSuccess?: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function OrgVendorForm({ vendor, globalVendors = [] }: OrgVendorFormProps) {
+export function OrgVendorForm({ vendor, globalVendors = [], onSuccess }: OrgVendorFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!vendor;
@@ -74,7 +75,11 @@ export function OrgVendorForm({ vendor, globalVendors = [] }: OrgVendorFormProps
 
       if (result.success) {
         toast.success(isEditing ? "Vendor updated" : "Vendor added");
-        router.push(isEditing ? `/vendors/${vendor.id}` : "/vendors");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(isEditing ? `/vendors/${vendor.id}` : "/vendors");
+        }
       } else {
         toast.error(result.error);
       }
@@ -169,7 +174,7 @@ export function OrgVendorForm({ vendor, globalVendors = [] }: OrgVendorFormProps
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() => onSuccess ? onSuccess() : router.back()}
           disabled={isPending}
         >
           Cancel

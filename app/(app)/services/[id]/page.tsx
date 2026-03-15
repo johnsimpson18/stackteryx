@@ -62,6 +62,7 @@ export default async function ServiceProfilePage({ params }: ServiceProfilePageP
   );
 
   return (
+    /* Intentional: custom profile header replaces PageHeader for five-layer layout */
     <ServiceProfileClient
       bundle={bundle}
       outcome={outcome}

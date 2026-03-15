@@ -15,13 +15,17 @@ const ROUTE_LABELS: Record<string, string> = {
   members: "Members",
   admin: "Admin",
   bundles: "Services",
-  versions: "Pricing Configurations",
+  versions: "Pricing Versions",
   approvals: "Approvals",
   scenarios: "Scenarios",
-  "stack-catalog": "Stack Catalog",
+  "stack-catalog": "Stack & Pricing",
   "sales-studio": "Sales Studio",
   vendors: "Vendors",
   clients: "Clients",
+  "additional-services": "Additional Services",
+  packages: "Packages",
+  pricing: "Pricing",
+  compliance: "Compliance",
 };
 
 export function Breadcrumbs() {

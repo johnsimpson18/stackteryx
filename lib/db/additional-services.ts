@@ -114,6 +114,74 @@ export async function archiveAdditionalService(
   return updateAdditionalService(id, { status: "archived" });
 }
 
+// ── Usage counts per additional service ───────────────────────────────────────
+
+export interface AdditionalServiceUsage {
+  additional_service_id: string;
+  bundle_id: string;
+  bundle_name: string;
+}
+
+export async function getAdditionalServiceUsages(
+  orgId: string
+): Promise<AdditionalServiceUsage[]> {
+  const supabase = await createClient();
+
+  // Get all junction rows for this org, then join with bundle_versions to get bundle info
+  const { data: bvasRows, error: bvasError } = await supabase
+    .from("bundle_version_additional_services")
+    .select("additional_service_id, bundle_version_id")
+    .eq("org_id", orgId);
+
+  if (bvasError) throw bvasError;
+  if (!bvasRows || bvasRows.length === 0) return [];
+
+  // Get unique version IDs
+  const versionIds = [...new Set(bvasRows.map((r) => r.bundle_version_id))];
+  const { data: versions, error: vError } = await supabase
+    .from("bundle_versions")
+    .select("id, bundle_id")
+    .in("id", versionIds);
+
+  if (vError) throw vError;
+
+  const versionMap = new Map(
+    (versions ?? []).map((v: { id: string; bundle_id: string }) => [v.id, v.bundle_id])
+  );
+
+  // Get bundle names
+  const bundleIds = [...new Set([...versionMap.values()])];
+  const { data: bundles, error: bError } = await supabase
+    .from("bundles")
+    .select("id, name")
+    .in("id", bundleIds);
+
+  if (bError) throw bError;
+
+  const bundleNameMap = new Map(
+    (bundles ?? []).map((b: { id: string; name: string }) => [b.id, b.name])
+  );
+
+  // Deduplicate by (additional_service_id, bundle_id)
+  const seen = new Set<string>();
+  const results: AdditionalServiceUsage[] = [];
+
+  for (const row of bvasRows) {
+    const bundleId = versionMap.get(row.bundle_version_id);
+    if (!bundleId) continue;
+    const key = `${row.additional_service_id}:${bundleId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    results.push({
+      additional_service_id: row.additional_service_id,
+      bundle_id: bundleId,
+      bundle_name: bundleNameMap.get(bundleId) ?? "Unknown",
+    });
+  }
+
+  return results;
+}
+
 // ── Bundle Version Additional Services ────────────────────────────────────────
 
 export async function getAdditionalServicesByVersionId(

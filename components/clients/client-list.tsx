@@ -23,12 +23,14 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import { CLIENT_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { ClientWithContracts, ClientStatus } from "@/lib/types";
 
 interface ClientListProps {
   clients: ClientWithContracts[];
   userRole: string;
+  complianceScores?: Record<string, number>;
 }
 
 function daysUntil(dateStr: string): number {
@@ -47,7 +49,7 @@ function marginColor(margin: number): string {
 type SortField = "name" | "margin" | "mrr";
 type SortDir = "asc" | "desc";
 
-export function ClientList({ clients, userRole }: ClientListProps) {
+export function ClientList({ clients, userRole, complianceScores = {} }: ClientListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "all">("all");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -150,30 +152,33 @@ export function ClientList({ clients, userRole }: ClientListProps) {
                 <TableHead>Active Service</TableHead>
                 <TableHead className="text-right">Seats</TableHead>
                 <TableHead className="text-right">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => toggleSort("mrr")}
-                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     MRR
                     {sortField === "mrr" && (
-                      <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
                     )}
-                  </button>
+                  </Button>
                 </TableHead>
                 <TableHead className="text-right">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => toggleSort("margin")}
-                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Margin
                     {sortField === "margin" && (
-                      <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
                     )}
-                  </button>
+                  </Button>
                 </TableHead>
                 <TableHead>Renewal</TableHead>
+                <TableHead className="text-center">Compliance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -258,6 +263,24 @@ export function ClientList({ clients, userRole }: ClientListProps) {
                                 : `${days}d`}
                           </span>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {complianceScores[client.id] != null ? (
+                        <span
+                          className={cn(
+                            "text-xs font-mono font-medium",
+                            complianceScores[client.id] >= 80
+                              ? "text-emerald-400"
+                              : complianceScores[client.id] >= 50
+                                ? "text-amber-400"
+                                : "text-red-400"
+                          )}
+                        >
+                          {complianceScores[client.id]}%
+                        </span>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}

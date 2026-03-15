@@ -22,9 +22,10 @@ import type { Client, ClientStatus } from "@/lib/types";
 
 interface ClientFormProps {
   client?: Client;
+  onSuccess?: () => void;
 }
 
-export function ClientForm({ client }: ClientFormProps) {
+export function ClientForm({ client, onSuccess }: ClientFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!client;
@@ -46,7 +47,11 @@ export function ClientForm({ client }: ClientFormProps) {
 
       if (result.success) {
         toast.success(isEditing ? "Client updated" : "Client created");
-        router.push(isEditing ? `/clients/${client.id}` : `/clients/${result.data.id}`);
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(isEditing ? `/clients/${client.id}` : `/clients/${result.data.id}`);
+        }
       } else {
         toast.error(result.error);
       }
@@ -142,7 +147,7 @@ export function ClientForm({ client }: ClientFormProps) {
       <Separator />
 
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => onSuccess ? onSuccess() : router.back()}>
           Cancel
         </Button>
         <Button type="submit" disabled={isPending || !name.trim()}>

@@ -315,7 +315,7 @@ export function BundleSummary({ bundleState, pricing, onChange }: BundleSummaryP
             variant="outline"
             size="sm"
             className="flex-1 text-xs border-border bg-white/3 hover:bg-white/6"
-            onClick={() => toast.info("Export PDF — coming soon")}
+            disabled
           >
             <FileText className="h-3 w-3 mr-1" />
             Export

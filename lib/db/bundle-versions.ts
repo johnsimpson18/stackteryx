@@ -159,6 +159,7 @@ export interface CreateVersionInput {
   sell_strategy?: string;
   sell_config?: Record<string, unknown>;
   assumptions?: Record<string, unknown>;
+  tool_cost_overrides?: Record<string, number>;
 }
 
 export async function createVersion(
@@ -184,34 +185,36 @@ export async function createVersion(
   }
 
   // 3. Build PricingInput (includes all v2 fields for canonical engine)
+  const overrides = input.tool_cost_overrides ?? {};
   const pricingTools: PricingToolInput[] = input.tools
     .filter((t) => toolDataMap.has(t.tool_id))
     .map((t) => {
       const tool = toolDataMap.get(t.tool_id)!;
+      const costOverride = overrides[t.tool_id];
       return {
         id: tool.id,
         name: tool.name,
-        pricing_model: tool.pricing_model,
-        per_seat_cost: Number(tool.per_seat_cost),
-        flat_monthly_cost: Number(tool.flat_monthly_cost),
-        tier_rules: tool.tier_rules ?? [],
-        vendor_minimum_monthly: tool.vendor_minimum_monthly
+        pricing_model: costOverride != null ? ("per_seat" as const) : tool.pricing_model,
+        per_seat_cost: costOverride != null ? costOverride : Number(tool.per_seat_cost),
+        flat_monthly_cost: costOverride != null ? 0 : Number(tool.flat_monthly_cost),
+        tier_rules: costOverride != null ? [] : (tool.tier_rules ?? []),
+        vendor_minimum_monthly: costOverride != null ? null : (tool.vendor_minimum_monthly
           ? Number(tool.vendor_minimum_monthly)
-          : null,
+          : null),
         labor_cost_per_seat: tool.labor_cost_per_seat
           ? Number(tool.labor_cost_per_seat)
           : null,
         quantity_multiplier: t.quantity_multiplier,
         // v2 fields — now used by the canonical engine
-        annual_flat_cost: Number(tool.annual_flat_cost ?? 0),
-        per_user_cost: Number(tool.per_user_cost ?? 0),
-        per_org_cost: Number(tool.per_org_cost ?? 0),
-        percent_discount: Number(tool.percent_discount ?? 0),
-        flat_discount: Number(tool.flat_discount ?? 0),
-        min_monthly_commit: tool.min_monthly_commit
+        annual_flat_cost: costOverride != null ? 0 : Number(tool.annual_flat_cost ?? 0),
+        per_user_cost: costOverride != null ? 0 : Number(tool.per_user_cost ?? 0),
+        per_org_cost: costOverride != null ? 0 : Number(tool.per_org_cost ?? 0),
+        percent_discount: costOverride != null ? 0 : Number(tool.percent_discount ?? 0),
+        flat_discount: costOverride != null ? 0 : Number(tool.flat_discount ?? 0),
+        min_monthly_commit: costOverride != null ? null : (tool.min_monthly_commit
           ? Number(tool.min_monthly_commit)
-          : null,
-        tier_metric: tool.tier_metric,
+          : null),
+        tier_metric: costOverride != null ? undefined : tool.tier_metric,
       };
     });
 

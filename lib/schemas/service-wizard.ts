@@ -58,6 +58,7 @@ export const economicsStepSchema = z.object({
     .default("cost_plus_margin"),
   sell_config: z.record(z.unknown()).optional(),
   assumptions: z.record(z.unknown()).optional(),
+  tool_cost_overrides: z.record(z.string(), z.number().min(0)).optional(),
 });
 
 export type EconomicsStepValues = z.infer<typeof economicsStepSchema>;

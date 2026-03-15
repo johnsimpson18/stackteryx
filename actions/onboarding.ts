@@ -154,7 +154,7 @@ export async function completeOnboardingAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/tools");
-    revalidatePath("/bundles");
+    revalidatePath("/services");
 
     return {
       success: true,

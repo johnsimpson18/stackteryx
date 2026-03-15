@@ -66,7 +66,7 @@ export async function saveEnablementAction(
     await upsertEnablement(orgId, profile.id, bundle_version_id, content);
 
     // Revalidate the version detail page
-    revalidatePath(`/bundles`);
+    revalidatePath(`/services`);
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: "Failed to save enablement content" };

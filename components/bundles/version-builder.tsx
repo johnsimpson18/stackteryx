@@ -375,7 +375,7 @@ export function VersionBuilder({
               disabled={!canSave || isPending}
               className="gap-1.5"
             >
-              {isPending ? "Saving…" : "Save Pricing Configuration"}
+              {isPending ? "Saving…" : "Save Pricing Version"}
             </Button>
           </div>
         </div>
@@ -918,7 +918,7 @@ export function VersionBuilder({
                       disabled={!canSave || isPending}
                     >
                       <TrendingUp className="h-3.5 w-3.5" />
-                      {isPending ? "Saving…" : "Save Pricing Configuration"}
+                      {isPending ? "Saving…" : "Save Pricing Version"}
                     </Button>
                   </div>
                 </TooltipTrigger>

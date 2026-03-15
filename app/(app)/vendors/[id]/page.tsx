@@ -1,15 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/db/profiles";
-import { getOrgVendorById } from "@/lib/db/vendors";
+import { getOrgVendorById, getGlobalVendors } from "@/lib/db/vendors";
 import { getActiveOrgId } from "@/lib/org-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { VendorDetailClient } from "@/components/vendors/vendor-detail-client";
+import { VendorEditButton } from "@/components/vendors/vendor-edit-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_LABELS } from "@/lib/constants";
-import { Pencil, Building2 } from "lucide-react";
-import Link from "next/link";
+import { Building2 } from "lucide-react";
 import type { ToolCategory } from "@/lib/types";
 
 interface VendorDetailPageProps {
@@ -29,15 +28,12 @@ export default async function VendorDetailPage({
   const vendor = await getOrgVendorById(orgId, id);
   if (!vendor) notFound();
 
+  const globalVendors = await getGlobalVendors();
+
   return (
     <div className="space-y-6">
       <PageHeader title={vendor.display_name}>
-        <Button variant="outline" asChild>
-          <Link href={`/vendors/${id}/edit`}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit Vendor
-          </Link>
-        </Button>
+        <VendorEditButton vendor={vendor} globalVendors={globalVendors} />
       </PageHeader>
 
       {/* Vendor Info */}

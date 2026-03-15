@@ -315,9 +315,10 @@ function PreviewPanel({ values }: { values: ToolFormValues }) {
 
 interface ToolFormProps {
   tool?: Tool;
+  onSuccess?: () => void;
 }
 
-export function ToolForm({ tool }: ToolFormProps) {
+export function ToolForm({ tool, onSuccess }: ToolFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showDiscounts, setShowDiscounts] = useState(false);
@@ -392,7 +393,11 @@ export function ToolForm({ tool }: ToolFormProps) {
 
       if (result.success) {
         toast.success(isEditing ? "Tool updated" : "Tool created");
-        router.push("/stack-catalog");
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/stack-catalog");
+        }
       } else {
         toast.error(result.error);
       }
@@ -962,7 +967,11 @@ export function ToolForm({ tool }: ToolFormProps) {
                             const result = await deactivateToolAction(tool!.id);
                             if (result.success) {
                               toast.success("Tool removed");
-                              router.push("/stack-catalog");
+                              if (onSuccess) {
+                                onSuccess();
+                              } else {
+                                router.push("/stack-catalog");
+                              }
                             } else {
                               toast.error(result.error);
                             }
@@ -981,7 +990,7 @@ export function ToolForm({ tool }: ToolFormProps) {
                 type="button"
                 variant="outline"
                 className="text-sm"
-                onClick={() => router.push("/stack-catalog")}
+                onClick={() => onSuccess ? onSuccess() : router.push("/stack-catalog")}
               >
                 Cancel
               </Button>

@@ -62,6 +62,43 @@ export function PricingHealthClient({
 
   return (
     <div className="space-y-6">
+      {/* Batch recalculate banner */}
+      {staleCount > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {staleCount} service{staleCount !== 1 ? "s have" : " has"} stale pricing
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Costs have changed since the last calculation
+            </p>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5"
+            disabled={isRecalculating}
+            onClick={() => {
+              startRecalcTransition(async () => {
+                const result = await batchRecalculateStaleAction();
+                if (result.success) {
+                  toast.success(
+                    `Recalculated ${result.data.recalculated} version(s)`
+                  );
+                } else {
+                  toast.error(result.error);
+                }
+              });
+            }}
+          >
+            <RefreshCw
+              className={cn("h-3.5 w-3.5", isRecalculating && "animate-spin")}
+            />
+            Recalculate All Stale
+          </Button>
+        </div>
+      )}
+
       {/* 1. Needs Attention */}
       {needsAttention.length > 0 && (
         <div className="space-y-3">
@@ -169,7 +206,7 @@ export function PricingHealthClient({
           <span className="w-20 text-xs font-medium text-muted-foreground text-center">
             Status
           </span>
-          <span className="w-5" />
+          <span className="w-24 text-xs font-medium text-muted-foreground text-right">Action</span>
         </div>
 
         {/* Rows */}
@@ -262,13 +299,31 @@ function ServicePricingRow({
         <PricingStatusBadge status={pricingStatus} />
       </div>
 
-      {/* Arrow */}
-      <Link
-        href={`/services/${bundle.id}`}
-        className="w-5 flex justify-center"
-      >
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-      </Link>
+      {/* Action */}
+      <div className="w-24 flex justify-end">
+        {pricingStatus === "STALE" ? (
+          <Link
+            href={`/services/${bundle.id}/versions/new`}
+            className="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
+          >
+            Recalculate →
+          </Link>
+        ) : pricingStatus === "INCOMPLETE" || pricingStatus === "NOT_SET" ? (
+          <Link
+            href={`/services/${bundle.id}`}
+            className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+          >
+            Complete Setup →
+          </Link>
+        ) : (
+          <Link
+            href={`/services/${bundle.id}`}
+            className="text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+          >
+            View →
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

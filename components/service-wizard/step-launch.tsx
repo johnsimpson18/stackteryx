@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Loader2, Rocket, ArrowRight, Plus, LayoutDashboard } from "lucide-react";
+import { Loader2, Rocket, ArrowRight, Plus, LayoutDashboard, Megaphone } from "lucide-react";
 
 interface StepLaunchProps {
   launched: boolean;
@@ -16,6 +17,7 @@ interface StepLaunchProps {
 export function StepLaunch({
   launched,
   isPending,
+  bundleId,
   onLaunch,
   onViewService,
   onCreateAnother,
@@ -93,6 +95,14 @@ export function StepLaunch({
           <ArrowRight className="h-4 w-4" />
           View Service
         </Button>
+        {bundleId && (
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href={`/sales-studio?tab=playbooks&bundle=${bundleId}`}>
+              <Megaphone className="h-4 w-4" />
+              Generate Sales Playbook
+            </Link>
+          </Button>
+        )}
         <Button onClick={onCreateAnother} variant="outline" className="gap-2">
           <Plus className="h-4 w-4" />
           Create Another

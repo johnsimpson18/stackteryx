@@ -132,9 +132,6 @@ export function MemberList({ members, currentUserId }: MemberListProps) {
                 Invite
               </Button>
             </form>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Team invitations coming soon.
-            </p>
           </CardContent>
         </Card>
       )}

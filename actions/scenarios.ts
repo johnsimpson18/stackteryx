@@ -65,8 +65,8 @@ export async function createScenarioAction(
       sell_config: parsed.data.sell_config as import("@/lib/types").SellConfig,
     });
 
-    revalidatePath(`/bundles/${parsed.data.bundle_id}`);
-    revalidatePath(`/bundles/${parsed.data.bundle_id}/versions/new`);
+    revalidatePath(`/services/${parsed.data.bundle_id}`);
+    revalidatePath(`/services/${parsed.data.bundle_id}/versions/new`);
     return { success: true, data: scenario };
   } catch {
     return { success: false, error: "Failed to create scenario" };
@@ -110,7 +110,7 @@ export async function updateScenarioAction(
     });
 
     if (bundle_id) {
-      revalidatePath(`/bundles/${bundle_id}/versions/new`);
+      revalidatePath(`/services/${bundle_id}/versions/new`);
     }
     return { success: true, data: scenario };
   } catch {
@@ -141,7 +141,7 @@ export async function deleteScenarioAction(
     }
 
     await dbDelete(id);
-    revalidatePath(`/bundles/${bundleId}/versions/new`);
+    revalidatePath(`/services/${bundleId}/versions/new`);
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: "Failed to delete scenario" };

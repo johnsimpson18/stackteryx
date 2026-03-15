@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { cn } from "@/lib/utils";
@@ -47,6 +50,7 @@ import {
   exportProposalDocxAction,
 } from "@/actions/proposals";
 import { SalesEnablementPanel } from "./sales-enablement-panel";
+import { FractionalCTOStudioPanel } from "./fractional-cto-studio-panel";
 import { ContextQualityBadge } from "@/components/ui/context-quality-badge";
 import type {
   ClientWithContracts,
@@ -76,7 +80,7 @@ interface SalesStudioClientProps {
   activeBundles: ActiveBundle[];
   bundleVersions: Record<string, BundleVersionInfo>;
   proposals: Proposal[];
-  initialMode: "client" | "prospect";
+  initialTab: StudioTab;
   preSelectedClientId: string | null;
   preSelectedClientContracts: {
     bundle_id: string;
@@ -100,7 +104,7 @@ interface ServiceSelection {
   cost_per_seat: number | null;
 }
 
-type StudioTab = "generate" | "past";
+type StudioTab = "client" | "prospect" | "playbooks" | "history" | "fractional-cto";
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
@@ -124,7 +128,7 @@ export function SalesStudioClient({
   activeBundles,
   bundleVersions,
   proposals,
-  initialMode,
+  initialTab,
   preSelectedClientId,
   preSelectedClientContracts,
   orgName,
@@ -134,12 +138,24 @@ export function SalesStudioClient({
   publishedPackages = [],
 }: SalesStudioClientProps) {
   const [, startTransition] = useTransition();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // ── Tab state ──────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<StudioTab>("generate");
+  // ── Tab state (synced with URL ?tab=) ──────────────────────────────────
+  const [activeTab, setActiveTab] = useState<StudioTab>(initialTab);
 
-  // ── Mode state ─────────────────────────────────────────────────────────
-  const [mode, setMode] = useState<"client" | "prospect" | "enablement">(initialMode);
+  function handleTabChange(value: string) {
+    const tab = value as StudioTab;
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }
+
+  // Derive mode from active tab for backwards compatibility
+  const mode: "client" | "prospect" | "enablement" =
+    activeTab === "prospect" ? "prospect" :
+    activeTab === "playbooks" ? "enablement" : "client";
 
   // ── Client mode state ──────────────────────────────────────────────────
   const [clientId, setClientId] = useState(preSelectedClientId ?? "");
@@ -474,7 +490,7 @@ export function SalesStudioClient({
     setInputCollapsed(true);
     setEditedSections(new Set());
     setSaveStatus("saved");
-    setTab("generate");
+    handleTabChange("client");
   }
 
   // ── Export handlers ────────────────────────────────────────────────────
@@ -527,205 +543,98 @@ export function SalesStudioClient({
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1
-          className="text-2xl font-bold tracking-tight text-foreground"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Sales Studio
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Generate client-ready proposals powered by AI
-        </p>
-      </div>
+      <PageHeader
+        title="Sales Studio"
+        description="Generate proposals, build playbooks, and close more business"
+      />
 
-      {/* Tab bar: Generate / Past Proposals */}
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 w-fit">
-        <button
-          type="button"
-          onClick={() => setTab("generate")}
-          className={cn(
-            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-            tab === "generate"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          New Proposal
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("past")}
-          className={cn(
-            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-            tab === "past"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Past Proposals
-          {proposals.length > 0 && (
-            <span className="ml-1.5 text-xs text-muted-foreground">
-              ({proposals.length})
-            </span>
-          )}
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="client">Client Proposals</TabsTrigger>
+          <TabsTrigger value="prospect">Prospect Proposals</TabsTrigger>
+          <TabsTrigger value="playbooks">Playbooks</TabsTrigger>
+          <TabsTrigger value="history">
+            Proposal History
+            {proposals.length > 0 && (
+              <span className="ml-1.5 text-xs text-muted-foreground">
+                ({proposals.length})
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="fractional-cto">Fractional CTO</TabsTrigger>
+        </TabsList>
 
-      {tab === "generate" && (
-        <>
-          {/* Mode toggle + Input panel */}
-          {!inputCollapsed || mode === "enablement" ? (
+        {/* ── Client Proposals Tab ── */}
+        <TabsContent value="client" className="space-y-6">
+          {!inputCollapsed ? (
             <Card>
               <CardContent className="p-5 space-y-5">
-                {/* Mode selector */}
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 w-fit">
-                  <button
-                    type="button"
-                    onClick={() => setMode("client")}
-                    className={cn(
-                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-                      mode === "client"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Client Proposal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("prospect")}
-                    className={cn(
-                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-                      mode === "prospect"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Prospect Proposal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("enablement")}
-                    className={cn(
-                      "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-                      mode === "enablement"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Sales Enablement
-                  </button>
-                </div>
+                <ClientInputPanel
+                  clients={filteredClients}
+                  clientId={clientId}
+                  clientSearch={clientSearch}
+                  onSearchChange={setClientSearch}
+                  onClientSelect={handleClientSelect}
+                  services={clientServices}
+                  onToggleService={(idx) => {
+                    const updated = [...clientServices];
+                    updated[idx] = {
+                      ...updated[idx],
+                      checked: !updated[idx].checked,
+                    };
+                    setClientServices(updated);
+                  }}
+                  onOverridePrice={(idx, price) => {
+                    const updated = [...clientServices];
+                    updated[idx] = { ...updated[idx], override_price: price };
+                    setClientServices(updated);
+                  }}
+                  playbookStatus={playbookStatus}
+                  bundleOutcomes={bundleOutcomes}
+                  bundleVersions={bundleVersions}
+                  onSwitchToEnablement={() => handleTabChange("playbooks")}
+                />
 
-                {mode !== "enablement" && (
-                  <>
-                    {mode === "client" ? (
-                      <ClientInputPanel
-                        clients={filteredClients}
-                        clientId={clientId}
-                        clientSearch={clientSearch}
-                        onSearchChange={setClientSearch}
-                        onClientSelect={handleClientSelect}
-                        services={clientServices}
-                        onToggleService={(idx) => {
-                          const updated = [...clientServices];
-                          updated[idx] = {
-                            ...updated[idx],
-                            checked: !updated[idx].checked,
-                          };
-                          setClientServices(updated);
-                        }}
-                        onOverridePrice={(idx, price) => {
-                          const updated = [...clientServices];
-                          updated[idx] = { ...updated[idx], override_price: price };
-                          setClientServices(updated);
-                        }}
-                        playbookStatus={playbookStatus}
-                        bundleOutcomes={bundleOutcomes}
-                        bundleVersions={bundleVersions}
-                        onSwitchToEnablement={() => setMode("enablement")}
-                      />
-                    ) : (
-                      <ProspectInputPanel
-                        prospectName={prospectName}
-                        prospectIndustry={prospectIndustry}
-                        prospectSize={prospectSize}
-                        primaryConcern={primaryConcern}
-                        onNameChange={setProspectName}
-                        onIndustryChange={setProspectIndustry}
-                        onSizeChange={setProspectSize}
-                        onConcernChange={setPrimaryConcern}
-                        matchLoading={matchLoading}
-                        onMatch={handleMatchServices}
-                        matchedServices={matchedServices}
-                        onToggleService={(idx) => {
-                          const updated = [...matchedServices];
-                          updated[idx] = {
-                            ...updated[idx],
-                            checked: !updated[idx].checked,
-                          };
-                          setMatchedServices(updated);
-                        }}
-                        onOverridePrice={(idx, price) => {
-                          const updated = [...matchedServices];
-                          updated[idx] = { ...updated[idx], override_price: price };
-                          setMatchedServices(updated);
-                        }}
-                        canMatch={!!prospectName.trim()}
-                        playbookStatus={playbookStatus}
-                        bundleOutcomes={bundleOutcomes}
-                        bundleVersions={bundleVersions}
-                        onSwitchToEnablement={() => setMode("enablement")}
-                      />
-                    )}
-
-                    {/* Published packages hint */}
-                    {publishedPackages.length > 0 && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border px-3 py-2">
-                        <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                        <span>
-                          {publishedPackages.length} published{" "}
-                          {publishedPackages.length === 1
-                            ? "package"
-                            : "packages"}{" "}
-                          available —{" "}
-                          <a
-                            href="/packages"
-                            className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                          >
-                            view packages
-                          </a>
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Generate button */}
-                    <Button
-                      onClick={handleGenerate}
-                      disabled={!canGenerate || generating}
-                      className="w-full gap-2"
-                      size="lg"
-                    >
-                      {generating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Drafting your proposal...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4" />
-                          Generate Proposal
-                        </>
-                      )}
-                    </Button>
-                  </>
+                {/* Published packages hint */}
+                {publishedPackages.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border px-3 py-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <span>
+                      {publishedPackages.length} published{" "}
+                      {publishedPackages.length === 1 ? "package" : "packages"}{" "}
+                      available —{" "}
+                      <a
+                        href="/services?tab=packages"
+                        className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                      >
+                        view packages
+                      </a>
+                    </span>
+                  </div>
                 )}
+
+                {/* Generate button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate || generating}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Drafting your proposal...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Generate Proposal
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           ) : (
-            /* Collapsed summary bar (only for client/prospect modes) */
             <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -769,17 +678,8 @@ export function SalesStudioClient({
             </div>
           )}
 
-          {/* Sales Enablement panel */}
-          {mode === "enablement" && (
-            <SalesEnablementPanel
-              activeBundles={activeBundles}
-              orgName={orgName}
-              orgTargetVerticals={orgTargetVerticals}
-            />
-          )}
-
           {/* Generating overlay */}
-          {mode !== "enablement" && generating && !proposal && (
+          {generating && !proposal && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
               <p className="text-lg font-medium text-foreground">
@@ -792,7 +692,7 @@ export function SalesStudioClient({
           )}
 
           {/* Proposal output */}
-          {mode !== "enablement" && proposal && !generating && (
+          {proposal && !generating && (
             <ProposalOutput
               content={proposal}
               proposalId={proposalId}
@@ -810,20 +710,192 @@ export function SalesStudioClient({
               exportingDocx={exportingDocx}
             />
           )}
-        </>
-      )}
+        </TabsContent>
 
-      {tab === "past" && (
-        <PastProposals
-          proposals={proposals}
-          clients={clients}
-          onLoad={handleLoadProposal}
-          onExportPdf={handleExportPdf}
-          onExportDocx={handleExportDocx}
-          exportingPdf={exportingPdf}
-          exportingDocx={exportingDocx}
-        />
-      )}
+        {/* ── Prospect Proposals Tab ── */}
+        <TabsContent value="prospect" className="space-y-6">
+          {!inputCollapsed ? (
+            <Card>
+              <CardContent className="p-5 space-y-5">
+                <ProspectInputPanel
+                  prospectName={prospectName}
+                  prospectIndustry={prospectIndustry}
+                  prospectSize={prospectSize}
+                  primaryConcern={primaryConcern}
+                  onNameChange={setProspectName}
+                  onIndustryChange={setProspectIndustry}
+                  onSizeChange={setProspectSize}
+                  onConcernChange={setPrimaryConcern}
+                  matchLoading={matchLoading}
+                  onMatch={handleMatchServices}
+                  matchedServices={matchedServices}
+                  onToggleService={(idx) => {
+                    const updated = [...matchedServices];
+                    updated[idx] = {
+                      ...updated[idx],
+                      checked: !updated[idx].checked,
+                    };
+                    setMatchedServices(updated);
+                  }}
+                  onOverridePrice={(idx, price) => {
+                    const updated = [...matchedServices];
+                    updated[idx] = { ...updated[idx], override_price: price };
+                    setMatchedServices(updated);
+                  }}
+                  canMatch={!!prospectName.trim()}
+                  playbookStatus={playbookStatus}
+                  bundleOutcomes={bundleOutcomes}
+                  bundleVersions={bundleVersions}
+                  onSwitchToEnablement={() => handleTabChange("playbooks")}
+                />
+
+                {/* Published packages hint */}
+                {publishedPackages.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border px-3 py-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <span>
+                      {publishedPackages.length} published{" "}
+                      {publishedPackages.length === 1 ? "package" : "packages"}{" "}
+                      available —{" "}
+                      <a
+                        href="/services?tab=packages"
+                        className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                      >
+                        view packages
+                      </a>
+                    </span>
+                  </div>
+                )}
+
+                {/* Generate button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate || generating}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Drafting your proposal...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Generate Proposal
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Proposal for {recipientName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {checkedServices.length} service
+                    {checkedServices.length !== 1 ? "s" : ""} included
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "text-xs",
+                    saveStatus === "saved"
+                      ? "text-muted-foreground"
+                      : saveStatus === "saving"
+                        ? "text-amber-400"
+                        : "text-red-400"
+                  )}
+                >
+                  {saveStatus === "saved"
+                    ? "Saved"
+                    : saveStatus === "saving"
+                      ? "Saving..."
+                      : "Unsaved changes"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInputCollapsed(false)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Generating overlay */}
+          {generating && !proposal && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-lg font-medium text-foreground">
+                Drafting your proposal...
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI is generating a tailored proposal for {recipientName}
+              </p>
+            </div>
+          )}
+
+          {/* Proposal output */}
+          {proposal && !generating && (
+            <ProposalOutput
+              content={proposal}
+              proposalId={proposalId}
+              onUpdateSection={updateSection}
+              onRegenSection={handleRegenSection}
+              onRegenFull={handleRegenFull}
+              editingSection={editingSection}
+              onEditSection={setEditingSection}
+              regenSection={regenSection}
+              saveStatus={saveStatus}
+              checkedServices={checkedServices}
+              onExportPdf={() => handleExportPdf()}
+              onExportDocx={() => handleExportDocx()}
+              exportingPdf={exportingPdf}
+              exportingDocx={exportingDocx}
+            />
+          )}
+        </TabsContent>
+
+        {/* ── Playbooks Tab ── */}
+        <TabsContent value="playbooks">
+          <SalesEnablementPanel
+            activeBundles={activeBundles}
+            orgName={orgName}
+            orgTargetVerticals={orgTargetVerticals}
+          />
+        </TabsContent>
+
+        {/* ── Proposal History Tab ── */}
+        <TabsContent value="history">
+          <PastProposals
+            proposals={proposals}
+            clients={clients}
+            onLoad={handleLoadProposal}
+            onExportPdf={handleExportPdf}
+            onExportDocx={handleExportDocx}
+            exportingPdf={exportingPdf}
+            exportingDocx={exportingDocx}
+          />
+        </TabsContent>
+
+        {/* ── Fractional CTO Tab ── */}
+        <TabsContent value="fractional-cto">
+          <FractionalCTOStudioPanel
+            proposal={proposal}
+            recipientName={recipientName}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

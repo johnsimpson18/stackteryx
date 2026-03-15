@@ -9,18 +9,21 @@ import {
   CATEGORY_COLORS,
 } from "@/lib/constants";
 import { calculatePricing } from "@/lib/pricing/engine";
+import { calculateAdditionalServicesMrr } from "@/lib/pricing/additional-services";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
-import { CheckCircle2, Pencil } from "lucide-react";
+import { CheckCircle2, Pencil, ArrowRight, Sparkles } from "lucide-react";
 import type { WizardFormData } from "./wizard-shell";
-import type { Tool, PricingInput, PricingToolInput, PricingOutput } from "@/lib/types";
+import type { Tool, PricingInput, PricingToolInput, PricingOutput, AdditionalService } from "@/lib/types";
 
 interface StepReviewProps {
   form: WizardFormData;
   tools: Tool[];
+  additionalServices: AdditionalService[];
+  launched: boolean;
   onEditStep: (step: number) => void;
 }
 
-export function StepReview({ form, tools, onEditStep }: StepReviewProps) {
+export function StepReview({ form, tools, additionalServices, launched, onEditStep }: StepReviewProps) {
   const selectedTools = useMemo(
     () => tools.filter((t) => form.selectedToolIds.has(t.id)),
     [tools, form.selectedToolIds]
@@ -42,7 +45,7 @@ export function StepReview({ form, tools, onEditStep }: StepReviewProps) {
       labor_cost_per_seat: tool.labor_cost_per_seat
         ? Number(tool.labor_cost_per_seat)
         : null,
-      quantity_multiplier: 1,
+      quantity_multiplier: form.toolQuantities[tool.id] ?? 1,
       annual_flat_cost: tool.annual_flat_cost,
       per_user_cost: tool.per_user_cost,
       per_org_cost: tool.per_org_cost,
@@ -71,13 +74,34 @@ export function StepReview({ form, tools, onEditStep }: StepReviewProps) {
     }
   }, [selectedTools, form]);
 
+  const selectedAdditionalServices = useMemo(
+    () => additionalServices.filter((s) => form.selectedAdditionalServiceIds.has(s.id)),
+    [additionalServices, form.selectedAdditionalServiceIds]
+  );
+
+  const addSvcTotals = useMemo(() => {
+    if (selectedAdditionalServices.length === 0) return null;
+    return calculateAdditionalServicesMrr(
+      selectedAdditionalServices.map((s) => ({
+        service_id: s.id,
+        service_name: s.name,
+        billing_type: s.billing_type,
+        cost: Number(s.cost),
+        sell_price: Number(s.sell_price),
+        cost_override: null,
+        sell_price_override: null,
+        quantity: 1,
+      })),
+      { endpoints: form.seat_count, users: form.seat_count, org_count: 1 }
+    );
+  }, [selectedAdditionalServices, form.seat_count]);
+
   // Completeness check
   const layers = [
     { name: "Outcome", complete: !!form.name.trim() },
     { name: "Service", complete: true },
     { name: "Stack", complete: form.selectedToolIds.size > 0 },
     { name: "Economics", complete: form.seat_count > 0 },
-    { name: "Enablement", complete: true },
   ];
   const completeLayers = layers.filter((l) => l.complete).length;
 
@@ -107,7 +131,7 @@ export function StepReview({ form, tools, onEditStep }: StepReviewProps) {
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground ml-2">{completeLayers}/5</span>
+        <span className="text-xs text-muted-foreground ml-2">{completeLayers}/4</span>
       </div>
 
       {/* Outcome */}
@@ -193,57 +217,79 @@ export function StepReview({ form, tools, onEditStep }: StepReviewProps) {
       {/* Economics */}
       <ReviewCard title="Economics" step={4} onEdit={onEditStep}>
         {pricing ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Seats</p>
-              <p className="text-lg font-bold">{form.seat_count}</p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Seats</p>
+                <p className="text-lg font-bold">{form.seat_count}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">MRR</p>
+                <p className="text-lg font-bold">
+                  {formatCurrency(pricing.total_mrr + (addSvcTotals?.total_mrr ?? 0))}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">ARR</p>
+                <p className="text-lg font-bold">
+                  {formatCurrency((pricing.total_mrr + (addSvcTotals?.total_mrr ?? 0)) * 12)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Margin</p>
+                <p
+                  className={cn(
+                    "text-lg font-bold",
+                    pricing.margin_pct_post_discount >= 0.25
+                      ? "text-emerald-400"
+                      : pricing.margin_pct_post_discount >= 0.15
+                        ? "text-amber-400"
+                        : "text-red-400"
+                  )}
+                >
+                  {formatPercent(pricing.margin_pct_post_discount)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">MRR</p>
-              <p className="text-lg font-bold">{formatCurrency(pricing.total_mrr)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">ARR</p>
-              <p className="text-lg font-bold">{formatCurrency(pricing.total_arr)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Margin</p>
-              <p
-                className={cn(
-                  "text-lg font-bold",
-                  pricing.margin_pct_post_discount >= 0.25
-                    ? "text-emerald-400"
-                    : pricing.margin_pct_post_discount >= 0.15
-                      ? "text-amber-400"
-                      : "text-red-400"
-                )}
-              >
-                {formatPercent(pricing.margin_pct_post_discount)}
-              </p>
-            </div>
+            {selectedAdditionalServices.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                Includes {selectedAdditionalServices.length} additional service{selectedAdditionalServices.length !== 1 ? "s" : ""}{" "}
+                ({formatCurrency(addSvcTotals?.total_mrr ?? 0)}/mo)
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No pricing data</p>
         )}
       </ReviewCard>
 
-      {/* Enablement */}
-      <ReviewCard title="Enablement" step={5} onEdit={onEditStep}>
-        <div className="space-y-2 text-sm">
-          {[
-            { label: "Service overview", value: form.service_overview },
-            { label: "What's included", value: form.whats_included },
-            { label: "Talking points", value: form.talking_points },
-            { label: "Pricing narrative", value: form.pricing_narrative },
-            { label: "Why us", value: form.why_us },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <span className="text-muted-foreground">{label}</span>
-              <p className="font-medium line-clamp-2">{value || "—"}</p>
-            </div>
-          ))}
+      {/* Sales Enablement CTA */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            Sales Enablement
+          </h3>
+          {launched ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => window.open("/sales-studio", "_blank")}
+            >
+              <Sparkles className="h-3 w-3" />
+              Generate
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">Available after launch</span>
+          )}
         </div>
-      </ReviewCard>
+        <p className="text-sm text-muted-foreground">
+          Generate talk tracks, email templates, and objection handling after you launch.
+          Available in the Sales Studio once your service is active.
+        </p>
+      </div>
     </div>
   );
 }

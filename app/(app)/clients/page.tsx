@@ -7,6 +7,10 @@ import { getCurrentProfile } from "@/lib/db/profiles";
 import { getClients } from "@/lib/db/clients";
 import { hasPermission } from "@/lib/constants";
 import { getActiveOrgId } from "@/lib/org-context";
+import {
+  getOrgComplianceTargets,
+  getAllComplianceScores,
+} from "@/lib/db/compliance";
 import { PageHeader } from "@/components/shared/page-header";
 import { ClientList } from "@/components/clients/client-list";
 import { Button } from "@/components/ui/button";
@@ -21,6 +25,26 @@ export default async function ClientsPage() {
 
   const orgId = await getActiveOrgId();
   const clients = await getClients(orgId ?? undefined);
+
+  // Fetch compliance scores — best score across all enabled frameworks per client
+  const complianceScores: Record<string, number> = {};
+  if (orgId) {
+    try {
+      const targets = await getOrgComplianceTargets(orgId);
+      const enabledIds = targets.filter((t) => t.enabled).map((t) => t.framework_id);
+      for (const fwId of enabledIds) {
+        const scores = await getAllComplianceScores(orgId, fwId);
+        for (const s of scores) {
+          const pct = Number(s.score_pct);
+          if (complianceScores[s.client_id] == null || pct > complianceScores[s.client_id]) {
+            complianceScores[s.client_id] = pct;
+          }
+        }
+      }
+    } catch {
+      // Compliance data unavailable — degrade gracefully
+    }
+  }
 
   const activeClients = clients.filter((c) => c.status === "active");
   const totalMrr = activeClients.reduce(
@@ -115,7 +139,7 @@ export default async function ClientsPage() {
         </Card>
       </div>
 
-      <ClientList clients={clients} userRole={profile.role} />
+      <ClientList clients={clients} userRole={profile.role} complianceScores={complianceScores} />
     </div>
   );
 }

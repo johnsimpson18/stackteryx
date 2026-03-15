@@ -28,12 +28,13 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
-import { Plus, Pencil, Mail, User, Building2, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Pencil, Mail, User, Building2, AlertTriangle, FileText, Brain } from "lucide-react";
 import {
   RenewalBanner,
   ServiceFitBadge,
   ProposalHistory,
 } from "@/components/clients/client-detail-sections";
+import { ClientEditButton } from "@/components/clients/client-edit-button";
 import { findSoonestRenewal, calculateServiceFit } from "@/lib/client-utils";
 import { ClientComplianceSection } from "@/components/compliance/client-compliance-section";
 import { ClientProfitabilityCard } from "@/components/clients/client-profitability-card";
@@ -141,13 +142,14 @@ export default async function ClientDetailPage({
               Generate Proposal
             </Link>
           </Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/cto-briefs">
+              <Brain className="h-3 w-3 mr-1" />
+              Technology Advisory
+            </Link>
+          </Button>
           <RoleGate role={profile.role} permission="edit_clients">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/clients/${id}/edit`}>
-                <Pencil className="h-3 w-3 mr-1" />
-                Edit
-              </Link>
-            </Button>
+            <ClientEditButton client={client} />
           </RoleGate>
         </div>
       </PageHeader>

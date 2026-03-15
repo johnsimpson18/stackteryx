@@ -17,7 +17,7 @@ import { getTierPackages } from "@/lib/db/tier-packages";
 import { SalesStudioClient } from "@/components/sales-studio/sales-studio-client";
 
 interface SalesStudioPageProps {
-  searchParams: Promise<{ mode?: string; client?: string }>;
+  searchParams: Promise<{ tab?: string; client?: string }>;
 }
 
 export default async function SalesStudioPage({
@@ -119,7 +119,13 @@ export default async function SalesStudioPage({
       }))}
       bundleVersions={bundleVersions}
       proposals={proposals}
-      initialMode={params.mode === "prospect" ? "prospect" : "client"}
+      initialTab={
+        (["client", "prospect", "playbooks", "history", "fractional-cto"] as const).includes(
+          params.tab as "client" | "prospect" | "playbooks" | "history" | "fractional-cto"
+        )
+          ? (params.tab as "client" | "prospect" | "playbooks" | "history" | "fractional-cto")
+          : "client"
+      }
       preSelectedClientId={params.client ?? null}
       preSelectedClientContracts={preSelectedClientContracts}
       orgName={org?.name ?? ""}

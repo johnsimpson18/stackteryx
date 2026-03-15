@@ -27,6 +27,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { BundleForm } from "@/components/bundles/bundle-form";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { CostBreakdown } from "@/components/pricing/cost-breakdown";
@@ -150,6 +157,7 @@ export function ServiceProfileClient({
   const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
   const [capabilitiesModalOpen, setCapabilitiesModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [metadataSheetOpen, setMetadataSheetOpen] = useState(false);
 
   // Dismissed cards (optimistic)
   const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
@@ -454,11 +462,17 @@ export function ServiceProfileClient({
           </p>
         </div>
 
-        {/* Assign to Client */}
-        <Button onClick={() => setAssignModalOpen(true)} className="shrink-0 gap-1.5">
-          <UserPlus className="h-4 w-4" />
-          Assign to Client
-        </Button>
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setMetadataSheetOpen(true)} className="gap-1.5">
+            <Pencil className="h-4 w-4" />
+            Edit Details
+          </Button>
+          <Button onClick={() => setAssignModalOpen(true)} className="shrink-0 gap-1.5">
+            <UserPlus className="h-4 w-4" />
+            Assign to Client
+          </Button>
+        </div>
       </div>
 
       {/* 2a. Stale Pricing Banner */}
@@ -614,23 +628,23 @@ export function ServiceProfileClient({
         />
       </div>
 
-      {/* 4. Pricing Configurations */}
+      {/* 4. Pricing Versions */}
       <div>
         <p className="text-xs text-muted-foreground mb-3">
-          Each configuration represents a different way to package and price this service for different client segments.
+          Each version represents a different way to package and price this service for different client segments.
         </p>
         {versions.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
               <DollarSign className="h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm font-medium text-foreground">No pricing configurations</p>
+              <p className="text-sm font-medium text-foreground">No pricing versions</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Add tools and model pricing to complete your service.
               </p>
               <Button size="sm" asChild className="mt-4">
                 <Link href={`/services/${bundle.id}/versions/new`}>
                   <Plus className="h-3 w-3 mr-1" />
-                  Create Pricing Configuration
+                  Create Pricing Version
                 </Link>
               </Button>
             </CardContent>
@@ -638,11 +652,11 @@ export function ServiceProfileClient({
         ) : (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between py-3">
-              <CardTitle className="text-sm">Pricing Configurations</CardTitle>
+              <CardTitle className="text-sm">Pricing Versions</CardTitle>
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/services/${bundle.id}/versions/new`}>
                   <Plus className="h-3 w-3 mr-1" />
-                  New Configuration
+                  New Version
                 </Link>
               </Button>
             </CardHeader>
@@ -895,6 +909,22 @@ export function ServiceProfileClient({
         clients={clients}
         versions={versions}
       />
+
+      {/* Metadata Edit Sheet */}
+      <Sheet open={metadataSheetOpen} onOpenChange={setMetadataSheetOpen}>
+        <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Service Details</SheetTitle>
+          </SheetHeader>
+          <BundleForm
+            bundle={bundle}
+            onSuccess={() => {
+              setMetadataSheetOpen(false);
+              router.refresh();
+            }}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

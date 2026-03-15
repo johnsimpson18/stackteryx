@@ -30,9 +30,10 @@ import type { Bundle, BundleType, BundleStatus } from "@/lib/types";
 
 interface BundleFormProps {
   bundle?: Bundle;
+  onSuccess?: () => void;
 }
 
-export function BundleForm({ bundle }: BundleFormProps) {
+export function BundleForm({ bundle, onSuccess }: BundleFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!bundle;
@@ -63,7 +64,11 @@ export function BundleForm({ bundle }: BundleFormProps) {
         });
         if (result.success) {
           toast.success("Service updated");
-          router.push(`/services/${bundle.id}`);
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push(`/services/${bundle.id}`);
+          }
         } else {
           toast.error(result.error);
         }
@@ -71,7 +76,11 @@ export function BundleForm({ bundle }: BundleFormProps) {
         const result = await createBundleAction(data);
         if (result.success) {
           toast.success("Service created");
-          router.push(`/services/${result.data.id}`);
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push(`/services/${result.data.id}`);
+          }
         } else {
           toast.error(result.error);
         }
@@ -160,7 +169,7 @@ export function BundleForm({ bundle }: BundleFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(isEditing ? `/services/${bundle.id}` : "/services")}
+          onClick={() => onSuccess ? onSuccess() : router.push(isEditing ? `/services/${bundle.id}` : "/services")}
         >
           Cancel
         </Button>

@@ -65,7 +65,7 @@ export async function createBundleAction(
       name: bundle.name,
     }, orgId);
 
-    revalidatePath("/bundles");
+    revalidatePath("/services");
     return { success: true, data: bundle };
   } catch {
     return { success: false, error: "Failed to create bundle" };
@@ -109,8 +109,8 @@ export async function updateBundleAction(
       name: bundle.name,
     }, orgId);
 
-    revalidatePath("/bundles");
-    revalidatePath(`/bundles/${id}`);
+    revalidatePath("/services");
+    revalidatePath(`/services/${id}`);
     return { success: true, data: bundle };
   } catch {
     return { success: false, error: "Failed to update bundle" };
@@ -145,8 +145,8 @@ export async function archiveBundleAction(
       name: bundle.name,
     }, orgId);
 
-    revalidatePath("/bundles");
-    revalidatePath(`/bundles/${id}`);
+    revalidatePath("/services");
+    revalidatePath(`/services/${id}`);
     return { success: true, data: bundle };
   } catch {
     return { success: false, error: "Failed to archive bundle" };
@@ -247,8 +247,8 @@ export async function createVersionAction(
       revalidatePath("/approvals");
     }
 
-    revalidatePath(`/bundles/${bundleId}`);
-    revalidatePath("/bundles");
+    revalidatePath(`/services/${bundleId}`);
+    revalidatePath("/services");
     revalidatePath("/dashboard");
     return { success: true, data: result };
   } catch {
@@ -351,7 +351,7 @@ export async function createBundleFromRecommendation(
       orgId
     );
 
-    revalidatePath("/bundles");
+    revalidatePath("/services");
     revalidatePath("/dashboard");
 
     return {

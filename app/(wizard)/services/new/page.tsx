@@ -10,7 +10,6 @@ import { getAdditionalServicesByOrgId } from "@/lib/db/additional-services";
 import { getBundleById, getInProgressBundle } from "@/lib/db/bundles";
 import { getServiceOutcome } from "@/lib/db/service-outcomes";
 import { getVersionsByBundleId, getVersionById } from "@/lib/db/bundle-versions";
-import { getEnablementByVersionId } from "@/lib/db/enablement";
 import { ServiceWizardShell } from "@/components/service-wizard/wizard-shell";
 import type { BundleType } from "@/lib/types";
 
@@ -47,21 +46,18 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
 
       const latestVersion = versions[0] ?? null;
       let versionToolIds: string[] = [];
-      let enablement = null;
 
       if (latestVersion) {
         const versionWithTools = await getVersionById(latestVersion.id);
         versionToolIds = versionWithTools?.tools.map((t) => t.tool_id) ?? [];
-        enablement = await getEnablementByVersionId(orgId, latestVersion.id);
       }
 
       initialData = {
         bundleId: bundle.id,
-        step: bundle.wizard_step_completed + 1,
+        step: Math.min(bundle.wizard_step_completed + 1, 6),
         outcome,
         version: latestVersion,
         versionToolIds,
-        enablement,
         bundleType: bundle.bundle_type as BundleType,
       };
     }
@@ -81,6 +77,8 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
         target_margin_pct: settings?.default_target_margin_pct ?? 0.35,
         overhead_pct: settings?.default_overhead_pct ?? 0.1,
         labor_pct: settings?.default_labor_pct ?? 0.15,
+        red_zone_margin_pct: settings?.red_zone_margin_pct ?? 0.15,
+        max_discount_no_approval_pct: settings?.max_discount_no_approval_pct ?? 0.10,
       }}
       initialData={initialData}
     />

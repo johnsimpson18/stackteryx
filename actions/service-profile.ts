@@ -45,7 +45,7 @@ export async function updateServiceNameAction(
     }, orgId);
 
     revalidatePath(`/services/${bundleId}`);
-    revalidatePath("/bundles");
+    revalidatePath("/services");
     return { success: true, data: updated };
   } catch {
     return { success: false, error: "Failed to update name" };
@@ -98,7 +98,7 @@ export async function updateServiceStatusAction(
     }, orgId);
 
     revalidatePath(`/services/${bundleId}`);
-    revalidatePath("/bundles");
+    revalidatePath("/services");
     revalidatePath("/dashboard");
     return { success: true, data: updated };
   } catch {

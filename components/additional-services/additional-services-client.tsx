@@ -29,13 +29,18 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { InlinePriceEditor } from "@/components/ui/inline-price-editor";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatting";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
   Plus,
   Search,
@@ -132,11 +137,12 @@ const TEMPLATES: ServiceTemplate[] = [
 
 interface AdditionalServicesClientProps {
   services: AdditionalService[];
+  usageMap?: Record<string, { bundle_id: string; bundle_name: string }[]>;
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function AdditionalServicesClient({ services }: AdditionalServicesClientProps) {
+export function AdditionalServicesClient({ services, usageMap = {} }: AdditionalServicesClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<AdditionalServiceCategory | "all">("all");
@@ -175,15 +181,18 @@ export function AdditionalServicesClient({ services }: AdditionalServicesClientP
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Additional Services"
-        description="Consulting, retainers, and professional services that power your margin"
-      >
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Additional Services</h2>
+          <p className="text-sm text-muted-foreground">
+            Consulting, retainers, and professional services that power your margin
+          </p>
+        </div>
         <Button onClick={() => openCreate()}>
           <Plus className="h-4 w-4 mr-2" />
           Add Service
         </Button>
-      </PageHeader>
+      </div>
 
       {activeServices.length === 0 ? (
         <div className="space-y-4">
@@ -267,6 +276,7 @@ export function AdditionalServicesClient({ services }: AdditionalServicesClientP
                     <TableHead>Cost</TableHead>
                     <TableHead>Sell Price</TableHead>
                     <TableHead>Margin</TableHead>
+                    <TableHead>Used In</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -276,6 +286,7 @@ export function AdditionalServicesClient({ services }: AdditionalServicesClientP
                     <ServiceRow
                       key={svc.id}
                       service={svc}
+                      usages={usageMap[svc.id] ?? []}
                       onEdit={() => openEdit(svc)}
                     />
                   ))}
@@ -283,6 +294,14 @@ export function AdditionalServicesClient({ services }: AdditionalServicesClientP
               </Table>
             </div>
           )}
+
+          {/* Footer CTA */}
+          <p className="text-sm text-muted-foreground">
+            Add these to your services in the service wizard.{" "}
+            <Link href="/services/new" className="underline">
+              Build a Service →
+            </Link>
+          </p>
         </>
       )}
 
@@ -312,9 +331,11 @@ export function AdditionalServicesClient({ services }: AdditionalServicesClientP
 
 function ServiceRow({
   service: svc,
+  usages,
   onEdit,
 }: {
   service: AdditionalService;
+  usages: { bundle_id: string; bundle_name: string }[];
   onEdit: () => void;
 }) {
   const [, startTransition] = useTransition();
@@ -364,6 +385,33 @@ function ServiceRow({
       </TableCell>
       <TableCell>
         <MarginHealthBadge margin={margin} />
+      </TableCell>
+      <TableCell>
+        {usages.length > 0 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                {usages.length} service{usages.length !== 1 ? "s" : ""}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <ul className="space-y-1">
+                {usages.map((u) => (
+                  <li key={u.bundle_id}>
+                    <Link
+                      href={`/services/${u.bundle_id}`}
+                      className="block rounded px-2 py-1 text-sm hover:bg-muted transition-colors"
+                    >
+                      {u.bundle_name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <span className="text-muted-foreground text-sm">Not used</span>
+        )}
       </TableCell>
       <TableCell>
         <Badge variant={svc.status === "active" ? "secondary" : "outline"} className="text-[10px] capitalize">

@@ -50,8 +50,8 @@ export function OnboardingBanner({ bundleId, firstVersionId }: OnboardingBannerP
           <Link
             href={
               firstVersionId
-                ? `/bundles/${bundleId}/versions/${firstVersionId}?tab=enablement`
-                : `/bundles/${bundleId}`
+                ? `/services/${bundleId}/versions/${firstVersionId}?tab=enablement`
+                : `/services/${bundleId}`
             }
             className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
           >

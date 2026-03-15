@@ -253,13 +253,19 @@ export async function saveEconomicsStepAction(
       sell_strategy: parsed.data.sell_strategy,
       sell_config: parsed.data.sell_config,
       assumptions: parsed.data.assumptions,
+      tool_cost_overrides: parsed.data.tool_cost_overrides,
     });
 
-    // Attach selected additional services to the version
+    // Attach selected additional services to the version (with overrides)
     if (parsed.data.additional_service_ids.length > 0) {
+      const overrides = (parsed.data as Record<string, unknown>).additional_service_overrides as
+        Record<string, { cost?: number; sell_price?: number }> | undefined;
       await Promise.all(
         parsed.data.additional_service_ids.map((svcId) =>
-          addAdditionalServiceToVersion(result.version.id, svcId, orgId)
+          addAdditionalServiceToVersion(result.version.id, svcId, orgId, overrides?.[svcId] ? {
+            cost_override: overrides[svcId].cost ?? null,
+            sell_price_override: overrides[svcId].sell_price ?? null,
+          } : undefined)
         )
       );
     }
@@ -344,7 +350,7 @@ export async function launchServiceAction(
     await updateBundle(bundleId, {
       status: "active",
       wizard_in_progress: false,
-      wizard_step_completed: 7,
+      wizard_step_completed: 6,
       outcome_layer_complete: true,
       stack_layer_complete: true,
       economics_layer_complete: true,
@@ -353,7 +359,7 @@ export async function launchServiceAction(
 
     await logAudit(profile.id, "bundle_updated", "bundle", bundleId, {
       via: "build_service_wizard",
-      step: 7,
+      step: 6,
       action: "launched",
     }, orgId);
 
