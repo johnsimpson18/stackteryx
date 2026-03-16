@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { Loader2, Download, FileText, ArrowRight } from "lucide-react";
+import { Loader2, Download, FileText, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import {
   exportBriefPdfAction,
   exportBriefDocxAction,
 } from "@/actions/fractional-cto";
+import { captureFreeLead } from "@/actions/free-tool";
 import type { BriefOutput } from "@/actions/fractional-cto";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -58,9 +59,19 @@ const PROGRESS_MESSAGES = [
   "Preparing your executive brief...",
 ] as const;
 
+type Step = "capture" | "intake" | "generating" | "output";
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function FractionalCTOClient() {
+  // Step state
+  const [step, setStep] = useState<Step>("capture");
+
+  // Lead capture state
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+
   // Form state
   const [domain, setDomain] = useState("");
   const [industry, setIndustry] = useState("");
@@ -99,6 +110,40 @@ export function FractionalCTOClient() {
     }
   }, [brief]);
 
+  // Sync step with generation state
+  useEffect(() => {
+    if (brief) setStep("output");
+  }, [brief]);
+
+  useEffect(() => {
+    if (isPending) setStep("generating");
+  }, [isPending]);
+
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  function handleCaptureSubmit() {
+    if (!isValidEmail) return;
+
+    // Fire and forget — don't block on lead capture
+    captureFreeLead({
+      email,
+      firstName: firstName || undefined,
+      companyName: companyName || undefined,
+      clientDomain: "",
+    });
+
+    // Pre-fill MSP name from company name
+    if (companyName && !mspName) {
+      setMspName(companyName);
+    }
+
+    setStep("intake");
+    // Scroll to form
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }
+
   const canSubmit =
     domain.trim().length > 0 &&
     industry.length > 0 &&
@@ -111,6 +156,16 @@ export function FractionalCTOClient() {
     setError(null);
     setBrief(null);
 
+    // Update the lead with the domain they entered (fire and forget)
+    if (email) {
+      captureFreeLead({
+        email,
+        firstName: firstName || undefined,
+        companyName: companyName || undefined,
+        clientDomain: domain.trim(),
+      });
+    }
+
     startTransition(async () => {
       try {
         const result = await generateCTOBrief({
@@ -122,6 +177,7 @@ export function FractionalCTOClient() {
         });
         setBrief(result);
       } catch (err) {
+        setStep("intake");
         setError(
           err instanceof Error
             ? err.message
@@ -190,149 +246,226 @@ export function FractionalCTOClient() {
         </button>
       </section>
 
-      {/* ── Section 2: Intake Form ───────────────────────────────────────── */}
-      <section
-        ref={formRef}
-        className="px-6 pb-20 max-w-xl mx-auto scroll-mt-20"
-      >
-        <div className="rounded-xl border border-border bg-card p-6 sm:p-8 space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Brief Details
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Fill in your client details and we&apos;ll generate a tailored
-              Technology Strategy Brief.
-            </p>
-          </div>
-
-          {/* Client Domain */}
-          <div className="space-y-2">
-            <Label htmlFor="domain">Client Domain *</Label>
-            <Input
-              id="domain"
-              placeholder="acmecorp.com"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
-
-          {/* Industry */}
-          <div className="space-y-2">
-            <Label>Industry *</Label>
-            <Select
-              value={industry}
-              onValueChange={setIndustry}
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select industry" />
-              </SelectTrigger>
-              <SelectContent>
-                {INDUSTRIES.map((ind) => (
-                  <SelectItem key={ind} value={ind}>
-                    {ind}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Company Size */}
-          <div className="space-y-2">
-            <Label>Company Size *</Label>
-            <Select
-              value={companySize}
-              onValueChange={setCompanySize}
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select company size" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMPANY_SIZES.map((size) => (
-                  <SelectItem key={size} value={size}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Primary Technology Concern */}
-          <div className="space-y-2">
-            <Label>Primary Technology Concern</Label>
-            <Select
-              value={concern}
-              onValueChange={setConcern}
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Optional" />
-              </SelectTrigger>
-              <SelectContent>
-                {CONCERNS.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* MSP Name */}
-          <div className="space-y-2">
-            <Label htmlFor="mspName">Your Company Name (MSP) *</Label>
-            <Input
-              id="mspName"
-              placeholder="Your MSP Name"
-              value={mspName}
-              onChange={(e) => setMspName(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
-
-          {/* Submit */}
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || isPending}
-            className="w-full"
-            size="lg"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                Generate Technology Strategy Brief
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </Button>
-
-          {/* Progress messages */}
-          {isPending && (
-            <div className="text-center">
-              <p className="text-sm text-primary/80 animate-pulse">
-                {PROGRESS_MESSAGES[progressIdx].replace(
-                  "{domain}",
-                  domain.trim() || "client",
-                )}
+      {/* ── Step 1: Lead Capture ─────────────────────────────────────────── */}
+      {step === "capture" && (
+        <section
+          ref={formRef}
+          className="px-6 pb-20 max-w-xl mx-auto scroll-mt-20"
+        >
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-8 space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Generate Your Free Technology Strategy Brief
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enter your details to generate a client-ready executive advisory
+                report. Powered by AI. Ready in seconds. No credit card required.
               </p>
             </div>
-          )}
 
-          {/* Error */}
-          {error && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="space-y-2">
+              <Label htmlFor="capture-email">Your email address *</Label>
+              <Input
+                id="capture-email"
+                type="email"
+                placeholder="you@yourmsp.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-          )}
-        </div>
-      </section>
+
+            <div className="space-y-2">
+              <Label htmlFor="capture-name">Your first name</Label>
+              <Input
+                id="capture-name"
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="capture-company">Your company name (MSP)</Label>
+              <Input
+                id="capture-company"
+                placeholder="Acme IT Solutions"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              By continuing, you agree to receive occasional product updates from
+              Stackteryx. Unsubscribe at any time.
+            </p>
+
+            <Button
+              onClick={handleCaptureSubmit}
+              disabled={!isValidEmail}
+              className="w-full"
+              size="lg"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* ── Step 2: Intake Form ──────────────────────────────────────────── */}
+      {(step === "intake" || step === "generating") && (
+        <section
+          ref={formRef}
+          className="px-6 pb-20 max-w-xl mx-auto scroll-mt-20"
+        >
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-8 space-y-6">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep("capture")}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  Brief Details
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Fill in your client details and we&apos;ll generate a tailored
+                  Technology Strategy Brief.
+                </p>
+              </div>
+            </div>
+
+            {/* Client Domain */}
+            <div className="space-y-2">
+              <Label htmlFor="domain">Client Domain *</Label>
+              <Input
+                id="domain"
+                placeholder="acmecorp.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Industry */}
+            <div className="space-y-2">
+              <Label>Industry *</Label>
+              <Select
+                value={industry}
+                onValueChange={setIndustry}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDUSTRIES.map((ind) => (
+                    <SelectItem key={ind} value={ind}>
+                      {ind}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Company Size */}
+            <div className="space-y-2">
+              <Label>Company Size *</Label>
+              <Select
+                value={companySize}
+                onValueChange={setCompanySize}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select company size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMPANY_SIZES.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Primary Technology Concern */}
+            <div className="space-y-2">
+              <Label>Primary Technology Concern</Label>
+              <Select
+                value={concern}
+                onValueChange={setConcern}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Optional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONCERNS.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* MSP Name */}
+            <div className="space-y-2">
+              <Label htmlFor="mspName">Your Company Name (MSP) *</Label>
+              <Input
+                id="mspName"
+                placeholder="Your MSP Name"
+                value={mspName}
+                onChange={(e) => setMspName(e.target.value)}
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || isPending}
+              className="w-full"
+              size="lg"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  Generate Technology Strategy Brief
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+
+            {/* Progress messages */}
+            {isPending && (
+              <div className="text-center">
+                <p className="text-sm text-primary/80 animate-pulse">
+                  {PROGRESS_MESSAGES[progressIdx].replace(
+                    "{domain}",
+                    domain.trim() || "client",
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ── Section 3: Report Output ─────────────────────────────────────── */}
       {brief && (

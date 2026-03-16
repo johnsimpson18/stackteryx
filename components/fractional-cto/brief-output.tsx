@@ -97,12 +97,12 @@ function RiskCard({ risk }: { risk: TechnologyRisk }) {
 
 function RadarItemCard({ item }: { item: RadarItem }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-card p-4 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">
+    <div className="rounded-lg border border-border/50 bg-card p-4 space-y-2 min-w-0 overflow-hidden">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <h3 className="text-sm font-semibold text-foreground min-w-0">
           {item.technology}
         </h3>
-        <span className="shrink-0 px-2 py-0.5 text-[11px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
+        <span className="inline-block max-w-full break-words whitespace-normal px-2 py-0.5 text-[11px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
           {item.relevance}
         </span>
       </div>

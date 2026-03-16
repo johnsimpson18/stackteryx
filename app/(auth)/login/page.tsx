@@ -11,65 +11,17 @@ import {
   resendConfirmation,
 } from "@/actions/auth";
 import { toast } from "sonner";
-import { Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft, Brain } from "lucide-react";
+import {
+  Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft,
+  Brain, TrendingDown, Table, Target, Wrench, Package,
+  DollarSign, FileText, BarChart2, Sparkles,
+} from "lucide-react";
+
 
 /* ─────────────────────────────────────────────────────────────
    STACKTERYX LANDING PAGE
    Industrial-premium marketing + login entry point.
    ───────────────────────────────────────────────────────────── */
-
-// ── Inline SVG icons for feature section ─────────────────────
-
-function IconStack() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 4L28 10L16 16L4 10L16 4Z" stroke="#A8FF3E" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M4 16L16 22L28 16" stroke="#A8FF3E" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M4 22L16 28L28 22" stroke="#A8FF3E" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconDoc() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="6" y="4" width="20" height="24" rx="2" stroke="#A8FF3E" strokeWidth="1.5" />
-      <line x1="10" y1="11" x2="22" y2="11" stroke="#A8FF3E" strokeWidth="1.5" />
-      <line x1="10" y1="15.5" x2="22" y2="15.5" stroke="#A8FF3E" strokeWidth="1.5" />
-      <line x1="10" y1="20" x2="17" y2="20" stroke="#A8FF3E" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function IconChart() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="5" y="18" width="5" height="10" rx="1" stroke="#A8FF3E" strokeWidth="1.5" />
-      <rect x="13.5" y="12" width="5" height="16" rx="1" stroke="#A8FF3E" strokeWidth="1.5" />
-      <rect x="22" y="6" width="5" height="22" rx="1" stroke="#A8FF3E" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-// ── HIPAA bundle spreadsheet data (the painful way) ──────────
-
-const spreadsheetRows = [
-  { tool: "CrowdStrike Falcon", cost: "$4.20/ep", sell: "$7.00/ep", margin: "40.0%", notes: "" },
-  { tool: "Mimecast Email Sec", cost: "$3.10/u",  sell: "$5.50/u",  margin: "43.6%", notes: "" },
-  { tool: "Datto Backup",      cost: "$2.80/ep", sell: "$4.75/ep", margin: "41.1%", notes: "" },
-  { tool: "KnowBe4 Training",  cost: "$1.90/u",  sell: "$3.25/u",  margin: "41.5%", notes: "" },
-  { tool: "Huntress MDR",      cost: "$3.50/ep", sell: "$6.00/ep", margin: "41.7%", notes: "" },
-];
-
-// ── HIPAA bundle card data (the Stackteryx way) ──────────────
-
-const bundleTools = [
-  { name: "CrowdStrike Falcon", category: "Endpoint", color: "#3B82F6", price: "$7.00/ep" },
-  { name: "Mimecast Email Sec", category: "Email",    color: "#A855F7", price: "$5.50/u" },
-  { name: "Datto Backup",       category: "Backup",   color: "#F59E0B", price: "$4.75/ep" },
-  { name: "KnowBe4 Training",   category: "Training", color: "#10B981", price: "$3.25/u" },
-  { name: "Huntress MDR",       category: "MDR",      color: "#EF4444", price: "$6.00/ep" },
-];
 
 // ── Password strength helpers ────────────────────────────────
 
@@ -962,6 +914,7 @@ function AuthCard() {
   );
 }
 
+
 // ── Main page component ──────────────────────────────────────
 
 export default function LoginPage() {
@@ -970,11 +923,16 @@ export default function LoginPage() {
     document.getElementById("login")?.scrollIntoView({ behavior: "smooth" });
   }
 
+  function scrollToSection(e: React.MouseEvent, id: string) {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "#0A0A0A", scrollPaddingTop: "80px" }}>
 
       {/* ═══════════════════════════════════════════════════════
-          NAVIGATION BAR — sticky, authoritative
+          NAVIGATION BAR
           ═══════════════════════════════════════════════════════ */}
       <nav
         className="sticky top-0 z-50 flex items-center justify-between h-16 px-6"
@@ -992,16 +950,16 @@ export default function LoginPage() {
             href="/fractional-cto"
             className="h-8 px-4 flex items-center gap-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
             style={{
-              color: "#A8FF3E",
-              border: "1px solid #A8FF3E40",
+              color: "#c8f135",
+              border: "1px solid #c8f13540",
               fontFamily: "var(--font-display)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#A8FF3E";
-              e.currentTarget.style.background = "#A8FF3E10";
+              e.currentTarget.style.borderColor = "#c8f135";
+              e.currentTarget.style.background = "#c8f13510";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#A8FF3E40";
+              e.currentTarget.style.borderColor = "#c8f13540";
               e.currentTarget.style.background = "transparent";
             }}
           >
@@ -1017,8 +975,8 @@ export default function LoginPage() {
               fontFamily: "var(--font-display)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#A8FF3E";
-              e.currentTarget.style.color = "#A8FF3E";
+              e.currentTarget.style.borderColor = "#c8f135";
+              e.currentTarget.style.color = "#c8f135";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "#1E1E1E";
@@ -1032,12 +990,12 @@ export default function LoginPage() {
             onClick={scrollToLogin}
             className="h-8 px-4 flex items-center rounded text-xs font-bold uppercase tracking-wider transition-all"
             style={{
-              background: "#A8FF3E",
+              background: "#c8f135",
               color: "#0A0A0A",
               fontFamily: "var(--font-display)",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#BFFF5C")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#A8FF3E")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
           >
             Sign Up
           </a>
@@ -1051,7 +1009,7 @@ export default function LoginPage() {
         className="relative min-h-[calc(100vh-64px)] flex items-center"
         style={{
           backgroundImage:
-            "linear-gradient(#A8FF3E08 1px, transparent 1px), linear-gradient(90deg, #A8FF3E08 1px, transparent 1px)",
+            "linear-gradient(#c8f13508 1px, transparent 1px), linear-gradient(90deg, #c8f13508 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }}
       >
@@ -1063,23 +1021,26 @@ export default function LoginPage() {
               {/* Eyebrow */}
               <p
                 className="landing-fade-in text-xs uppercase tracking-[0.3em] font-bold"
-                style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)", animationDelay: "0ms" }}
+                style={{ color: "#c8f135", fontFamily: "var(--font-mono)", animationDelay: "0ms" }}
               >
-                THE MSSP OPERATING SYSTEM
+                THE SERVICE ECONOMICS PLATFORM FOR MSPS
               </p>
 
               <h1
-                className="text-[48px] md:text-[72px] lg:text-[88px] font-extrabold leading-[0.95] uppercase tracking-tight"
+                className="text-[40px] md:text-[60px] lg:text-[72px] font-extrabold leading-[0.95] tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "0ms" }}>
-                  DESIGN PROFITABLE
+                  Your MSP deserves
+                </span>
+                <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "60ms" }}>
+                  better than
                 </span>
                 <span
                   className="landing-word landing-glow-text block"
-                  style={{ color: "#A8FF3E", animationDelay: "80ms" }}
+                  style={{ color: "#c8f135", animationDelay: "120ms" }}
                 >
-                  SECURITY SERVICES.
+                  a spreadsheet.
                 </span>
               </h1>
 
@@ -1091,104 +1052,64 @@ export default function LoginPage() {
                   fontFamily: "var(--font-mono)",
                 }}
               >
-                The platform where managed security services are architected — from the
-                business outcome they deliver, down to the vendor cost that makes them
-                profitable. With an AI layer that reasons through the process on your behalf.
+                Most MSPs price services on gut instinct and track margins in Excel.
+                Stackteryx replaces the guesswork with real unit economics — so every
+                service you sell is profitable by design.
               </p>
 
-              {/* Five-layer framework chips */}
+              {/* CTA buttons */}
               <div
-                className="landing-fade-in flex flex-wrap items-center gap-2 pt-1"
+                className="landing-fade-in flex flex-wrap items-center gap-4 pt-2"
                 style={{ animationDelay: "450ms" }}
               >
-                {["OUTCOME", "SERVICE", "STACK", "COST", "COMMERCIAL"].map((layer, i) => (
-                  <div key={layer} className="flex items-center gap-2">
-                    <span
-                      className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded font-bold"
-                      style={{
-                        background: "#A8FF3E10",
-                        border: "1px solid #A8FF3E30",
-                        color: "#A8FF3E",
-                        fontFamily: "var(--font-mono)",
-                      }}
-                    >
-                      {layer}
-                    </span>
-                    {i < 4 && (
-                      <span style={{ color: "#A8FF3E40", fontSize: "10px" }}>→</span>
-                    )}
-                  </div>
-                ))}
+                <a
+                  href="#login"
+                  onClick={scrollToLogin}
+                  className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
+                  style={{
+                    background: "#c8f135",
+                    color: "#0A0A0A",
+                    fontFamily: "var(--font-display)",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
+                >
+                  Start Free
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href="#how-it-works"
+                  onClick={(e) => scrollToSection(e, "how-it-works")}
+                  className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
+                  style={{
+                    color: "#FFFFFF",
+                    border: "1px solid #1E1E1E",
+                    fontFamily: "var(--font-display)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#c8f135";
+                    e.currentTarget.style.color = "#c8f135";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#1E1E1E";
+                    e.currentTarget.style.color = "#FFFFFF";
+                  }}
+                >
+                  See How It Works
+                </a>
               </div>
 
-              {/* Stat row */}
-              <div
-                className="landing-fade-in flex flex-wrap gap-6 pt-2"
-                style={{ animationDelay: "550ms" }}
-              >
-                {[
-                  "Vendor agnostic",
-                  "5-layer service architecture",
-                  "AI-generated proposals",
-                ].map((stat) => (
-                  <div
-                    key={stat}
-                    className="text-xs uppercase tracking-widest font-semibold"
-                    style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-                  >
-                    {stat}
-                  </div>
-                ))}
-              </div>
-
-              {/* Free CTO Brief CTA */}
-              <a
-                href="/fractional-cto"
-                className="landing-fade-in block max-w-lg rounded-lg p-4 transition-all group"
+              {/* Credibility line */}
+              <p
+                className="landing-fade-in text-xs"
                 style={{
-                  animationDelay: "650ms",
-                  background: "#A8FF3E08",
-                  border: "1px solid #A8FF3E20",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#A8FF3E50";
-                  e.currentTarget.style.background = "#A8FF3E12";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#A8FF3E20";
-                  e.currentTarget.style.background = "#A8FF3E08";
+                  color: "#444444",
+                  animationDelay: "550ms",
+                  fontFamily: "var(--font-mono)",
                 }}
               >
-                <div className="flex items-start gap-3">
-                  <div
-                    className="flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center mt-0.5"
-                    style={{ background: "#A8FF3E15" }}
-                  >
-                    <Brain className="h-4 w-4" style={{ color: "#A8FF3E" }} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                    >
-                      Generate a free Technology Strategy Brief for your clients
-                    </p>
-                    <p
-                      className="text-xs leading-relaxed"
-                      style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                    >
-                      A client-ready executive advisory report — powered by AI, ready in seconds. No login required.
-                    </p>
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider"
-                      style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-                    >
-                      Try the Free CTO Brief
-                      <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-                </div>
-              </a>
+                Free forever for one service. No credit card required.
+              </p>
             </div>
 
             {/* Right — Login Card */}
@@ -1218,454 +1139,516 @@ export default function LoginPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 2 — THE SPREADSHEET PROBLEM
+          SECTION 2 — THE PAIN
           ═══════════════════════════════════════════════════════ */}
       <section style={{ background: "#111111" }} className="py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6 text-center space-y-12">
+          <div className="space-y-4">
+            <p
+              className="text-xs uppercase tracking-[0.3em] font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+            >
+              THE PROBLEM
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Sound familiar?
+            </h2>
+          </div>
 
-          {/* Section eyebrow + headline */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1 — Profitability */}
+            <div
+              className="rounded-lg p-6 text-left space-y-3"
+              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+            >
+              <div
+                className="h-10 w-10 rounded-md flex items-center justify-center"
+                style={{ background: "#c8f13510" }}
+              >
+                <TrendingDown className="h-5 w-5" style={{ color: "#c8f135" }} />
+              </div>
+              <h3
+                className="text-base font-bold"
+                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+              >
+                &ldquo;Are we actually making money on this client?&rdquo;
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                You won the deal, but vendor costs crept up and scope expanded.
+                Six months later you&apos;re not sure the service is still profitable.
+              </p>
+            </div>
+
+            {/* Card 2 — Spreadsheets */}
+            <div
+              className="rounded-lg p-6 text-left space-y-3"
+              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+            >
+              <div
+                className="h-10 w-10 rounded-md flex items-center justify-center"
+                style={{ background: "#c8f13510" }}
+              >
+                <Table className="h-5 w-5" style={{ color: "#c8f135" }} />
+              </div>
+              <h3
+                className="text-base font-bold"
+                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+              >
+                &ldquo;Let me find the right spreadsheet...&rdquo;
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                Pricing lives in a spreadsheet. Proposals live in another.
+                Cost data lives in a third. None of them agree.
+              </p>
+            </div>
+
+            {/* Card 3 — Positioning */}
+            <div
+              className="rounded-lg p-6 text-left space-y-3"
+              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+            >
+              <div
+                className="h-10 w-10 rounded-md flex items-center justify-center"
+                style={{ background: "#c8f13510" }}
+              >
+                <Target className="h-5 w-5" style={{ color: "#c8f135" }} />
+              </div>
+              <h3
+                className="text-base font-bold"
+                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+              >
+                &ldquo;How do we differentiate from the MSP down the road?&rdquo;
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                Every competitor sells &ldquo;managed security.&rdquo; Without
+                outcome-based positioning, you&apos;re competing on price alone.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 3 — THE BIG IDEA (interstitial)
+          ═══════════════════════════════════════════════════════ */}
+      <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
+        <div className="max-w-3xl mx-auto px-6 text-center space-y-6">
           <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
+            className="text-xs uppercase tracking-[0.3em] font-bold"
+            style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
           >
-            THE PROBLEM
+            A BETTER WAY
           </p>
           <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-8"
+            className="text-3xl md:text-5xl font-extrabold leading-tight"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            MOST MSPS ARE RUNNING THEIR<br />
-            SECURITY BUSINESS<br />
-            <span style={{ color: "#666666" }}>IN A SPREADSHEET.</span>
+            What if every service you sold was{" "}
+            <span style={{ color: "#c8f135" }}>profitable by design?</span>
           </h2>
+          <p
+            className="text-base leading-relaxed max-w-2xl mx-auto"
+            style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
+          >
+            Stackteryx connects your service catalog, vendor costs, and pricing in one
+            place — then uses AI to help you build, price, and sell services that
+            actually make money.
+          </p>
+        </div>
+      </section>
 
-          {/* Pain point cards — 2×2 grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-16 md:mb-20">
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 4 — SPREADSHEET VS STACKTERYX
+          ═══════════════════════════════════════════════════════ */}
+      <section style={{ background: "#111111" }} className="py-20 md:py-28">
+        <div className="max-w-4xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-4">
+            <p
+              className="text-xs uppercase tracking-[0.3em] font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+            >
+              THE COMPARISON
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Spreadsheet vs. Stackteryx
+            </h2>
+          </div>
+
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{ border: "1px solid #1E1E1E" }}
+          >
+            <table className="w-full text-sm" style={{ fontFamily: "var(--font-mono)" }}>
+              <thead>
+                <tr style={{ background: "#0A0A0A" }}>
+                  <th
+                    className="text-left px-5 py-3 text-xs uppercase tracking-wider font-bold"
+                    style={{ color: "#666666" }}
+                  >
+                    Capability
+                  </th>
+                  <th
+                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
+                    style={{ color: "#666666" }}
+                  >
+                    Spreadsheet
+                  </th>
+                  <th
+                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
+                    style={{ color: "#c8f135" }}
+                  >
+                    Stackteryx
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["Live unit-cost margins", false, true],
+                  ["Outcome-based service design", false, true],
+                  ["One-click proposal generation", false, true],
+                  ["Multi-tier pricing engine", false, true],
+                  ["AI technology advisory", false, true],
+                  ["Portfolio-wide profitability view", false, true],
+                  ["Client compliance scoring", false, true],
+                ].map(([label, spreadsheet, stx], i) => (
+                  <tr
+                    key={i}
+                    style={{
+                      background: i % 2 === 0 ? "#111111" : "#0A0A0A",
+                      borderTop: "1px solid #1E1E1E",
+                    }}
+                  >
+                    <td className="px-5 py-3" style={{ color: "#CCCCCC" }}>
+                      {label as string}
+                    </td>
+                    <td className="text-center px-5 py-3" style={{ color: "#EF4444" }}>
+                      {spreadsheet ? "✓" : "✗"}
+                    </td>
+                    <td className="text-center px-5 py-3" style={{ color: "#c8f135" }}>
+                      {stx ? "✓" : "✗"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 5 — HOW IT WORKS
+          ═══════════════════════════════════════════════════════ */}
+      <section id="how-it-works" className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
+        <div className="max-w-5xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-4">
+            <p
+              className="text-xs uppercase tracking-[0.3em] font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+            >
+              HOW IT WORKS
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Four steps to profitable services
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: "Hidden margin risk", desc: "A vendor price increase silently erodes your margin across every affected service." },
-              { title: "Inconsistent proposals", desc: "Every rep quotes differently. No two clients see the same service." },
-              { title: "Tool sprawl", desc: "Nobody knows which tools are actually assigned to which services." },
-              { title: "Services that don\u2019t scale", desc: "You can\u2019t package, replicate, or sell what only exists in a spreadsheet." },
-            ].map((pain) => (
+              {
+                step: "01",
+                title: "Define the Outcome",
+                desc: "Start with the business problem your service solves — not the tools in the stack.",
+                Icon: Target,
+              },
+              {
+                step: "02",
+                title: "Build the Stack",
+                desc: "Add vendor tools, set unit costs, and let the pricing engine calculate margins automatically.",
+                Icon: Wrench,
+              },
+              {
+                step: "03",
+                title: "Price with Confidence",
+                desc: "Multi-tier pricing (Good / Better / Best) with real-time margin visibility on every tier.",
+                Icon: DollarSign,
+              },
+              {
+                step: "04",
+                title: "Sell and Deliver",
+                desc: "Generate branded proposals, track contracts, and monitor profitability across your portfolio.",
+                Icon: FileText,
+              },
+            ].map(({ step, title, desc, Icon }) => (
               <div
-                key={pain.title}
-                className="flex items-start gap-3 rounded-lg px-4 py-3.5"
-                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+                key={step}
+                className="rounded-lg p-6 space-y-3"
+                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
               >
                 <span
-                  className="h-2 w-2 rounded-full flex-shrink-0 mt-1.5"
-                  style={{ background: "#EF4444" }}
-                />
+                  className="text-xs font-bold uppercase tracking-wider"
+                  style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+                >
+                  STEP {step}
+                </span>
+                <div
+                  className="h-10 w-10 rounded-md flex items-center justify-center"
+                  style={{ background: "#c8f13510" }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: "#c8f135" }} />
+                </div>
+                <h3
+                  className="text-base font-bold"
+                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                >
+                  {title}
+                </h3>
+                <p
+                  className="text-sm leading-relaxed"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+                >
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 6 — FRACTIONAL CTO
+          ═══════════════════════════════════════════════════════ */}
+      <section style={{ background: "#111111" }} className="py-20 md:py-28">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <p
+                className="text-xs uppercase tracking-[0.3em] font-bold"
+                style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+              >
+                FRACTIONAL CTO
+              </p>
+              <h2
+                className="text-3xl md:text-4xl font-extrabold"
+                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+              >
+                Give every client a CTO —{" "}
+                <span style={{ color: "#c8f135" }}>without hiring one.</span>
+              </h2>
+              <p
+                className="text-base leading-relaxed"
+                style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
+              >
+                Generate executive-grade Technology Strategy Briefs that surface
+                risks, recommend actions, and position your MSP as a strategic
+                advisor — not just a vendor.
+              </p>
+
+              <div className="space-y-4 pt-2">
+                {[
+                  {
+                    title: "AI-Generated Briefs",
+                    desc: "Quarterly technology strategy reports tailored to each client's industry and stack.",
+                  },
+                  {
+                    title: "Risk Intelligence",
+                    desc: "Surface technology risks before they become incidents. Clients see you as proactive, not reactive.",
+                  },
+                  {
+                    title: "Revenue Expansion",
+                    desc: "Every brief is a conversation starter for new services. Advisory becomes a billable offering.",
+                  },
+                ].map(({ title, desc }) => (
+                  <div
+                    key={title}
+                    className="flex items-start gap-3"
+                  >
+                    <div
+                      className="flex-shrink-0 h-6 w-6 rounded flex items-center justify-center mt-0.5"
+                      style={{ background: "#c8f13515" }}
+                    >
+                      <Brain className="h-3.5 w-3.5" style={{ color: "#c8f135" }} />
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-bold"
+                        style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                      >
+                        {title}
+                      </p>
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+                      >
+                        {desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <a
+                href="/fractional-cto"
+                className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider transition-colors"
+                style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#d4f55c")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#c8f135")}
+              >
+                Try a Free CTO Brief
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+
+            {/* Right — visual */}
+            <div
+              className="rounded-lg p-8 space-y-4"
+              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="h-10 w-10 rounded-md flex items-center justify-center"
+                  style={{ background: "#c8f13515" }}
+                >
+                  <Brain className="h-5 w-5" style={{ color: "#c8f135" }} />
+                </div>
                 <div>
                   <p
                     className="text-sm font-bold"
                     style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
                   >
-                    {pain.title}
+                    Technology Strategy Brief
                   </p>
                   <p
-                    className="text-xs mt-0.5"
+                    className="text-xs"
                     style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
                   >
-                    {pain.desc}
+                    Q1 2026 &middot; Healthcare
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Two-column comparison — same HIPAA bundle, two worlds */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-
-            {/* Left — The old way (fake Excel spreadsheet) */}
-            <div>
-              <p
-                className="text-xs uppercase tracking-[0.2em] mb-4 font-bold"
-                style={{ color: "#EF4444", fontFamily: "var(--font-mono)" }}
-              >
-                YOUR CURRENT SYSTEM
-              </p>
               <div
-                className="landing-scanline rounded overflow-hidden"
-                style={{ border: "1px solid #C0C0C0" }}
-              >
-                <table
-                  className="w-full text-[11px] border-collapse"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  <thead>
-                    <tr style={{ background: "#E8E8E8" }}>
-                      {["Tool Name", "Cost/Mo", "Sell/Mo", "Margin%", "Notes"].map((h) => (
-                        <th
-                          key={h}
-                          className="text-left px-2.5 py-1.5 font-normal"
-                          style={{
-                            color: "#333333",
-                            border: "1px solid #C0C0C0",
-                          }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {spreadsheetRows.map((row) => (
-                      <tr key={row.tool}>
-                        <td
-                          className="px-2.5 py-1.5"
-                          style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#FAFAFA" }}
-                        >
-                          {row.tool}
-                        </td>
-                        <td
-                          className="px-2.5 py-1.5"
-                          style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#FAFAFA" }}
-                        >
-                          {row.cost}
-                        </td>
-                        <td
-                          className="px-2.5 py-1.5"
-                          style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#FAFAFA" }}
-                        >
-                          {row.sell}
-                        </td>
-                        <td
-                          className="px-2.5 py-1.5"
-                          style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#FAFAFA" }}
-                        >
-                          {row.margin}
-                        </td>
-                        <td
-                          className="px-2.5 py-1.5"
-                          style={{ color: "#999999", border: "1px solid #D0D0D0", background: "#FAFAFA" }}
-                        >
-                          &nbsp;
-                        </td>
-                      </tr>
-                    ))}
-                    {/* TOTAL row — the broken formula */}
-                    <tr style={{ fontWeight: 600 }}>
-                      <td
-                        className="px-2.5 py-2"
-                        style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#F0F0F0" }}
-                      >
-                        TOTAL
-                      </td>
-                      <td
-                        className="px-2.5 py-2"
-                        style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#F0F0F0" }}
-                      >
-                        $15.50
-                      </td>
-                      <td
-                        className="px-2.5 py-2"
-                        style={{ color: "#333333", border: "1px solid #D0D0D0", background: "#F0F0F0" }}
-                      >
-                        $26.50
-                      </td>
-                      <td
-                        className="px-2.5 py-2 text-[12px]"
-                        style={{
-                          border: "1px solid #D0D0D0",
-                          background: "#FEE2E2",
-                          color: "#DC2626",
-                          fontWeight: 700,
-                        }}
-                      >
-                        #REF!
-                      </td>
-                      <td
-                        className="px-2.5 py-2"
-                        style={{
-                          color: "#999999",
-                          border: "1px solid #D0D0D0",
-                          background: "#F0F0F0",
-                          fontSize: "9px",
-                        }}
-                      >
-                        =B8/C8
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p
-                className="text-[10px] mt-3"
-                style={{ color: "#EF444490", fontFamily: "var(--font-mono)" }}
-              >
-                Last edited by Mike · 47 versions · pricing_FINAL_v3_ACTUAL_FINAL.xlsx
-              </p>
+                className="h-px w-full"
+                style={{ background: "#1E1E1E" }}
+              />
+              {[
+                { label: "Technology Risks", value: "3 identified", color: "#EF4444" },
+                { label: "Strategic Recommendations", value: "5 actions", color: "#c8f135" },
+                { label: "Budget Guidance", value: "$24k–$36k/yr", color: "#3B82F6" },
+                { label: "Compliance Gaps", value: "2 critical", color: "#F59E0B" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
+                    {label}
+                  </span>
+                  <span className="text-sm font-bold" style={{ color, fontFamily: "var(--font-mono)" }}>
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
-
-            {/* Right — The Stackteryx way (HIPAA bundle card) */}
-            <div>
-              <p
-                className="text-xs uppercase tracking-[0.2em] mb-4 font-bold"
-                style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-              >
-                WITH STACKTERYX
-              </p>
-              <div
-                className="rounded-lg overflow-hidden"
-                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-              >
-                {/* Card header */}
-                <div className="px-5 pt-5 pb-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
-                      <h3
-                        className="text-base font-bold uppercase tracking-wide"
-                        style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                      >
-                        HIPAA COMPLIANCE BUNDLE
-                      </h3>
-                      <p
-                        className="text-[10px] mt-1"
-                        style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                      >
-                        5 tools · Updated today
-                      </p>
-                    </div>
-                    <span
-                      className="text-[10px] uppercase tracking-widest px-2 py-1 rounded font-bold"
-                      style={{
-                        background: "#A8FF3E15",
-                        color: "#A8FF3E",
-                        fontFamily: "var(--font-mono)",
-                      }}
-                    >
-                      ACTIVE
-                    </span>
-                  </div>
-                </div>
-
-                {/* Tool list */}
-                <div style={{ fontFamily: "var(--font-mono)" }}>
-                  {bundleTools.map((tool) => (
-                    <div
-                      key={tool.name}
-                      className="flex items-center justify-between px-5 py-2.5"
-                      style={{ borderTop: "1px solid #1E1E1E" }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="h-2 w-2 rounded-full flex-shrink-0"
-                          style={{ background: tool.color }}
-                        />
-                        <span className="text-xs" style={{ color: "#CCCCCC" }}>
-                          {tool.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-[10px]" style={{ color: "#555555" }}>
-                          {tool.category}
-                        </span>
-                        <span className="text-xs" style={{ color: "#FFFFFF" }}>
-                          {tool.price}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Bottom metrics */}
-                <div
-                  className="px-5 py-4 flex items-center justify-between flex-wrap gap-4"
-                  style={{ borderTop: "1px solid #1E1E1E", background: "#0D0D0D" }}
-                >
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest" style={{ color: "#555555", fontFamily: "var(--font-mono)" }}>
-                        Monthly Cost
-                      </p>
-                      <p className="text-sm font-bold" style={{ color: "#CCCCCC", fontFamily: "var(--font-mono)" }}>
-                        $15.50
-                      </p>
-                    </div>
-                    <span style={{ color: "#333333" }}>→</span>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest" style={{ color: "#555555", fontFamily: "var(--font-mono)" }}>
-                        Sell Price
-                      </p>
-                      <p className="text-sm font-bold" style={{ color: "#CCCCCC", fontFamily: "var(--font-mono)" }}>
-                        $26.50
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-widest" style={{ color: "#555555", fontFamily: "var(--font-mono)" }}>
-                      Margin
-                    </p>
-                    <p
-                      className="text-2xl font-extrabold"
-                      style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-                    >
-                      41.5%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="text-center mt-14 md:mt-20">
-            <a
-              href="#import"
-              className="inline-flex items-center gap-2 text-sm font-bold transition-colors"
-              style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#BFFF5C")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#A8FF3E")}
-            >
-              Import your existing spreadsheet → takes less than 2 minutes
-            </a>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 3 — THE FIVE-LAYER MODEL
+          SECTION 7 — WHAT'S INSIDE
           ═══════════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            THE ARCHITECTURE
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-6"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            SECURITY SERVICES SHOULD BE<br />
-            DESIGNED LIKE PRODUCTS.
-          </h2>
-          <p
-            className="text-sm leading-relaxed text-center max-w-2xl mx-auto mb-16"
-            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-          >
-            Every service in Stackteryx is built across five layers — in sequence.
-            You cannot skip ahead. The platform enforces the order because the order is the discipline.
-          </p>
-
-          {/* Five layers vertical stack */}
-          <div className="max-w-2xl mx-auto space-y-0">
-            {[
-              { num: "01", name: "OUTCOME", desc: "Define the business result the client is paying for — before you select a single tool." },
-              { num: "02", name: "SERVICE", desc: "Define the capabilities this service delivers. What does the MSP actually do?" },
-              { num: "03", name: "STACK", desc: "Assign the tools that power each capability. Every tool has a domain, a cost, and a purpose." },
-              { num: "04", name: "ECONOMICS", desc: "Calculate the true cost floor — tools, labor, overhead. See the margin before you set the price." },
-              { num: "05", name: "COMMERCIAL", desc: "Generate the pricing configuration, the proposal, and the sales playbook. Automated." },
-            ].map((layer, i) => (
-              <div key={layer.num} className="flex items-start gap-6 relative">
-                {/* Connecting line */}
-                {i < 4 && (
-                  <div
-                    className="absolute left-[15px] top-[40px] w-px h-[calc(100%)]"
-                    style={{ background: "#1E1E1E" }}
-                  />
-                )}
-                {/* Number */}
-                <div
-                  className="flex-shrink-0 w-[32px] h-[32px] rounded-full flex items-center justify-center text-[11px] font-bold relative z-10"
-                  style={{
-                    background: "#A8FF3E10",
-                    border: "1px solid #A8FF3E30",
-                    color: "#A8FF3E",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {layer.num}
-                </div>
-                {/* Content */}
-                <div className="pb-8">
-                  <h3
-                    className="text-base font-extrabold uppercase tracking-wide mb-1"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                  >
-                    {layer.name}
-                  </h3>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                  >
-                    {layer.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
+        <div className="max-w-6xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-4">
+            <p
+              className="text-xs uppercase tracking-[0.3em] font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+            >
+              PLATFORM
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Everything you need to run profitable services
+            </h2>
           </div>
 
-          <p
-            className="text-center mt-8 text-sm"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            Stackteryx turns this process into a repeatable system.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — PLATFORM OVERVIEW
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#111111" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            THE PLATFORM
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-16"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            THE PLATFORM FOR MANAGED<br />
-            SERVICE ECONOMICS
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               {
-                icon: <IconStack />,
-                name: "SERVICE ARCHITECTURE",
-                desc: "Design standardized security services using the five-layer model. Every service has an outcome, capabilities, a stack, a cost floor, and a price — modeled automatically. One path to creating a service. No more ad-hoc quoting.",
+                Icon: Package,
+                title: "Service Builder",
+                desc: "Define services around business outcomes, not tools. Structure what you sell and why it matters.",
               },
               {
-                icon: <IconChart />,
-                name: "MARGIN INTELLIGENCE",
-                desc: "Know the true cost of every service — vendor costs, labor, and overhead rolled into a single cost floor. When a vendor raises prices, Stackteryx flags every affected service and shows you the margin impact before your next renewal.",
+                Icon: Wrench,
+                title: "Bundle Configurator",
+                desc: "Assemble vendor tools into service bundles with per-unit cost tracking built in.",
               },
               {
-                icon: <IconDoc />,
-                name: "SALES ENABLEMENT",
-                desc: "Generate outcome-anchored proposals and full sales playbooks for every service — talk tracks, objection responses, email templates, and ICP profiles. All in business language. No tool names in the headline.",
+                Icon: DollarSign,
+                title: "Pricing Engine",
+                desc: "Good / Better / Best tiers with real-time margin calculations. No more guesswork.",
               },
-            ].map((feat) => (
+              {
+                Icon: FileText,
+                title: "Sales Studio",
+                desc: "Generate branded, client-ready proposals in seconds — pre-filled with your pricing and positioning.",
+              },
+              {
+                Icon: Brain,
+                title: "Fractional CTO",
+                desc: "AI-generated Technology Strategy Briefs that position you as a strategic advisor.",
+              },
+              {
+                Icon: BarChart2,
+                title: "Portfolio Intelligence",
+                desc: "See profitability across every client and service. Spot margin erosion before it hurts.",
+              },
+              {
+                Icon: Sparkles,
+                title: "AI Service Architect",
+                desc: "Describe what you want to build — AI structures the service, suggests tools, and sets pricing.",
+              },
+            ].map(({ Icon, title, desc }) => (
               <div
-                key={feat.name}
-                className="rounded-lg p-6 space-y-4"
-                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+                key={title}
+                className="rounded-lg p-5 space-y-3 transition-colors"
+                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f13540")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1E1E1E")}
               >
                 <div
-                  className="h-14 w-14 rounded-lg flex items-center justify-center"
-                  style={{ background: "#A8FF3E10", border: "1px solid #A8FF3E20" }}
+                  className="h-9 w-9 rounded-md flex items-center justify-center"
+                  style={{ background: "#c8f13510" }}
                 >
-                  {feat.icon}
+                  <Icon className="h-4.5 w-4.5" style={{ color: "#c8f135" }} />
                 </div>
                 <h3
-                  className="text-lg font-extrabold uppercase tracking-wide"
+                  className="text-sm font-bold"
                   style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
                 >
-                  {feat.name}
+                  {title}
                 </h3>
                 <p
                   className="text-sm leading-relaxed"
                   style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
                 >
-                  {feat.desc}
+                  {desc}
                 </p>
               </div>
             ))}
@@ -1674,483 +1657,281 @@ export default function LoginPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 5 — AI INTELLIGENCE
+          SECTION 8 — PRICING
           ═══════════════════════════════════════════════════════ */}
-      <section
-        className="py-20 md:py-28"
-        style={{
-          background: "#0A0A0A",
-          backgroundImage:
-            "linear-gradient(#A8FF3E08 1px, transparent 1px), linear-gradient(90deg, #A8FF3E08 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            THE INTELLIGENCE LAYER
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-6"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            YOUR AI ADVISOR FOR<br />
-            SERVICE ECONOMICS
-          </h2>
-          <p
-            className="text-sm leading-relaxed text-center max-w-2xl mx-auto mb-16"
-            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-          >
-            Stackteryx doesn&apos;t have a chatbot. The AI operates as three distinct
-            agents — each responsible for a specific part of the service business.
-            They run continuously, surface issues proactively, and generate outputs
-            the user reviews and approves.
-          </p>
+      <section id="pricing" style={{ background: "#111111" }} className="py-20 md:py-28">
+        <div className="max-w-5xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-4">
+            <p
+              className="text-xs uppercase tracking-[0.3em] font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+            >
+              PRICING
+            </p>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Start free. Scale when you&apos;re ready.
+            </h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                num: "01",
-                name: "SERVICE ARCHITECT",
-                desc: "When you start a new service, the AI reasons from the outcome downward through all five layers. It suggests capabilities, recommends stack tools, estimates a cost floor, and flags margin risk — before you\u2019ve manually configured anything.",
-              },
-              {
-                num: "02",
-                name: "PORTFOLIO INTELLIGENCE ENGINE",
-                desc: "Always-on awareness of your entire service portfolio. Knows which services are incomplete, which clients are on services with eroding margins, and when a vendor cost change creates a ripple effect. Surfaces these as actionable items on your Dashboard.",
-              },
-              {
-                num: "03",
-                name: "PROPOSAL AGENT",
-                desc: "Given a client or prospect, the Proposal Agent generates a complete, outcome-anchored proposal without being asked. It writes the executive summary, service overviews, pricing rationale, and why-us section. You review and send.",
-              },
-            ].map((agent) => (
-              <div key={agent.num} className="space-y-4">
-                <span
-                  className="text-[32px] font-extrabold"
-                  style={{ color: "#1E1E1E", fontFamily: "var(--font-display)" }}
-                >
-                  {agent.num}
-                </span>
-                <h3
-                  className="text-base font-extrabold uppercase tracking-wide"
-                  style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-                >
-                  {agent.name}
-                </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Free */}
+            <div
+              className="rounded-lg p-6 space-y-5"
+              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+            >
+              <div>
                 <p
-                  className="text-sm leading-relaxed"
+                  className="text-xs uppercase tracking-wider font-bold"
                   style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
                 >
-                  {agent.desc}
+                  Free
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 6 — HOW IT WORKS
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#111111" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            THE WORKFLOW
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-16"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            FROM OUTCOME TO PROPOSAL<br />
-            IN MINUTES
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-            {[
-              { num: "1", title: "DEFINE THE OUTCOME", desc: "What business result does this service deliver? Risk reduction, compliance, revenue protection, or productivity." },
-              { num: "2", title: "DESIGN THE SERVICE", desc: "What capabilities does it include? The AI suggests them based on the outcome. You confirm." },
-              { num: "3", title: "SELECT THE STACK", desc: "Which tools power each capability? Choose from your catalog or the built-in library of 40+ vendors." },
-              { num: "4", title: "MODEL THE COST", desc: "Your cost floor is calculated automatically from tool costs, labor, and overhead. No formulas." },
-              { num: "5", title: "SET THE PRICE", desc: "The AI suggests a price at your target margin. You adjust. The margin updates in real time." },
-              { num: "6", title: "GENERATE THE PROPOSAL", desc: "One click. A complete, outcome-anchored client proposal — ready to send in under 60 seconds." },
-            ].map((step) => (
-              <div key={step.num} className="flex items-start gap-4">
-                <span
-                  className="flex-shrink-0 text-[28px] font-extrabold leading-none"
-                  style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-                >
-                  {step.num}
-                </span>
-                <div>
-                  <h3
-                    className="text-sm font-extrabold uppercase tracking-wide mb-1.5"
+                <p className="mt-2">
+                  <span
+                    className="text-4xl font-extrabold"
                     style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
                   >
-                    {step.title}
-                  </h3>
-                  <p
-                    className="text-xs leading-relaxed"
+                    $0
+                  </span>
+                  <span
+                    className="text-sm ml-1"
                     style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
                   >
-                    {step.desc}
-                  </p>
-                </div>
+                    /month
+                  </span>
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 7 — VENDOR ECOSYSTEM
-          ═══════════════════════════════════════════════════════ */}
-      <section
-        className="py-20 md:py-28"
-        style={{
-          background: "#0A0A0A",
-          backgroundImage:
-            "linear-gradient(#A8FF3E08 1px, transparent 1px), linear-gradient(90deg, #A8FF3E08 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            THE STACK
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-6"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            BUILT FOR THE SECURITY TOOLS<br />
-            MSPS ALREADY USE
-          </h2>
-          <p
-            className="text-sm leading-relaxed text-center max-w-2xl mx-auto mb-16"
-            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-          >
-            Your vendor catalog powers your cost modeling. When a vendor raises prices,
-            every affected service gets flagged automatically.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-4xl mx-auto">
-            {[
-              "CrowdStrike", "SentinelOne", "Huntress", "Microsoft", "Okta", "Cisco",
-              "Mimecast", "Proofpoint", "Datto", "Veeam", "Acronis", "KnowBe4",
-              "Palo Alto Networks", "Fortinet", "SonicWall", "Zscaler", "Wiz", "Varonis",
-              "Splunk", "Microsoft Sentinel", "Rapid7", "Tenable", "Qualys", "CyberArk",
-            ].map((vendor) => (
-              <div
-                key={vendor}
-                className="px-3 py-2.5 rounded text-center text-[11px] font-medium transition-colors cursor-default"
+              <ul className="space-y-2">
+                {[
+                  "1 service bundle",
+                  "2 proposals / month",
+                  "1 CTO brief / month",
+                  "Community support",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ color: "#c8f135" }}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#login"
+                onClick={scrollToLogin}
+                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
                 style={{
-                  background: "#111111",
+                  color: "#FFFFFF",
                   border: "1px solid #1E1E1E",
-                  color: "#888888",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#A8FF3E40";
-                  e.currentTarget.style.color = "#CCCCCC";
+                  e.currentTarget.style.borderColor = "#c8f135";
+                  e.currentTarget.style.color = "#c8f135";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = "#1E1E1E";
-                  e.currentTarget.style.color = "#888888";
+                  e.currentTarget.style.color = "#FFFFFF";
                 }}
               >
-                {vendor}
-              </div>
-            ))}
-          </div>
-
-          <p
-            className="text-center mt-8 text-[11px]"
-            style={{ color: "#555555", fontFamily: "var(--font-mono)" }}
-          >
-            + 12 more vendors in the built-in library. Import any vendor not listed.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 8 — MARGIN VISIBILITY
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#111111" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4 text-center"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            MARGIN INTELLIGENCE
-          </p>
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight text-center mb-16"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            KNOW THE MARGIN OF EVERY<br />
-            SERVICE. ALL THE TIME.
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left copy */}
-            <div className="space-y-6">
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Most MSPs don&apos;t know their true service margin until the quarter ends.
-                Stackteryx calculates it continuously — across tool costs, labor allocation,
-                and overhead — so you always know which services are profitable and which
-                are quietly bleeding.
-              </p>
-
-              <div className="space-y-3">
-                {[
-                  "True cost floor calculated from real vendor pricing",
-                  "Margin updates automatically when vendor costs change",
-                  "Red zone alerts when margin drops below your threshold",
-                ].map((line) => (
-                  <div key={line} className="flex items-start gap-2">
-                    <span style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }} className="text-sm flex-shrink-0">→</span>
-                    <span
-                      className="text-sm"
-                      style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
-                    >
-                      {line}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                Get Started
+              </a>
             </div>
 
-            {/* Right — Mock margin display */}
+            {/* Pro — highlighted */}
             <div
-              className="rounded-lg overflow-hidden"
+              className="rounded-lg p-6 space-y-5 relative"
+              style={{ background: "#0A0A0A", border: "2px solid #c8f135" }}
+            >
+              <div
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                style={{
+                  background: "#c8f135",
+                  color: "#0A0A0A",
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                Most Popular
+              </div>
+              <div>
+                <p
+                  className="text-xs uppercase tracking-wider font-bold"
+                  style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
+                >
+                  Pro
+                </p>
+                <p className="mt-2">
+                  <span
+                    className="text-4xl font-extrabold"
+                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                  >
+                    $149
+                  </span>
+                  <span
+                    className="text-sm ml-1"
+                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+                  >
+                    /month
+                  </span>
+                </p>
+              </div>
+              <ul className="space-y-2">
+                {[
+                  "10 service bundles",
+                  "25 proposals / month",
+                  "10 CTO briefs / month",
+                  "Custom branding",
+                  "Priority support",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ color: "#c8f135" }}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#login"
+                onClick={scrollToLogin}
+                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
+                style={{
+                  background: "#c8f135",
+                  color: "#0A0A0A",
+                  fontFamily: "var(--font-display)",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
+              >
+                Start Free Trial
+              </a>
+            </div>
+
+            {/* Enterprise */}
+            <div
+              className="rounded-lg p-6 space-y-5"
               style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
             >
-              <div className="px-5 pt-5 pb-4 flex items-center justify-between">
-                <h3
-                  className="text-sm font-bold uppercase tracking-wide"
-                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+              <div>
+                <p
+                  className="text-xs uppercase tracking-wider font-bold"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
                 >
-                  HIPAA COMPLIANCE BUNDLE
-                </h3>
-                <span
-                  className="text-[10px] uppercase tracking-widest px-2 py-1 rounded font-bold"
-                  style={{
-                    background: "#A8FF3E15",
-                    color: "#A8FF3E",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  ACTIVE
-                </span>
+                  Enterprise
+                </p>
+                <p className="mt-2">
+                  <span
+                    className="text-4xl font-extrabold"
+                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                  >
+                    $399
+                  </span>
+                  <span
+                    className="text-sm ml-1"
+                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+                  >
+                    /month
+                  </span>
+                </p>
               </div>
-              <div style={{ borderTop: "1px solid #1E1E1E" }}>
+              <ul className="space-y-2">
                 {[
-                  { label: "Cost Floor", value: "$15.50/user" },
-                  { label: "Sell Price", value: "$26.50/user" },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between px-5 py-3"
-                    style={{ borderBottom: "1px solid #1E1E1E" }}
-                  >
-                    <span
-                      className="text-xs uppercase tracking-widest"
-                      style={{ color: "#555555", fontFamily: "var(--font-mono)" }}
-                    >
-                      {row.label}
-                    </span>
-                    <span
-                      className="text-sm font-bold"
-                      style={{ color: "#CCCCCC", fontFamily: "var(--font-mono)" }}
-                    >
-                      {row.value}
-                    </span>
-                  </div>
+                  "Unlimited bundles",
+                  "Unlimited proposals",
+                  "Unlimited CTO briefs",
+                  "White-label exports",
+                  "Team seats",
+                  "Dedicated support",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ color: "#c8f135" }}>✓</span>
+                    {item}
+                  </li>
                 ))}
-                <div className="flex items-center justify-between px-5 py-4">
-                  <span
-                    className="text-xs uppercase tracking-widest"
-                    style={{ color: "#555555", fontFamily: "var(--font-mono)" }}
-                  >
-                    Margin
-                  </span>
-                  <span
-                    className="text-3xl font-extrabold"
-                    style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
-                  >
-                    41.5%
-                  </span>
-                </div>
-              </div>
-              {/* Red zone indicator */}
-              <div
-                className="px-5 py-3 flex items-center justify-between"
-                style={{ borderTop: "1px solid #1E1E1E", background: "#0D0D0D" }}
+              </ul>
+              <a
+                href="#login"
+                onClick={scrollToLogin}
+                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
+                style={{
+                  color: "#FFFFFF",
+                  border: "1px solid #1E1E1E",
+                  fontFamily: "var(--font-display)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#c8f135";
+                  e.currentTarget.style.color = "#c8f135";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#1E1E1E";
+                  e.currentTarget.style.color = "#FFFFFF";
+                }}
               >
-                <span
-                  className="text-[10px] uppercase tracking-widest"
-                  style={{ color: "#EF444480", fontFamily: "var(--font-mono)" }}
-                >
-                  Red zone threshold: 25%
-                </span>
-                <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: "#1E1E1E" }}>
-                  <div className="h-full rounded-full" style={{ width: "25%", background: "#EF444450" }} />
-                </div>
-              </div>
+                Get Started
+              </a>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 9 — SPREADSHEET IMPORT
+          SECTION 9 — FINAL CTA
           ═══════════════════════════════════════════════════════ */}
-      <section
-        id="import"
-        className="py-20 md:py-28"
-        style={{
-          background: "#0A0A0A",
-          scrollMarginTop: "80px",
-          backgroundImage:
-            "linear-gradient(#A8FF3E08 1px, transparent 1px), linear-gradient(90deg, #A8FF3E08 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p
-            className="text-xs uppercase tracking-[0.3em] mb-4"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-mono)" }}
-          >
-            MIGRATION
-          </p>
+      <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
+        <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
           <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight mb-6"
+            className="text-3xl md:text-5xl font-extrabold leading-tight"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            IMPORT YOUR EXISTING<br />
-            PRICING SPREADSHEET
+            Stop guessing. Start building{" "}
+            <span style={{ color: "#c8f135" }}>profitable services.</span>
           </h2>
           <p
-            className="text-sm leading-relaxed max-w-xl mx-auto mb-12"
-            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+            className="text-base leading-relaxed max-w-xl mx-auto"
+            style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
           >
-            Already have your vendor pricing in a spreadsheet? Upload it and Stackteryx
-            converts it into structured services automatically. Takes less than 2 minutes.
+            Join MSPs who use Stackteryx to design, price, and sell services
+            with confidence.
           </p>
-
-          <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8 mb-10">
-            {[
-              "1. Upload your CSV or PDF pricing sheet",
-              "2. Stackteryx maps tools to vendors and domains",
-              "3. Your stack catalog is ready — start building services",
-            ].map((step) => (
-              <p
-                key={step}
-                className="text-xs"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                {step}
-              </p>
-            ))}
-          </div>
-
-          <a
-            href="#login"
-            onClick={scrollToLogin}
-            className="inline-flex items-center gap-2 h-11 px-6 rounded text-sm font-bold uppercase tracking-wider transition-all"
-            style={{
-              background: "#A8FF3E",
-              color: "#0A0A0A",
-              fontFamily: "var(--font-display)",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#BFFF5C")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#A8FF3E")}
-          >
-            Import My Spreadsheet
-            <ArrowRight className="h-4 w-4" />
-          </a>
-
-          <p
-            className="mt-4 text-[10px]"
-            style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-          >
-            Supported formats: CSV, Excel (.xlsx), PDF
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 10 — FINAL CTA
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 md:py-32" style={{ background: "#111111" }}>
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2
-            className="text-[36px] md:text-[56px] lg:text-[72px] font-extrabold leading-[0.95] uppercase tracking-tight mb-6"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            STOP RUNNING YOUR SECURITY<br />
-            SERVICES BUSINESS<br />
-            IN A SPREADSHEET.
-          </h2>
-          <p
-            className="text-sm mb-10"
-            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-          >
-            Start designing profitable services today.
-          </p>
-
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex flex-wrap justify-center gap-4">
             <a
               href="#login"
               onClick={scrollToLogin}
-              className="inline-flex items-center gap-2 h-11 px-6 rounded text-sm font-bold uppercase tracking-wider transition-all"
+              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
               style={{
-                background: "#A8FF3E",
+                background: "#c8f135",
                 color: "#0A0A0A",
                 fontFamily: "var(--font-display)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#BFFF5C")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#A8FF3E")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
             >
-              Create Your Account
+              Start Free
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
-              href="#login"
-              onClick={scrollToLogin}
-              className="inline-flex items-center h-11 px-6 rounded text-sm font-bold uppercase tracking-wider transition-all"
+              href="#pricing"
+              onClick={(e) => scrollToSection(e, "pricing")}
+              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
               style={{
-                border: "1px solid #1E1E1E",
                 color: "#FFFFFF",
+                border: "1px solid #1E1E1E",
                 fontFamily: "var(--font-display)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#A8FF3E";
-                e.currentTarget.style.color = "#A8FF3E";
+                e.currentTarget.style.borderColor = "#c8f135";
+                e.currentTarget.style.color = "#c8f135";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "#1E1E1E";
                 e.currentTarget.style.color = "#FFFFFF";
               }}
             >
-              Sign In
+              View Pricing
             </a>
           </div>
-
           <p
-            className="mt-6 text-[10px]"
-            style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
+            className="text-xs"
+            style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
           >
             No credit card required. Free to start.
           </p>
@@ -2161,46 +1942,113 @@ export default function LoginPage() {
           FOOTER
           ═══════════════════════════════════════════════════════ */}
       <footer
-        className="py-8"
+        className="py-12"
         style={{ background: "#0A0A0A", borderTop: "1px solid #1E1E1E" }}
       >
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
-          <div className="flex gap-4">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {/* Column 1 — Brand */}
+            <div className="col-span-2 md:col-span-1 space-y-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
+              <p
+                className="text-xs leading-relaxed"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                The service economics platform for MSPs.
+              </p>
+            </div>
+
+            {/* Column 2 — Product */}
+            <div className="space-y-2">
+              <p
+                className="text-xs uppercase tracking-wider font-bold"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                Product
+              </p>
+              {[
+                { label: "How It Works", href: "#how-it-works" },
+                { label: "Pricing", href: "#pricing" },
+                { label: "Free CTO Brief", href: "/fractional-cto" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={href.startsWith("#") ? (e) => scrollToSection(e, href.slice(1)) : undefined}
+                  className="block text-xs transition-colors"
+                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+
+            {/* Column 3 — Platform */}
+            <div className="space-y-2">
+              <p
+                className="text-xs uppercase tracking-wider font-bold"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                Platform
+              </p>
+              {[
+                { label: "Service Builder", href: "#login" },
+                { label: "Sales Studio", href: "#login" },
+                { label: "Portfolio Intelligence", href: "#login" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={scrollToLogin}
+                  className="block text-xs transition-colors"
+                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+
+            {/* Column 4 — Legal */}
+            <div className="space-y-2">
+              <p
+                className="text-xs uppercase tracking-wider font-bold"
+                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+              >
+                Legal
+              </p>
+              {["Terms", "Privacy", "Contact"].map((label) => (
+                <span
+                  key={label}
+                  className="block text-xs cursor-pointer transition-colors"
+                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="mt-8 pt-6 text-center"
+            style={{ borderTop: "1px solid #1E1E1E" }}
+          >
             <span
-              className="text-xs cursor-pointer transition-colors"
-              style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#666666")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+              className="text-xs"
+              style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
             >
-              Terms
-            </span>
-            <span
-              className="text-xs cursor-pointer transition-colors"
-              style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#666666")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-            >
-              Privacy
-            </span>
-            <span
-              className="text-xs cursor-pointer transition-colors"
-              style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#666666")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-            >
-              Contact
+              &copy; 2025 Stackteryx. Built for MSPs.
             </span>
           </div>
-          <span
-            className="text-xs"
-            style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
-          >
-            &copy; 2025 Stackteryx. Built for MSSPs.
-          </span>
         </div>
       </footer>
     </div>
   );
 }
+

@@ -77,6 +77,11 @@ export default async function ServicesPage({
     );
   }
 
+  // Check if the org already has a Fractional CTO service
+  const hasAdvisoryService = sorted.some(
+    (b) => b.name.toLowerCase().includes("fractional cto"),
+  );
+
   return (
     <ServicesTabs
       bundles={sorted}
@@ -90,6 +95,7 @@ export default async function ServicesPage({
       additionalServiceUsageMap={additionalServiceUsageMap}
       userRole={profile.role}
       initialTab={params.tab ?? "services"}
+      hasAdvisoryService={hasAdvisoryService}
     />
   );
 }

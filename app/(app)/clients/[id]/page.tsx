@@ -38,6 +38,7 @@ import { ClientEditButton } from "@/components/clients/client-edit-button";
 import { findSoonestRenewal, calculateServiceFit } from "@/lib/client-utils";
 import { ClientComplianceSection } from "@/components/compliance/client-compliance-section";
 import { ClientProfitabilityCard } from "@/components/clients/client-profitability-card";
+import { ClientRiskSummary } from "@/components/clients/client-risk-summary";
 import { createClient } from "@/lib/supabase/server";
 
 interface ClientDetailPageProps {
@@ -346,6 +347,9 @@ export default async function ClientDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Risk Summary */}
+      <ClientRiskSummary clientId={id} />
 
       {/* Compliance */}
       <ClientComplianceSection

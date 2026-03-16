@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BriefOutputDisplay } from "@/components/fractional-cto/brief-output";
+import { RiskSummary } from "@/components/fractional-cto/risk-summary";
 import {
   generateCTOBrief,
   exportBriefPdfAction,
@@ -127,6 +128,7 @@ export function FractionalCTOClient({
   const [mode, setMode] = useState<Mode>("generate");
   const [viewingBrief, setViewingBrief] = useState<CTOBriefRecord | null>(null);
   const [briefs, setBriefs] = useState(initialBriefs);
+  const [viewTab, setViewTab] = useState<"full" | "risks">("full");
 
   // Form state
   const [clientId, setClientId] = useState("");
@@ -287,6 +289,7 @@ export function FractionalCTOClient({
   function handleView(brief: CTOBriefRecord) {
     setViewingBrief(brief);
     setMode("view");
+    setViewTab("full");
     setGeneratedBrief(null);
   }
 
@@ -309,7 +312,7 @@ export function FractionalCTOClient({
   async function handleExportPdf(brief: BriefOutput) {
     setExportingPdf(true);
     try {
-      const { base64, filename } = await exportBriefPdfAction(brief, true);
+      const { base64, filename } = await exportBriefPdfAction(brief);
       downloadBase64(base64, filename, "application/pdf");
     } catch {
       setError("Failed to generate PDF. Please try again.");
@@ -321,7 +324,7 @@ export function FractionalCTOClient({
   async function handleExportDocx(brief: BriefOutput) {
     setExportingDocx(true);
     try {
-      const { base64, filename } = await exportBriefDocxAction(brief, true);
+      const { base64, filename } = await exportBriefDocxAction(brief);
       downloadBase64(
         base64,
         filename,
@@ -589,7 +592,7 @@ export function FractionalCTOClient({
           {mode === "view" && viewingBrief && activeBrief && (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-8 pb-6 border-b border-border/50 flex-wrap">
+                <div className="flex items-center gap-3 mb-6 pb-6 border-b border-border/50 flex-wrap">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -640,7 +643,42 @@ export function FractionalCTOClient({
                   </Button>
                 </div>
 
-                <BriefOutputDisplay brief={activeBrief} />
+                {/* View toggle: Full Brief / Risk Summary */}
+                <div className="flex items-center gap-1 mb-6 rounded-lg bg-muted/50 p-1 w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setViewTab("full")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      viewTab === "full"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Full Brief
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewTab("risks")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      viewTab === "risks"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Risk Summary
+                  </button>
+                </div>
+
+                {viewTab === "full" ? (
+                  <BriefOutputDisplay brief={activeBrief} />
+                ) : (
+                  <RiskSummary
+                    risks={activeBrief.sections.technologyRisks}
+                    clientDomain={activeBrief.clientDomain}
+                    mspName={activeBrief.mspName}
+                    quarterLabel={viewingBrief.quarterLabel}
+                  />
+                )}
               </div>
 
               {error && (

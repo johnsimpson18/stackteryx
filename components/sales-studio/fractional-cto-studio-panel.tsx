@@ -138,7 +138,7 @@ export function FractionalCTOStudioPanel({
     if (!activeBrief) return;
     setExportingPdf(true);
     try {
-      const { base64, filename } = await exportBriefPdfAction(activeBrief, true);
+      const { base64, filename } = await exportBriefPdfAction(activeBrief);
       downloadBase64(base64, filename, "application/pdf");
     } catch {
       setError("Failed to generate PDF.");
@@ -151,7 +151,7 @@ export function FractionalCTOStudioPanel({
     if (!activeBrief) return;
     setExportingDocx(true);
     try {
-      const { base64, filename } = await exportBriefDocxAction(activeBrief, true);
+      const { base64, filename } = await exportBriefDocxAction(activeBrief);
       downloadBase64(
         base64,
         filename,

@@ -4,12 +4,15 @@ import { callAI } from "@/lib/ai/validate";
 import { generateBriefPdf } from "@/lib/export/brief-pdf";
 import { generateBriefDocx } from "@/lib/export/brief-docx";
 import { generateCombinedPdf } from "@/lib/export/combined-pdf";
+import { generateRiskSummaryPdf } from "@/lib/export/risk-summary-pdf";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/org-context";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 import type {
   BriefInput,
   BriefOutput,
   BriefSections,
+  TechnologyRisk,
   SaveBriefInput,
   CTOBriefRecord,
 } from "@/types/fractional-cto";
@@ -89,6 +92,12 @@ export async function generateCTOBrief(
   if (!input.companySize) throw new Error("Company size is required");
   if (!input.mspName.trim()) throw new Error("MSP company name is required");
 
+  // Plan limit check — AI generation
+  const aiLimit = await checkLimit("aiGenerationsPerMonth");
+  if (!aiLimit.allowed) {
+    throw new Error("LIMIT_REACHED");
+  }
+
   const cleanInput: BriefInput = {
     ...input,
     domain,
@@ -110,6 +119,9 @@ export async function generateCTOBrief(
     systemPrompt: SYSTEM_PROMPT,
   });
 
+  // Increment usage after successful AI call
+  await incrementUsage("ai_generation");
+
   return {
     mspName: cleanInput.mspName,
     clientDomain: cleanInput.domain,
@@ -130,9 +142,16 @@ function slugify(str: string): string {
 
 export async function exportBriefPdfAction(
   brief: BriefOutput,
-  branded = false,
 ): Promise<{ base64: string; filename: string }> {
-  const buffer = await generateBriefPdf(brief, { branded });
+  const exportLimit = await checkLimit("exportsPerMonth");
+  if (!exportLimit.allowed) throw new Error("LIMIT_REACHED");
+
+  // Determine branding tier from org's plan
+  const branded = exportLimit.plan === "pro" || exportLimit.plan === "enterprise";
+  const whiteLabel = exportLimit.plan === "enterprise";
+
+  const buffer = await generateBriefPdf(brief, { branded, whiteLabel });
+  await incrementUsage("export");
   return {
     base64: buffer.toString("base64"),
     filename: `${slugify(brief.clientDomain)}-technology-strategy-brief.pdf`,
@@ -141,9 +160,15 @@ export async function exportBriefPdfAction(
 
 export async function exportBriefDocxAction(
   brief: BriefOutput,
-  branded = false,
 ): Promise<{ base64: string; filename: string }> {
-  const buffer = await generateBriefDocx(brief, { branded });
+  const exportLimit = await checkLimit("exportsPerMonth");
+  if (!exportLimit.allowed) throw new Error("LIMIT_REACHED");
+
+  const branded = exportLimit.plan === "pro" || exportLimit.plan === "enterprise";
+  const whiteLabel = exportLimit.plan === "enterprise";
+
+  const buffer = await generateBriefDocx(brief, { branded, whiteLabel });
+  await incrementUsage("export");
   return {
     base64: buffer.toString("base64"),
     filename: `${slugify(brief.clientDomain)}-technology-strategy-brief.docx`,
@@ -165,6 +190,9 @@ export interface CombinedExportInput {
 export async function exportCombinedPdfAction(
   input: CombinedExportInput,
 ): Promise<{ base64: string; filename: string }> {
+  const exportLimit = await checkLimit("exportsPerMonth");
+  if (!exportLimit.allowed) throw new Error("LIMIT_REACHED");
+
   const buffer = await generateCombinedPdf({
     briefJson: input.briefJson,
     mspName: input.mspName,
@@ -174,6 +202,7 @@ export async function exportCombinedPdfAction(
     proposalContent: input.proposalContent,
     proposalTitle: input.proposalTitle,
   });
+  await incrementUsage("export");
   return {
     base64: buffer.toString("base64"),
     filename: `${slugify(input.clientDomain)}-strategic-proposal-${slugify(input.quarterLabel)}.pdf`,
@@ -193,6 +222,12 @@ export async function saveCTOBrief(
 
   const orgId = await getActiveOrgId();
   if (!orgId) throw new Error("No active organization");
+
+  // Plan limit check — CTO briefs total ever
+  const briefLimit = await checkLimit("ctoBriefsTotalEver");
+  if (!briefLimit.allowed) {
+    throw new Error("LIMIT_REACHED");
+  }
 
   const { data, error } = await supabase
     .from("fractional_cto_briefs")
@@ -262,4 +297,74 @@ export async function getCTOBriefs(): Promise<CTOBriefRecord[]> {
     briefJson: row.brief_json as BriefSections,
     createdAt: row.created_at,
   }));
+}
+
+// ── Risk Summary PDF Export ─────────────────────────────────────────────────
+
+export async function exportRiskSummaryPdfAction(input: {
+  risks: TechnologyRisk[];
+  mspName: string;
+  clientDomain: string;
+  quarterLabel: string;
+}): Promise<{ base64: string; filename: string }> {
+  const exportLimit = await checkLimit("exportsPerMonth");
+  if (!exportLimit.allowed) throw new Error("LIMIT_REACHED");
+
+  const branded =
+    exportLimit.plan === "pro" || exportLimit.plan === "enterprise";
+  const whiteLabel = exportLimit.plan === "enterprise";
+
+  const buffer = await generateRiskSummaryPdf(input.risks, {
+    mspName: input.mspName,
+    clientDomain: input.clientDomain,
+    quarterLabel: input.quarterLabel,
+    branded,
+    whiteLabel,
+  });
+  await incrementUsage("export");
+  return {
+    base64: buffer.toString("base64"),
+    filename: `${slugify(input.clientDomain)}-risk-summary-${slugify(input.quarterLabel)}.pdf`,
+  };
+}
+
+// ── Get Briefs for a Specific Client ────────────────────────────────────────
+
+export async function getClientLatestBrief(
+  clientId: string,
+): Promise<CTOBriefRecord | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const orgId = await getActiveOrgId();
+  if (!orgId) return null;
+
+  const { data, error } = await supabase
+    .from("fractional_cto_briefs")
+    .select("*, clients(name)")
+    .eq("org_id", orgId)
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(`Failed to fetch brief: ${error.message}`);
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    clientId: data.client_id,
+    clientName: (data.clients as { name: string } | null)?.name ?? null,
+    domain: data.domain,
+    industry: data.industry,
+    companySize: data.company_size,
+    primaryConcern: data.primary_concern,
+    mspName: data.msp_name,
+    quarterLabel: data.quarter_label,
+    briefJson: data.brief_json as BriefSections,
+    createdAt: data.created_at,
+  };
 }

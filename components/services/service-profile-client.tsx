@@ -42,6 +42,8 @@ import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import {
   AlertTriangle,
+  ArrowRight,
+  Brain,
   ChevronDown,
   Check,
   Pencil,
@@ -885,6 +887,35 @@ export function ServiceProfileClient({
           bundleId={bundle.id}
         />
       </div>
+
+      {/* 6. Fractional CTO Advisory Panel — only for Advisory Services */}
+      {outcome?.outcome_type === "growth" &&
+        bundle.name.toLowerCase().includes("advisory") && (
+          <Card>
+            <CardContent className="flex items-start gap-4 pt-6">
+              <div className="shrink-0 h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                <Brain className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Deliver this service with Fractional CTO Intelligence
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  This service is powered by Stackteryx&apos;s Fractional CTO
+                  module. Generate quarterly technology strategy briefs, risk
+                  summaries, and QBR-ready reports for your clients directly from
+                  the platform.
+                </p>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href="/cto-briefs">
+                    Go to Fractional CTO
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* ── Modals ─────────────────────────────────────────────────────── */}
       <OutcomeEditModal
