@@ -1,6 +1,6 @@
 "use server";
 
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/org-context";
@@ -354,13 +354,15 @@ export async function createCheckoutSession(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const session = await stripe.checkout.sessions.create(sessionParams as any);
+  const session = await getStripe().checkout.sessions.create(sessionParams as any);
 
   if (!session.url) throw new Error("Failed to create checkout session");
   return { url: session.url };
 }
 
-export async function createBillingPortalSession(): Promise<{ url: string }> {
+export async function createBillingPortalSession(): Promise<
+  { url: string } | { error: "NO_BILLING_ACCOUNT"; message: string }
+> {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Not authenticated");
 
@@ -374,10 +376,13 @@ export async function createBillingPortalSession(): Promise<{ url: string }> {
     .single();
 
   if (!sub?.stripe_customer_id) {
-    throw new Error("No billing account found. Subscribe to Pro first.");
+    return {
+      error: "NO_BILLING_ACCOUNT",
+      message: "Upgrade to Pro to access billing management.",
+    };
   }
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: sub.stripe_customer_id,
     return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings`,
   });

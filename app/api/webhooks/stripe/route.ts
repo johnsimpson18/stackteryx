@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import type Stripe from "stripe";
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       // Retrieve the subscription to determine the plan from the price ID
       let plan: "pro" | "enterprise" = "pro";
       if (subscriptionId) {
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const sub = await getStripe().subscriptions.retrieve(subscriptionId);
         const priceId = sub.items.data[0]?.price?.id;
         const detected = planFromPriceId(priceId);
         if (detected === "pro" || detected === "enterprise") {

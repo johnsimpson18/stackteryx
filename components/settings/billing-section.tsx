@@ -9,6 +9,7 @@ import { usePlanContext } from "@/components/providers/plan-provider";
 import { createBillingPortalSession } from "@/actions/billing";
 import { PLAN_DISPLAY } from "@/lib/plans";
 import { AlertTriangle, CreditCard, Gift, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 export function BillingSection() {
   const { plan, status, usage, limits, loading, comped } = usePlanContext();
@@ -20,10 +21,15 @@ export function BillingSection() {
   function handlePortal() {
     startTransition(async () => {
       try {
-        const { url } = await createBillingPortalSession();
-        window.location.href = url;
+        const result = await createBillingPortalSession();
+        if ("error" in result) {
+          toast.error("Upgrade to Pro to manage billing");
+          openUpgradeModal();
+          return;
+        }
+        window.location.href = result.url;
       } catch {
-        // No billing account
+        toast.error("Unable to open billing portal");
       }
     });
   }

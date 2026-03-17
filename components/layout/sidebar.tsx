@@ -64,10 +64,15 @@ export function Sidebar({ profile }: SidebarProps) {
   function handleManageBilling() {
     startBillingTransition(async () => {
       try {
-        const { url } = await createBillingPortalSession();
-        window.location.href = url;
+        const result = await createBillingPortalSession();
+        if ("error" in result) {
+          // No billing account — open upgrade modal instead
+          openUpgradeModal();
+          return;
+        }
+        window.location.href = result.url;
       } catch {
-        // No billing account yet
+        // Network or auth error
       }
     });
   }
