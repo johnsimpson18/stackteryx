@@ -58,7 +58,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/recommend") ||
     pathname.startsWith("/services") ||
     pathname.startsWith("/additional-services") ||
-    pathname.startsWith("/cto-briefs");
+    pathname.startsWith("/cto-briefs") ||
+    pathname.startsWith("/sales-studio") ||
+    pathname.startsWith("/stack-catalog") ||
+    pathname.startsWith("/packages");
 
   if (!user && isAppRoute) {
     const url = request.nextUrl.clone();
