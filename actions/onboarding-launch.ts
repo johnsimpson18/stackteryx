@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireOrgMembership } from "@/lib/org-context";
+import { hasOrgPermission } from "@/lib/constants";
 import { saveOnboardingStep } from "@/lib/db/org-settings";
 import { updateOrg } from "@/lib/db/orgs";
 import type { ActionResult } from "@/lib/types";
@@ -12,7 +13,10 @@ export async function launchStackteryxAction(data: {
   additional_context: string;
   outcome_targets: string[];
 }): Promise<void> {
-  const { orgId } = await requireOrgMembership();
+  const { orgId, membership } = await requireOrgMembership();
+  if (!hasOrgPermission(membership.role, "update_settings")) {
+    throw new Error("You do not have permission to update settings");
+  }
 
   await saveOnboardingStep(orgId, 7, {
     target_margin_pct: data.target_margin_pct,
@@ -41,7 +45,10 @@ export async function saveOnboardingFinalStepAction(data: {
   outcome_targets: string[];
 }): Promise<ActionResult<void>> {
   try {
-    const { orgId } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to update settings" };
+    }
 
     await saveOnboardingStep(orgId, 7, {
       target_margin_pct: data.target_margin_pct,

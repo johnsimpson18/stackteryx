@@ -11,7 +11,7 @@ import { getCurrentProfile } from "@/lib/db/profiles";
 import { requireOrgMembership } from "@/lib/org-context";
 import { hasOrgPermission } from "@/lib/constants";
 import { logAudit } from "@/lib/db/audit";
-import type { ActionResult, PricingInput, PricingToolInput } from "@/lib/types";
+import type { ActionResult, BundleVersionWithTools, PricingInput, PricingToolInput } from "@/lib/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,27 @@ async function requireAuth() {
   return { profile, orgId, membership };
 }
 
+async function getVersionWithOrgValidation(
+  versionId: string,
+  orgId: string
+): Promise<BundleVersionWithTools | null> {
+  const version = await getVersionById(versionId);
+  if (!version) return null;
+
+  const supabase = await createClient();
+  const { data: bundle } = await supabase
+    .from("bundles")
+    .select("org_id")
+    .eq("id", version.bundle_id)
+    .single();
+
+  if (!bundle || bundle.org_id !== orgId) {
+    return null;
+  }
+
+  return version;
+}
+
 // ── recalculateVersionAction ─────────────────────────────────────────────────
 
 export async function recalculateVersionAction(
@@ -35,7 +56,7 @@ export async function recalculateVersionAction(
   try {
     const { profile, orgId } = await requireAuth();
 
-    const version = await getVersionById(versionId);
+    const version = await getVersionWithOrgValidation(versionId, orgId);
     if (!version) {
       return { success: false, error: "Version not found" };
     }
@@ -146,7 +167,7 @@ export async function updateVersionSellPriceAction(
   try {
     const { profile, orgId } = await requireAuth();
 
-    const version = await getVersionById(versionId);
+    const version = await getVersionWithOrgValidation(versionId, orgId);
     if (!version) {
       return { success: false, error: "Version not found" };
     }

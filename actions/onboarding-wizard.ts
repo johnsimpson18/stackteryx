@@ -1,6 +1,7 @@
 "use server";
 
 import { requireOrgMembership } from "@/lib/org-context";
+import { hasOrgPermission } from "@/lib/constants";
 import { saveOnboardingStep } from "@/lib/db/org-settings";
 import { saveOnboardingTools, updateToolPricing } from "@/lib/db/onboarding-tools";
 import { updateOrg } from "@/lib/db/orgs";
@@ -10,7 +11,10 @@ export async function updateOrgNameAction(
   name: string
 ): Promise<ActionResult> {
   try {
-    const { orgId } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to update settings" };
+    }
     await updateOrg(orgId, { name });
     return { success: true, data: undefined };
   } catch (err) {
@@ -25,7 +29,10 @@ export async function saveOnboardingStepAction(
   data: Record<string, unknown>
 ): Promise<ActionResult> {
   try {
-    const { orgId } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to update settings" };
+    }
     await saveOnboardingStep(orgId, step, data);
     return { success: true, data: undefined };
   } catch (err) {
@@ -44,7 +51,10 @@ export async function saveOnboardingToolsAction(
   }>
 ): Promise<ActionResult> {
   try {
-    const { orgId } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to update settings" };
+    }
     await saveOnboardingTools(orgId, tools);
     return { success: true, data: undefined };
   } catch (err) {
@@ -65,7 +75,10 @@ export async function saveOnboardingPricingAction(
   }>
 ): Promise<ActionResult> {
   try {
-    const { orgId } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "update_settings")) {
+      return { success: false, error: "You do not have permission to update settings" };
+    }
     for (const p of pricing) {
       await updateToolPricing(orgId, p.tool_name, {
         billing_basis: (p.billing_basis as BillingBasis) || undefined,

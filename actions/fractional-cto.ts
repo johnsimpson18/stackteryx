@@ -273,10 +273,14 @@ export async function deleteCTOBrief(id: string): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  const orgId = await getActiveOrgId();
+  if (!orgId) throw new Error("No active organization");
+
   const { count, error } = await supabase
     .from("fractional_cto_briefs")
     .delete({ count: "exact" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("org_id", orgId);
 
   if (error) throw new Error(`Failed to delete brief: ${error.message}`);
   if (count === 0) throw new Error("Brief not found or not authorized");

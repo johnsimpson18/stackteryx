@@ -115,8 +115,23 @@ export async function dismissActionCardAction(
     const profile = await getCurrentProfile();
     if (!profile) return { success: false, error: "Not authenticated" };
 
-    await requireOrgMembership();
-    await dbDismissActionCard(cardId);
+    const { orgId } = await requireOrgMembership();
+
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+
+    const snoozedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count, error } = await supabase
+      .from("ai_action_cards")
+      .update({
+        dismissed_at: new Date().toISOString(),
+        snoozed_until: snoozedUntil,
+      })
+      .eq("id", cardId)
+      .eq("org_id", orgId);
+
+    if (error) throw error;
+    if (count === 0) return { success: false, error: "Not found" };
 
     return { success: true, data: undefined };
   } catch {
@@ -265,6 +280,31 @@ export async function assignServiceToClientAction(
     const parsed = assignSchema.safeParse(data);
     if (!parsed.success) {
       return { success: false, error: parsed.error.errors.map((e) => e.message).join(", ") };
+    }
+
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", parsed.data.client_id)
+      .eq("org_id", orgId)
+      .single();
+
+    if (!client) {
+      return { success: false, error: "Client not found" };
+    }
+
+    const { data: version } = await supabase
+      .from("bundle_versions")
+      .select("id")
+      .eq("id", parsed.data.bundle_version_id)
+      .eq("bundle_id", bundleId)
+      .single();
+
+    if (!version) {
+      return { success: false, error: "Version not found" };
     }
 
     const { getOrgSettings } = await import("@/lib/db/org-settings");

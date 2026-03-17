@@ -353,7 +353,18 @@ export async function archiveBundlesAction(
   try {
     if (bundleIds.length === 0) return { success: true, data: { archived: 0 } };
 
-    const { orgId } = await requireOrgMembership();
+    const profile = await getCurrentProfile();
+    if (!profile) {
+      return { success: false, error: "Not authenticated" };
+    }
+    const { orgId, membership } = await requireOrgMembership();
+    if (!hasOrgPermission(membership.role, "archive_bundles")) {
+      return {
+        success: false,
+        error: "You do not have permission to archive bundles",
+      };
+    }
+
     let archived = 0;
 
     for (const id of bundleIds) {

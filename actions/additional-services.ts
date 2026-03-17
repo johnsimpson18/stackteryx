@@ -209,9 +209,26 @@ export async function updateOnVersionAction(
     const profile = await getCurrentProfile();
     if (!profile) return { success: false, error: "Not authenticated" };
 
-    const { membership } = await requireOrgMembership();
+    const { orgId, membership } = await requireOrgMembership();
     if (!hasOrgPermission(membership.role, "create_versions")) {
       return { success: false, error: "You do not have permission" };
+    }
+
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: bvasRecord } = await supabase
+      .from("bundle_version_additional_services")
+      .select("id, bundle_versions!inner(bundle_id, bundles!inner(org_id))")
+      .eq("id", bvasId)
+      .single();
+
+    if (!bvasRecord) {
+      return { success: false, error: "Not found" };
+    }
+
+    const bundleVersions = bvasRecord.bundle_versions as unknown as { bundles: { org_id: string } };
+    if (bundleVersions.bundles.org_id !== orgId) {
+      return { success: false, error: "Not found" };
     }
 
     const bvas = await dbUpdateOnVersion(bvasId, updates);
@@ -232,6 +249,23 @@ export async function removeFromVersionAction(
     const { orgId, membership } = await requireOrgMembership();
     if (!hasOrgPermission(membership.role, "create_versions")) {
       return { success: false, error: "You do not have permission" };
+    }
+
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: bvasRecord } = await supabase
+      .from("bundle_version_additional_services")
+      .select("id, bundle_versions!inner(bundle_id, bundles!inner(org_id))")
+      .eq("id", bvasId)
+      .single();
+
+    if (!bvasRecord) {
+      return { success: false, error: "Not found" };
+    }
+
+    const bundleVersions = bvasRecord.bundle_versions as unknown as { bundles: { org_id: string } };
+    if (bundleVersions.bundles.org_id !== orgId) {
+      return { success: false, error: "Not found" };
     }
 
     await dbRemoveFromVersion(bvasId);

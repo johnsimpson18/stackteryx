@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { upsertOrgVendorDiscount, deleteOrgVendorDiscount } from "@/lib/db/vendors";
+import { upsertOrgVendorDiscount, deleteOrgVendorDiscount, getOrgVendorById } from "@/lib/db/vendors";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { requireOrgMembership } from "@/lib/org-context";
@@ -18,6 +18,11 @@ async function requireAuth() {
   }
 
   return { profile, orgId };
+}
+
+async function verifyOrgVendorOwnership(orgVendorId: string, orgId: string): Promise<boolean> {
+  const vendor = await getOrgVendorById(orgId, orgVendorId);
+  return vendor !== null;
 }
 
 async function markAffectedVersionsStale(orgVendorId: string) {
@@ -69,7 +74,12 @@ export async function saveVendorDiscountAction(
   value: number,
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    await requireAuth();
+    const { orgId } = await requireAuth();
+
+    const isOwned = await verifyOrgVendorOwnership(orgVendorId, orgId);
+    if (!isOwned) {
+      return { success: false, error: "Vendor not found" };
+    }
 
     const discount = await upsertOrgVendorDiscount(orgVendorId, {
       discount_type: discountType,
@@ -92,7 +102,12 @@ export async function deleteVendorDiscountAction(
   orgVendorId: string,
 ): Promise<ActionResult<null>> {
   try {
-    await requireAuth();
+    const { orgId } = await requireAuth();
+
+    const isOwned = await verifyOrgVendorOwnership(orgVendorId, orgId);
+    if (!isOwned) {
+      return { success: false, error: "Vendor not found" };
+    }
 
     await deleteOrgVendorDiscount(orgVendorId);
     await markAffectedVersionsStale(orgVendorId);
