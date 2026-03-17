@@ -36,6 +36,7 @@ import {
 import { BundleForm } from "@/components/bundles/bundle-form";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
+import { AgentBadge } from "@/components/agents/agent-badge";
 import { CostBreakdown } from "@/components/pricing/cost-breakdown";
 import { cn } from "@/lib/utils";
 import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
@@ -510,9 +511,11 @@ export function ServiceProfileClient({
         </div>
       )}
 
-      {/* 2b. Key Pricing Metrics Row */}
+      {/* 2b. Key Pricing Metrics Row — Margin agent */}
       {latestVersion && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-3">
+          <AgentBadge agentId="margin" size="sm" />
+          <div className="grid grid-cols-3 gap-4">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
               Sell Price
@@ -548,6 +551,7 @@ export function ServiceProfileClient({
               showLabel
             />
           </div>
+        </div>
         </div>
       )}
 

@@ -63,6 +63,21 @@ export async function createClientAction(
       name: client.name,
     }, orgId);
 
+    // Trigger Scout analysis for new client (fire-and-forget)
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      logAgentActivity({
+        orgId,
+        agentId: "scout",
+        activityType: "analysis",
+        title: `Scout is analyzing portfolio for ${client.name}`,
+        description: "New client added — checking for service fit and upsell opportunities.",
+        entityType: "client",
+        entityId: client.id,
+        entityName: client.name,
+      });
+    } catch { /* never block main action */ }
+
     revalidatePath("/clients");
     revalidatePath("/dashboard");
     return { success: true, data: client };

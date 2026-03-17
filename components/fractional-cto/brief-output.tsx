@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { AgentBadge } from "@/components/agents/agent-badge";
 import type { BriefOutput, TechnologyRisk, RadarItem } from "@/types/fractional-cto";
 
 interface BriefOutputDisplayProps {
@@ -127,6 +128,12 @@ export function BriefOutputDisplay({
       <div className="space-y-4 pb-6 border-b border-border/50">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
+            <div className="flex items-center gap-3 mb-2">
+              <AgentBadge agentId="sage" size="md" />
+              <span className="text-[10px] text-muted-foreground/60">
+                {formatBriefDate(brief.generatedAt)}
+              </span>
+            </div>
             <h1
               className="text-2xl font-bold tracking-tight text-foreground"
               style={{ fontFamily: "var(--font-display)" }}

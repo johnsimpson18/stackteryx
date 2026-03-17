@@ -70,6 +70,21 @@ export async function createProposalAction(
       ...parsed.data,
     });
 
+    // Log agent activity (fire-and-forget)
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      const name = parsed.data.prospect_name ?? "a client";
+      logAgentActivity({
+        orgId,
+        agentId: "pitch",
+        activityType: "generation",
+        title: `Pitch wrote a client proposal for ${name}`,
+        entityType: "proposal",
+        entityId: proposal.id,
+        entityName: name,
+      });
+    } catch { /* never block main action */ }
+
     revalidatePath("/sales-studio");
     revalidatePath("/dashboard");
     return { success: true, data: proposal };

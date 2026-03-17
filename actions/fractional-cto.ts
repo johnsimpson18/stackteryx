@@ -122,6 +122,22 @@ export async function generateCTOBrief(
   // Increment usage after successful AI call
   await incrementUsage("ai_generation");
 
+  // Log agent activity (fire-and-forget)
+  try {
+    const { logAgentActivity } = await import("@/lib/agents/log-activity");
+    const actOrgId = await getActiveOrgId();
+    if (actOrgId) {
+      logAgentActivity({
+        orgId: actOrgId,
+        agentId: "sage",
+        activityType: "generation",
+        title: `Sage prepared a Technology Strategy Brief for ${cleanInput.domain}`,
+        entityType: "brief",
+        entityName: cleanInput.domain,
+      });
+    }
+  } catch { /* never block main action */ }
+
   return {
     mspName: cleanInput.mspName,
     clientDomain: cleanInput.domain,

@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 // ── Status lines ────────────────────────────────────────────────────────────
 
 const STEP_LABELS = [
-  "Analyzing your tool stack and delivery costs...",
-  "Identifying service opportunities for your market...",
-  "Preparing service suggestions based on your outcomes...",
-  "Calculating margin scenarios for your pricing targets...",
-  "Building your sales materials framework...",
-  "Scoring your portfolio coverage...",
+  "Aria is analyzing your tool stack and delivery costs...",
+  "Aria is identifying service opportunities for your market...",
+  "Aria is preparing service suggestions based on your outcomes...",
+  "Margin is calculating pricing scenarios for your targets...",
+  "Aria is building your sales materials framework...",
+  "Aria is scoring your portfolio coverage...",
   "Preparing your workspace...",
   "Your suggestions are ready.",
 ];

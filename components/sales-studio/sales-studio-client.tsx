@@ -61,6 +61,8 @@ import {
 import { SalesEnablementPanel } from "./sales-enablement-panel";
 import { FractionalCTOStudioPanel } from "./fractional-cto-studio-panel";
 import { ContextQualityBadge } from "@/components/ui/context-quality-badge";
+import { AgentBadge } from "@/components/agents/agent-badge";
+import { AgentWorking } from "@/components/agents/agent-working";
 import type {
   ClientWithContracts,
   Proposal,
@@ -664,12 +666,12 @@ export function SalesStudioClient({
                   {generating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Drafting your proposal...
+                      Pitch is drafting your proposal...
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      Generate Proposal
+                      Ask Pitch to write this proposal
                     </>
                   )}
                 </Button>
@@ -719,17 +721,12 @@ export function SalesStudioClient({
             </div>
           )}
 
-          {/* Generating overlay */}
+          {/* Generating overlay — Pitch agent */}
           {generating && !proposal && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium text-foreground">
-                Drafting your proposal...
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                AI is generating a tailored proposal for {recipientName}
-              </p>
-            </div>
+            <AgentWorking
+              agentId="pitch"
+              subtitle={`Writing your proposal for ${recipientName}...`}
+            />
           )}
 
           {/* Proposal output */}
@@ -836,12 +833,12 @@ export function SalesStudioClient({
                   {generating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Drafting your proposal...
+                      Pitch is drafting your proposal...
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      Generate Proposal
+                      Ask Pitch to write this proposal
                     </>
                   )}
                 </Button>
@@ -891,17 +888,12 @@ export function SalesStudioClient({
             </div>
           )}
 
-          {/* Generating overlay */}
+          {/* Generating overlay — Pitch agent */}
           {generating && !proposal && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium text-foreground">
-                Drafting your proposal...
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                AI is generating a tailored proposal for {recipientName}
-              </p>
-            </div>
+            <AgentWorking
+              agentId="pitch"
+              subtitle={`Writing your proposal for ${recipientName}...`}
+            />
           )}
 
           {/* Proposal output */}
@@ -1348,11 +1340,9 @@ function ProposalOutput({
 }) {
   return (
     <div className="space-y-0">
-      {/* Proposal header bar */}
+      {/* Proposal header bar — Pitch agent */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-semibold text-foreground">
-          Proposal
-        </h2>
+        <AgentBadge agentId="pitch" size="md" />
         <Button
           variant="outline"
           size="sm"

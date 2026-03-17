@@ -31,6 +31,10 @@ import { IntelligenceCard } from "@/components/dashboard/intelligence-card";
 import { AttentionFeed } from "@/components/dashboard/attention-feed";
 import { MRRBreakdown } from "@/components/dashboard/mrr-breakdown";
 import { RenewalList } from "@/components/dashboard/renewal-list";
+import { AgentBadge } from "@/components/agents/agent-badge";
+import { AgentActivityFeed } from "@/components/agents/agent-activity-feed";
+import { AGENTS } from "@/lib/agents";
+import type { AgentActivityRecord } from "@/lib/agents/log-activity";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 import type { MRRServiceItem } from "@/components/dashboard/mrr-breakdown";
 import type { RenewalItem } from "@/components/dashboard/renewal-list";
@@ -62,6 +66,7 @@ interface DashboardClientProps {
   attentionItems: AttentionItem[];
   orgCreatedAt: string | null;
   firstName: string | null;
+  recentActivities: AgentActivityRecord[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,6 +96,7 @@ export function DashboardClient({
   attentionItems,
   orgCreatedAt,
   firstName,
+  recentActivities,
 }: DashboardClientProps) {
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -156,6 +162,41 @@ export function DashboardClient({
             </Link>
           </Button>
         )}
+      </div>
+
+      {/* ── Agent Status Strip ──────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-5 rounded-lg px-4 py-2.5"
+        style={{
+          backgroundColor: "#111111",
+          border: "1px solid #1e1e1e",
+        }}
+      >
+        {Object.values(AGENTS).map((agent) => (
+          <div key={agent.id} className="flex items-center gap-1.5 group relative">
+            <span
+              className="h-2 w-2 rounded-full animate-pulse"
+              style={{ backgroundColor: agent.color }}
+            />
+            <span
+              className="text-xs font-medium"
+              style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
+            >
+              {agent.name}
+            </span>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-popover border border-border text-left whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+              <p className="text-xs font-semibold text-foreground">{agent.name}</p>
+              <p className="text-[11px] text-muted-foreground">{agent.title}</p>
+            </div>
+          </div>
+        ))}
+        <span
+          className="ml-auto text-xs"
+          style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+        >
+          All agents active
+        </span>
       </div>
 
       {/* ── Welcome Banner (post-onboarding, first 7 days) ────────────── */}
@@ -341,7 +382,65 @@ export function DashboardClient({
         </IntelligenceCard>
       </div>
 
-      {/* ── 5. Attention Feed ──────────────────────────────────────────── */}
+      {/* ── Agent Activity Feed ────────────────────────────────────── */}
+      {recentActivities.length > 0 && (
+        <div
+          style={{
+            background: "#111111",
+            border: "1px solid #1e1e1e",
+            borderRadius: 8,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <div>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  fontFamily: "var(--font-display)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Agent Activity
+              </span>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#555555",
+                  fontFamily: "var(--font-mono-alt)",
+                  marginTop: 2,
+                }}
+              >
+                Your AI team&apos;s recent work
+              </p>
+            </div>
+            <Link
+              href="/agents"
+              style={{
+                fontSize: 12,
+                color: "#c8f135",
+                fontFamily: "var(--font-mono-alt)",
+                textDecoration: "none",
+              }}
+            >
+              View all &rarr;
+            </Link>
+          </div>
+          <AgentActivityFeed activities={recentActivities} limit={5} />
+        </div>
+      )}
+
+      {/* ── 5. Attention Feed — Scout · Portfolio Intelligence ────── */}
       <div
         style={{
           background: "#111111",
@@ -354,25 +453,53 @@ export function DashboardClient({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            justifyContent: "space-between",
             marginBottom: 16,
           }}
         >
-          <AlertTriangle style={{ width: 16, height: 16, color: "#ef9f27" }} />
-          <span
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <AgentBadge agentId="scout" size="sm" showTitle={false} />
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#ffffff",
+                fontFamily: "var(--font-display)",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Portfolio Intelligence
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                color: "#555555",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              {attentionItems.length} signal{attentionItems.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <Link
+            href="/portfolio-intelligence"
             style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#ffffff",
-              fontFamily: "var(--font-display)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
+              fontSize: 12,
+              color: "#c8f135",
+              fontFamily: "var(--font-mono-alt)",
+              textDecoration: "none",
             }}
           >
-            Needs Attention
-          </span>
+            View full analysis &rarr;
+          </Link>
         </div>
-        <AttentionFeed items={attentionItems} />
+        {attentionItems.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            Scout sees no issues with your portfolio right now.
+          </p>
+        ) : (
+          <AttentionFeed items={attentionItems.slice(0, 3)} />
+        )}
       </div>
 
       {/* ── 6. Revenue by Service ──────────────────────────────────────── */}

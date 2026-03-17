@@ -155,6 +155,20 @@ export async function saveStackAsService(
       addon_count: input.addonServices?.length ?? 0,
     }, orgId);
 
+    // Log agent activity (fire-and-forget)
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      logAgentActivity({
+        orgId,
+        agentId: "aria",
+        activityType: "generation",
+        title: `Aria designed ${input.serviceName} with ${input.toolIds.length} tools`,
+        entityType: "service",
+        entityId: bundle.id,
+        entityName: input.serviceName,
+      });
+    } catch { /* never block main action */ }
+
     revalidatePath("/services");
     revalidatePath("/dashboard");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   X,
   Trash2,
@@ -97,7 +97,20 @@ export function StackCanvas({
   const [inlineSearch, setInlineSearch] = useState("");
   const [showInlineSearch, setShowInlineSearch] = useState(false);
   const [showAddonPicker, setShowAddonPicker] = useState(false);
+  const [ariaFlash, setAriaFlash] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevToolCount = useRef(stackTools.length);
+
+  // Brief "Aria updated" flash when tools change
+  useEffect(() => {
+    if (stackTools.length !== prevToolCount.current && stackTools.length > 0) {
+      setAriaFlash(true);
+      const timeout = setTimeout(() => setAriaFlash(false), 1000);
+      prevToolCount.current = stackTools.length;
+      return () => clearTimeout(timeout);
+    }
+    prevToolCount.current = stackTools.length;
+  }, [stackTools.length]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -158,9 +171,19 @@ export function StackCanvas({
       {/* Header */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Your Stack
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground">
+              Your Stack
+            </h2>
+            {ariaFlash && (
+              <span
+                className="text-[10px] font-medium transition-opacity duration-1000"
+                style={{ color: "#c8f135" }}
+              >
+                Aria updated
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-muted-foreground">
             {!hasItems
               ? "Drag tools here or click to add"

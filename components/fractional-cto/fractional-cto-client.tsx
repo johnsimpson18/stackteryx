@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { BriefOutputDisplay } from "@/components/fractional-cto/brief-output";
 import { RiskSummary } from "@/components/fractional-cto/risk-summary";
+import { AgentWorking } from "@/components/agents/agent-working";
 import {
   generateCTOBrief,
   exportBriefPdfAction,
@@ -492,11 +493,11 @@ export function FractionalCTOClient({
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
+                    Sage is generating...
                   </>
                 ) : (
                   <>
-                    Generate Technology Strategy Brief
+                    Ask Sage to generate a brief
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -504,14 +505,13 @@ export function FractionalCTOClient({
 
               {/* Progress */}
               {isPending && (
-                <div className="text-center">
-                  <p className="text-sm text-primary/80 animate-pulse">
-                    {PROGRESS_MESSAGES[progressIdx].replace(
-                      "{domain}",
-                      domain.trim() || "client",
-                    )}
-                  </p>
-                </div>
+                <AgentWorking
+                  agentId="sage"
+                  subtitle={PROGRESS_MESSAGES[progressIdx].replace(
+                    "{domain}",
+                    domain.trim() || "client",
+                  )}
+                />
               )}
 
               {/* Error */}

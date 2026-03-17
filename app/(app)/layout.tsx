@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { getAgentActivities } from "@/lib/agents/log-activity";
 import { WorkflowBanner } from "@/components/layout/workflow-banner";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { PlanProvider } from "@/components/providers/plan-provider";
@@ -99,6 +100,16 @@ export default async function AppLayout({
 
   const allWorkflowComplete = workflowSteps.hasTools && workflowSteps.hasServices && workflowSteps.hasClients && workflowSteps.hasProposals;
 
+  // ── Agent activity for topbar pulse ───────────────────────────────────
+  let topbarActivities: Awaited<ReturnType<typeof getAgentActivities>> = [];
+  if (orgId) {
+    try {
+      topbarActivities = await getAgentActivities(orgId, 3);
+    } catch {
+      // degrade gracefully
+    }
+  }
+
   const appContent = (
     <div className="flex h-screen overflow-hidden">
       <Sidebar profile={profile} memberCount={memberCount} />
@@ -107,6 +118,7 @@ export default async function AppLayout({
           workspaceName={workspaceName}
           activeOrgId={orgId ?? undefined}
           userOrgs={userOrgs}
+          recentActivities={topbarActivities}
         />
         <main className="flex-1 overflow-y-auto app-grid-bg p-6 pb-20 md:pb-6">
           {!allWorkflowComplete && <WorkflowBanner steps={workflowSteps} />}

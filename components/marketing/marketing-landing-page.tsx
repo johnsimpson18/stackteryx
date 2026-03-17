@@ -2,15 +2,52 @@
 
 import Link from "next/link";
 import {
-  ArrowRight, Brain, TrendingDown, Table, Target, Wrench,
-  Package, DollarSign, FileText, BarChart2, Sparkles,
+  ArrowRight, Brain, Layers2, TrendingUp, BarChart2, FileText,
+  Package, DollarSign, Sparkles,
 } from "lucide-react";
 import { HeroGraphic } from "./hero-graphic";
 
 /* ─────────────────────────────────────────────────────────────
    STACKTERYX MARKETING LANDING PAGE
-   All marketing sections extracted from the monolithic login page.
    ───────────────────────────────────────────────────────────── */
+
+const AGENTS = [
+  {
+    name: "Aria",
+    title: "Service Architect",
+    color: "#c8f135",
+    Icon: Layers2,
+    desc: "Designs your service stack and maps tools to outcomes.",
+  },
+  {
+    name: "Margin",
+    title: "Pricing Analyst",
+    color: "#378ADD",
+    Icon: TrendingUp,
+    desc: "Models real delivery costs and suggests profitable pricing.",
+  },
+  {
+    name: "Scout",
+    title: "Portfolio Analyst",
+    color: "#5DCAA5",
+    Icon: BarChart2,
+    desc: "Monitors every client for risk and opportunity 24/7.",
+  },
+  {
+    name: "Sage",
+    title: "Advisory Agent",
+    color: "#AFA9EC",
+    Icon: Brain,
+    desc: "Generates executive CTO briefs and advisory reports.",
+  },
+  {
+    name: "Pitch",
+    title: "Pre-Sales Agent",
+    color: "#F0997B",
+    Icon: FileText,
+    desc: "Writes proposals, playbooks, and talk tracks from your service stack.",
+  },
+];
 
 export function MarketingLandingPage() {
   function scrollToSection(e: React.MouseEvent, id: string) {
@@ -120,7 +157,7 @@ export function MarketingLandingPage() {
               className="landing-fade-in text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)", animationDelay: "0ms" }}
             >
-              THE SERVICE ECONOMICS PLATFORM FOR MSPS
+              MSP SERVICE INTELLIGENCE PLATFORM
             </p>
 
             <h1
@@ -149,9 +186,10 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Most MSPs price services on gut instinct and track margins in Excel.
-              Stackteryx replaces the guesswork with real unit economics — so every
-              service you sell is profitable by design.
+              Stackteryx gives MSPs a team of AI agents that design profitable
+              services, model real delivery costs, generate client proposals,
+              and deliver executive advisory &mdash; so every engagement is strategic,
+              not reactive.
             </p>
 
             {/* CTA buttons */}
@@ -195,7 +233,7 @@ export function MarketingLandingPage() {
               </a>
             </div>
 
-            {/* Credibility line */}
+            {/* Social proof */}
             <p
               className="landing-fade-in mt-12 text-[13px]"
               style={{
@@ -204,7 +242,9 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Free forever for one service. No credit card required.
+              Trusted by MSPs delivering managed security services across North America.
+              <br />
+              Five AI agents. One intelligence platform.
             </p>
           </div>
 
@@ -221,9 +261,79 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 2 — THE PAIN
+          SECTION 2 — AGENT SHOWCASE
           ═══════════════════════════════════════════════════════ */}
       <section style={{ background: "#111111" }} className="py-24 md:py-32">
+        <div className="max-w-6xl mx-auto px-6 space-y-14">
+          <div className="text-center space-y-5">
+            <p
+              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              YOUR AI TEAM
+            </p>
+            <h2
+              className="text-3xl md:text-[42px] font-extrabold leading-tight"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Five agents. Every role in your service business covered.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+            {AGENTS.map((agent) => (
+              <div
+                key={agent.name}
+                className="rounded-lg p-5 space-y-3"
+                style={{
+                  background: "#0A0A0A",
+                  borderLeft: `3px solid ${agent.color}`,
+                  border: `1px solid #1E1E1E`,
+                  borderLeftColor: agent.color,
+                  borderLeftWidth: 3,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: agent.color }}
+                  />
+                  <span
+                    className="text-lg font-bold"
+                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                  >
+                    {agent.name}
+                  </span>
+                </div>
+                <p
+                  className="text-xs uppercase tracking-wider font-semibold"
+                  style={{ color: agent.color, fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {agent.title}
+                </p>
+                <p
+                  className="text-[14px] leading-[1.65]"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {agent.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p
+            className="text-center text-[14px]"
+            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+          >
+            All five work continuously &mdash; no prompting required.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 3 — THE PAIN
+          ═══════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-5xl mx-auto px-6 text-center space-y-14">
           <div className="space-y-5">
             <p
@@ -241,88 +351,56 @@ export function MarketingLandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
+            {[
+              {
+                heading: "MSPs are flying blind on service economics.",
+                body: "Most providers can\u2019t tell you their real margin on a service. Tool costs, labor, and overhead aren\u2019t modeled together \u2014 so every quote is a guess.",
+                Icon: DollarSign,
+              },
+              {
+                heading: "Advisory services don\u2019t scale without infrastructure.",
+                body: "Every new client needs a strategy brief, a QBR, a technology roadmap. Done manually, this work doesn\u2019t scale. Done with AI, it becomes a recurring revenue line.",
+                Icon: Brain,
+              },
+              {
+                heading: "Clients don\u2019t pay for tools. They pay for outcomes.",
+                body: "When services are defined by vendor tools instead of business results, MSPs compete on price. When they\u2019re defined by outcomes, MSPs compete on value.",
+                Icon: Package,
+              },
+            ].map(({ heading, body, Icon }) => (
               <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
+                key={heading}
+                className="rounded-lg p-6 text-left space-y-3"
+                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
               >
-                <TrendingDown className="h-5 w-5" style={{ color: "#c8f135" }} />
+                <div
+                  className="h-10 w-10 rounded-md flex items-center justify-center"
+                  style={{ background: "#c8f13510" }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: "#c8f135" }} />
+                </div>
+                <h3
+                  className="text-base font-bold"
+                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                >
+                  {heading}
+                </h3>
+                <p
+                  className="text-[15px] leading-[1.7]"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {body}
+                </p>
               </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;Are we actually making money on this client?&rdquo;
-              </h3>
-              <p
-                className="text-[15px] leading-[1.7]"
-                style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-              >
-                You won the deal, but vendor costs crept up and scope expanded.
-                Six months later you&apos;re not sure the service is still profitable.
-              </p>
-            </div>
-
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
-              >
-                <Table className="h-5 w-5" style={{ color: "#c8f135" }} />
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;Let me find the right spreadsheet...&rdquo;
-              </h3>
-              <p
-                className="text-[15px] leading-[1.7]"
-                style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-              >
-                Pricing lives in a spreadsheet. Proposals live in another.
-                Cost data lives in a third. None of them agree.
-              </p>
-            </div>
-
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
-              >
-                <Target className="h-5 w-5" style={{ color: "#c8f135" }} />
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;How do we differentiate from the MSP down the road?&rdquo;
-              </h3>
-              <p
-                className="text-[15px] leading-[1.7]"
-                style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-              >
-                Every competitor sells &ldquo;managed security.&rdquo; Without
-                outcome-based positioning, you&apos;re competing on price alone.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 3 — THE BIG IDEA (interstitial)
+          SECTION 4 — THE BIG IDEA (interstitial)
           ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-24" style={{ background: "#0A0A0A" }}>
+      <section style={{ background: "#111111" }} className="py-20 md:py-24">
         <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
           <p
             className="text-[11px] uppercase tracking-[0.3em] font-semibold"
@@ -342,90 +420,9 @@ export function MarketingLandingPage() {
             style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
           >
             Stackteryx connects your service catalog, vendor costs, and pricing in one
-            place — then uses AI to help you build, price, and sell services that
+            place &mdash; then deploys five AI agents to help you build, price, and sell services that
             actually make money.
           </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — SPREADSHEET VS STACKTERYX
-          ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-24 md:py-32">
-        <div className="max-w-4xl mx-auto px-6 space-y-14">
-          <div className="text-center space-y-5">
-            <p
-              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-            >
-              THE COMPARISON
-            </p>
-            <h2
-              className="text-3xl md:text-[42px] font-extrabold leading-tight"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Spreadsheet vs. Stackteryx
-            </h2>
-          </div>
-
-          <div
-            className="rounded-lg overflow-hidden"
-            style={{ border: "1px solid #1E1E1E" }}
-          >
-            <table className="w-full" style={{ fontFamily: "var(--font-mono-alt)" }}>
-              <thead>
-                <tr style={{ background: "#0A0A0A" }}>
-                  <th
-                    className="text-left px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#666666" }}
-                  >
-                    Capability
-                  </th>
-                  <th
-                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#666666" }}
-                  >
-                    Spreadsheet
-                  </th>
-                  <th
-                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#c8f135" }}
-                  >
-                    Stackteryx
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Live unit-cost margins", false, true],
-                  ["Outcome-based service design", false, true],
-                  ["One-click proposal generation", false, true],
-                  ["Multi-tier pricing engine", false, true],
-                  ["AI technology advisory", false, true],
-                  ["Portfolio-wide profitability view", false, true],
-                  ["Client compliance scoring", false, true],
-                ].map(([label, spreadsheet, stx], i) => (
-                  <tr
-                    key={i}
-                    style={{
-                      background: i % 2 === 0 ? "#111111" : "#0A0A0A",
-                      borderTop: "1px solid #1E1E1E",
-                    }}
-                  >
-                    <td className="px-5 py-3 text-[15px]" style={{ color: "#CCCCCC" }}>
-                      {label as string}
-                    </td>
-                    <td className="text-center px-5 py-3 text-[14px]" style={{ color: "#EF4444" }}>
-                      {spreadsheet ? "\u2713" : "\u2717"}
-                    </td>
-                    <td className="text-center px-5 py-3 text-[14px]" style={{ color: "#c8f135" }}>
-                      {stx ? "\u2713" : "\u2717"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </section>
 
@@ -445,33 +442,69 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Four steps to profitable services
+              Your agents run the workflow. You run the business.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { step: "01", title: "Define the Outcome", desc: "Start with the business problem your service solves \u2014 not the tools in the stack.", Icon: Target },
-              { step: "02", title: "Build the Stack", desc: "Add vendor tools, set unit costs, and let the pricing engine calculate margins automatically.", Icon: Wrench },
-              { step: "03", title: "Price with Confidence", desc: "Multi-tier pricing (Good / Better / Best) with real-time margin visibility on every tier.", Icon: DollarSign },
-              { step: "04", title: "Sell and Deliver", desc: "Generate branded proposals, track contracts, and monitor profitability across your portfolio.", Icon: FileText },
-            ].map(({ step, title, desc, Icon }) => (
+              {
+                step: "01",
+                agent: "Aria",
+                agentColor: "#c8f135",
+                title: "Aria designs your services",
+                desc: "Add your vendor tools and Aria maps them to client outcomes, scores compliance coverage, detects stack gaps, and suggests service configurations in real time.",
+                Icon: Layers2,
+              },
+              {
+                step: "02",
+                agent: "Margin",
+                agentColor: "#378ADD",
+                title: "Margin prices them profitably",
+                desc: "Margin models your real delivery cost \u2014 tools, labor, overhead \u2014 and calculates the price point that hits your target margin before you ever send a quote.",
+                Icon: TrendingUp,
+              },
+              {
+                step: "03",
+                agent: "Pitch",
+                agentColor: "#F0997B",
+                title: "Pitch writes your sales materials",
+                desc: "Pitch transforms your service stack into client-ready proposals, talk tracks, and objection handlers \u2014 written in outcome language your clients understand.",
+                Icon: FileText,
+              },
+              {
+                step: "04",
+                agent: "Sage & Scout",
+                agentColor: "#AFA9EC",
+                title: "Sage and Scout run the advisory layer",
+                desc: "Sage generates quarterly technology strategy briefs for every client. Scout monitors your portfolio and flags opportunities, risks, and renewals before they surface on their own.",
+                Icon: Brain,
+              },
+            ].map(({ step, agent, agentColor, title, desc, Icon }) => (
               <div
                 key={step}
                 className="rounded-lg p-6 space-y-3"
                 style={{ background: "#111111", border: "1px solid #1E1E1E" }}
               >
-                <span
-                  className="text-[11px] font-semibold uppercase tracking-wider"
-                  style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-                >
-                  STEP {step}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[11px] font-semibold uppercase tracking-wider"
+                    style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+                  >
+                    STEP {step}
+                  </span>
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ color: agentColor, fontFamily: "var(--font-mono-alt)" }}
+                  >
+                    &middot; {agent}
+                  </span>
+                </div>
                 <div
                   className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13510" }}
+                  style={{ background: `${agentColor}15` }}
                 >
-                  <Icon className="h-5 w-5" style={{ color: "#c8f135" }} />
+                  <Icon className="h-5 w-5" style={{ color: agentColor }} />
                 </div>
                 <h3
                   className="text-base font-bold"
@@ -595,7 +628,7 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 7 — WHAT'S INSIDE
+          SECTION 7 — FEATURE GRID (agent-organized)
           ═══════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-6xl mx-auto px-6 space-y-14">
@@ -610,20 +643,55 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Everything you need to run profitable services
+              One platform. Five agents. The full service intelligence stack.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { Icon: Package, title: "Service Builder", desc: "Define services around business outcomes, not tools. Structure what you sell and why it matters." },
-              { Icon: Wrench, title: "Bundle Configurator", desc: "Assemble vendor tools into service bundles with per-unit cost tracking built in." },
-              { Icon: DollarSign, title: "Pricing Engine", desc: "Good / Better / Best tiers with real-time margin calculations. No more guesswork." },
-              { Icon: FileText, title: "Sales Studio", desc: "Generate branded, client-ready proposals in seconds \u2014 pre-filled with your pricing and positioning." },
-              { Icon: Brain, title: "Fractional CTO", desc: "AI-generated Technology Strategy Briefs that position you as a strategic advisor." },
-              { Icon: BarChart2, title: "Portfolio Intelligence", desc: "See profitability across every client and service. Spot margin erosion before it hurts." },
-              { Icon: Sparkles, title: "AI Service Architect", desc: "Describe what you want to build \u2014 AI structures the service, suggests tools, and sets pricing." },
-            ].map(({ Icon, title, desc }) => (
+              {
+                agent: "Aria",
+                agentColor: "#c8f135",
+                Icon: Layers2,
+                title: "Stack Builder",
+                desc: "Design service stacks visually with live compliance scoring and outcome mapping.",
+              },
+              {
+                agent: "Margin",
+                agentColor: "#378ADD",
+                Icon: DollarSign,
+                title: "Pricing Engine",
+                desc: "Know your exact margin before you quote \u2014 every time.",
+              },
+              {
+                agent: "Scout",
+                agentColor: "#5DCAA5",
+                Icon: BarChart2,
+                title: "Portfolio Intelligence",
+                desc: "24/7 monitoring across every client for risks, renewals, and revenue signals.",
+              },
+              {
+                agent: "Pitch",
+                agentColor: "#F0997B",
+                Icon: FileText,
+                title: "Sales Studio",
+                desc: "Proposals, playbooks, and talk tracks written from your service stack in minutes.",
+              },
+              {
+                agent: "Sage",
+                agentColor: "#AFA9EC",
+                Icon: Brain,
+                title: "Fractional CTO",
+                desc: "Executive technology advisory briefs and client strategy reports, on demand.",
+              },
+              {
+                agent: "All Agents",
+                agentColor: "#c8f135",
+                Icon: Sparkles,
+                title: "Service Intelligence",
+                desc: "The unified operating layer that connects your tools, clients, margins, and advisory.",
+              },
+            ].map(({ agent, agentColor, Icon, title, desc }) => (
               <div
                 key={title}
                 className="rounded-lg p-5 space-y-3 transition-colors"
@@ -631,11 +699,19 @@ export function MarketingLandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f13540")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1E1E1E")}
               >
-                <div
-                  className="h-9 w-9 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13510" }}
-                >
-                  <Icon className="h-4.5 w-4.5" style={{ color: "#c8f135" }} />
+                <div className="flex items-center justify-between">
+                  <div
+                    className="h-9 w-9 rounded-md flex items-center justify-center"
+                    style={{ background: `${agentColor}15` }}
+                  >
+                    <Icon className="h-4.5 w-4.5" style={{ color: agentColor }} />
+                  </div>
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wider"
+                    style={{ color: agentColor, fontFamily: "var(--font-mono-alt)" }}
+                  >
+                    {agent}
+                  </span>
                 </div>
                 <h3 className="text-sm font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>
                   {title}
@@ -650,9 +726,67 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 8 — PRICING
+          SECTION 8 — WHY NOW
           ═══════════════════════════════════════════════════════ */}
-      <section id="pricing" style={{ background: "#111111" }} className="py-24 md:py-32">
+      <section style={{ background: "#111111" }} className="py-24 md:py-32">
+        <div className="max-w-5xl mx-auto px-6 space-y-14">
+          <div className="text-center space-y-5">
+            <p
+              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              WHY THIS MATTERS NOW
+            </p>
+            <h2
+              className="text-3xl md:text-[42px] font-extrabold leading-tight"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              AI is reshaping how managed services get bought and sold.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                title: "MSPs are getting squeezed",
+                body: "Clients expect strategic guidance. Margins are compressed by vendor pricing complexity. The providers who survive will deliver advisory at scale \u2014 not just reactive support.",
+              },
+              {
+                title: "The tools exist. The infrastructure doesn\u2019t.",
+                body: "AI can write a technology strategy brief. AI can model service margins. But no platform has assembled these capabilities into an operating system for MSP service delivery. Until now.",
+              },
+              {
+                title: "The window is open",
+                body: "MSPs that build an AI-powered advisory layer in the next 24 months will own the high-margin segment of their market. Those that don\u2019t will compete on price against offshore providers and automation.",
+              },
+            ].map(({ title, body }) => (
+              <div
+                key={title}
+                className="rounded-lg p-6 space-y-3"
+                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+              >
+                <h3
+                  className="text-base font-bold"
+                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                >
+                  {title}
+                </h3>
+                <p
+                  className="text-[15px] leading-[1.7]"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 9 — PRICING
+          ═══════════════════════════════════════════════════════ */}
+      <section id="pricing" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-5xl mx-auto px-6 space-y-14">
           <div className="text-center space-y-5">
             <p
@@ -673,7 +807,7 @@ export function MarketingLandingPage() {
             {/* Free */}
             <div
               className="rounded-lg p-6 space-y-5"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
             >
               <div>
                 <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Free</p>
@@ -703,7 +837,7 @@ export function MarketingLandingPage() {
             {/* Pro */}
             <div
               className="rounded-lg p-6 space-y-5 relative"
-              style={{ background: "#0A0A0A", border: "2px solid #c8f135" }}
+              style={{ background: "#111111", border: "2px solid #c8f135" }}
             >
               <div
                 className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
@@ -739,7 +873,7 @@ export function MarketingLandingPage() {
             {/* Enterprise */}
             <div
               className="rounded-lg p-6 space-y-5"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
             >
               <div>
                 <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Enterprise</p>
@@ -770,7 +904,7 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 9 — FINAL CTA
+          SECTION 10 — FINAL CTA
           ═══════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
@@ -829,7 +963,7 @@ export function MarketingLandingPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
               <p className="text-[13px] leading-relaxed" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
-                The service economics platform for MSPs.
+                The MSP Service Intelligence Platform &mdash; five AI agents that design, price, and sell managed services.
               </p>
             </div>
 

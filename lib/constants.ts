@@ -1,4 +1,5 @@
 import {
+  BarChart2,
   LayoutDashboard,
   Layers,
   Layers2,
@@ -6,6 +7,7 @@ import {
   Settings,
   ShieldCheck,
   Shield,
+  Sparkles,
   Users,
   FileText,
   Brain,
@@ -51,6 +53,13 @@ export const NAV_ITEMS = [
     group: "primary" as NavGroup,
   },
   {
+    label: "Portfolio Intelligence",
+    href: "/portfolio-intelligence",
+    icon: BarChart2,
+    disabled: false,
+    group: "primary" as NavGroup,
+  },
+  {
     label: "Sales Studio",
     href: "/sales-studio",
     icon: FileText,
@@ -63,6 +72,13 @@ export const NAV_ITEMS = [
     icon: Brain,
     disabled: false,
     group: "primary" as NavGroup,
+  },
+  {
+    label: "AI Agents",
+    href: "/agents",
+    icon: Sparkles,
+    disabled: false,
+    group: "secondary" as NavGroup,
   },
   {
     label: "Compliance",

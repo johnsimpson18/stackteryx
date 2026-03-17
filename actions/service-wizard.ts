@@ -374,6 +374,31 @@ export async function launchServiceAction(
       action: "launched",
     }, orgId);
 
+    // Log Aria activity + trigger Scout scan (fire-and-forget)
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      logAgentActivity({
+        orgId,
+        agentId: "aria",
+        activityType: "generation",
+        title: `Aria launched ${bundle.name}`,
+        description: "Service is now active and available for client contracts.",
+        entityType: "service",
+        entityId: bundleId,
+        entityName: bundle.name,
+      });
+      logAgentActivity({
+        orgId,
+        agentId: "scout",
+        activityType: "detection",
+        title: `Scout scanning clients for ${bundle.name} fit`,
+        description: "New service launched — checking which clients could benefit.",
+        entityType: "service",
+        entityId: bundleId,
+        entityName: bundle.name,
+      });
+    } catch { /* never block main action */ }
+
     revalidatePath("/bundles");
     revalidatePath("/dashboard");
     revalidatePath("/services");

@@ -15,6 +15,7 @@ import { getProposals } from "@/lib/db/proposals";
 import { getOrgById } from "@/lib/db/orgs";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { createClient } from "@/lib/supabase/server";
+import { getAgentActivities } from "@/lib/agents/log-activity";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
     ctoBriefCountResult,
     orgResult,
     profileResult,
+    activitiesResult,
   ] = await Promise.allSettled([
     getBundles(orgId ?? undefined),
     getClients(orgId ?? undefined),
@@ -56,6 +58,7 @@ export default async function DashboardPage() {
     getCTOBriefCount(orgId),
     orgId ? getOrgById(orgId) : Promise.resolve(null),
     getCurrentProfile(),
+    orgId ? getAgentActivities(orgId, 5) : Promise.resolve([]),
   ]);
 
   const bundles =
@@ -84,6 +87,8 @@ export default async function DashboardPage() {
     orgResult.status === "fulfilled" ? orgResult.value : null;
   const profile =
     profileResult.status === "fulfilled" ? profileResult.value : null;
+  const recentActivities =
+    activitiesResult.status === "fulfilled" ? activitiesResult.value : [];
 
   // ── Phase 2: Pricing health (depends on bundles) ────────────────────────
 
@@ -260,6 +265,7 @@ export default async function DashboardPage() {
       attentionItems={attentionItems}
       orgCreatedAt={org?.created_at ?? null}
       firstName={profile?.display_name?.split(" ")[0] ?? null}
+      recentActivities={recentActivities}
     />
   );
 }
