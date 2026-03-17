@@ -1,17 +1,16 @@
 import {
   LayoutDashboard,
-  Wrench,
+  Layers,
+  Layers2,
   Package,
   Settings,
   ShieldCheck,
   Shield,
   Users,
   FileText,
-  PlusCircle,
-  CheckSquare,
   Brain,
 } from "lucide-react";
-import type { UserRole, OrgRole, ToolCategory, PricingModel, BundleType, BundleStatus, RiskTier, ClientStatus, ApprovalStatus } from "@/lib/types";
+import type { UserRole, OrgRole, ToolCategory, PricingModel, BundleType, BundleStatus, RiskTier, ClientStatus } from "@/lib/types";
 
 export type NavGroup = "primary" | "secondary";
 
@@ -24,12 +23,18 @@ export const NAV_ITEMS = [
     group: "primary" as NavGroup,
   },
   {
-    label: "Build a Service",
-    href: "/services/new",
-    icon: PlusCircle,
+    label: "Tools & Costs",
+    href: "/stack-catalog",
+    icon: Layers,
     disabled: false,
     group: "primary" as NavGroup,
-    accent: true,
+  },
+  {
+    label: "Stack Builder",
+    href: "/stack-builder",
+    icon: Layers2,
+    disabled: false,
+    group: "primary" as NavGroup,
   },
   {
     label: "Services",
@@ -46,13 +51,6 @@ export const NAV_ITEMS = [
     group: "primary" as NavGroup,
   },
   {
-    label: "Fractional CTO",
-    href: "/cto-briefs",
-    icon: Brain,
-    disabled: false,
-    group: "primary" as NavGroup,
-  },
-  {
     label: "Sales Studio",
     href: "/sales-studio",
     icon: FileText,
@@ -60,16 +58,9 @@ export const NAV_ITEMS = [
     group: "primary" as NavGroup,
   },
   {
-    label: "Stack & Pricing",
-    href: "/stack-catalog",
-    icon: Wrench,
-    disabled: false,
-    group: "primary" as NavGroup,
-  },
-  {
-    label: "Approvals",
-    href: "/approvals",
-    icon: CheckSquare,
+    label: "Fractional CTO",
+    href: "/cto-briefs",
+    icon: Brain,
     disabled: false,
     group: "primary" as NavGroup,
   },
@@ -113,9 +104,7 @@ type Permission =
   | "view_versions"
   | "view_clients"
   | "create_clients"
-  | "edit_clients"
-  | "view_approvals"
-  | "manage_approvals";
+  | "edit_clients";
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   owner: [
@@ -124,7 +113,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles", "archive_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals", "manage_approvals",
   ],
   finance: [
     "view_tools", "create_tools", "edit_tools", "deactivate_tools",
@@ -132,7 +120,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles", "archive_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals", "manage_approvals",
   ],
   sales: [
     "view_tools", "create_tools", "edit_tools",
@@ -140,13 +127,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals",
   ],
   viewer: [
     "view_tools", "view_settings",
     "view_bundles", "view_versions",
     "view_clients",
-    "view_approvals",
   ],
 };
 
@@ -163,7 +148,6 @@ export const ORG_ROLE_PERMISSIONS: Record<OrgRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles", "archive_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals", "manage_approvals",
   ],
   admin: [
     "view_tools", "create_tools", "edit_tools", "deactivate_tools",
@@ -171,7 +155,6 @@ export const ORG_ROLE_PERMISSIONS: Record<OrgRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles", "archive_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals", "manage_approvals",
   ],
   member: [
     "view_tools", "create_tools", "edit_tools",
@@ -179,13 +162,11 @@ export const ORG_ROLE_PERMISSIONS: Record<OrgRole, Permission[]> = {
     "view_bundles", "create_bundles", "edit_bundles",
     "create_versions", "view_versions",
     "view_clients", "create_clients", "edit_clients",
-    "view_approvals",
   ],
   viewer: [
     "view_tools", "view_settings",
     "view_bundles", "view_versions",
     "view_clients",
-    "view_approvals",
   ],
 };
 
@@ -207,6 +188,8 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   rmm: "RMM",
   psa: "PSA",
   network_monitoring: "Network Monitoring",
+  dark_web: "Dark Web Monitoring",
+  mdr: "MDR",
   other: "Other",
 };
 
@@ -234,6 +217,8 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
   "rmm",
   "psa",
   "network_monitoring",
+  "dark_web",
+  "mdr",
   "other",
 ];
 
@@ -334,6 +319,8 @@ export const CATEGORY_COLORS: Record<
   rmm:                         { bg: "bg-purple-500/10",  text: "text-purple-400",  border: "border-purple-500/20",  dot: "bg-purple-500" },
   psa:                         { bg: "bg-teal-500/10",    text: "text-teal-400",    border: "border-teal-500/20",    dot: "bg-teal-500" },
   network_monitoring:          { bg: "bg-sky-500/10",     text: "text-sky-400",     border: "border-sky-500/20",     dot: "bg-sky-500" },
+  dark_web:                    { bg: "bg-fuchsia-500/10", text: "text-fuchsia-400", border: "border-fuchsia-500/20", dot: "bg-fuchsia-500" },
+  mdr:                         { bg: "bg-rose-500/10",    text: "text-rose-400",    border: "border-rose-500/20",    dot: "bg-rose-500" },
   other:                       { bg: "bg-slate-500/10",   text: "text-slate-400",   border: "border-slate-500/20",   dot: "bg-slate-400" },
 };
 
@@ -345,11 +332,6 @@ export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
 
 export const CLIENT_STATUSES: ClientStatus[] = ["prospect", "active", "churned"];
 
-export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {
-  pending: "Pending Review",
-  approved: "Approved",
-  rejected: "Rejected",
-};
 
 export const INDUSTRY_OPTIONS = [
   "Healthcare",

@@ -194,6 +194,13 @@ export function NewPackageWizard({ activeBundles }: NewPackageWizardProps) {
         ))}
       </div>
 
+      {/* Explanation */}
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        A package combines multiple services into a single offering your clients
+        can subscribe to. Create 2&ndash;4 tiers (e.g. Good / Better / Best) to give
+        clients options at different price points.
+      </p>
+
       {/* Step content */}
       {step === 0 && (
         <Card>

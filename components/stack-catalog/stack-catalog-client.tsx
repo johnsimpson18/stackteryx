@@ -48,14 +48,17 @@ import {
   Ban,
   Package,
   Library,
+  Globe,
 } from "lucide-react";
 import { ToolLibraryModal } from "./tool-library-modal";
+import { GlobalLibrarySheet } from "@/components/tools/global-library-sheet";
 import type {
   ToolWithAssignments,
   DomainCoverage,
   RedundancyFlag,
   CoverageGap,
 } from "@/lib/db/stack-catalog";
+import type { GlobalToolEntry } from "@/actions/global-tool-library";
 import type { UserRole, ToolCategory } from "@/lib/types";
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -67,6 +70,7 @@ interface StackCatalogClientProps {
   redundancies: RedundancyFlag[];
   gaps: CoverageGap[];
   userRole: UserRole;
+  globalTools: GlobalToolEntry[];
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -78,6 +82,7 @@ export function StackCatalogClient({
   redundancies,
   gaps,
   userRole,
+  globalTools,
 }: StackCatalogClientProps) {
   const router = useRouter();
   const [view, setView] = useState<"category" | "list">("category");
@@ -85,6 +90,7 @@ export function StackCatalogClient({
   const [showGaps, setShowGaps] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [globalLibraryOpen, setGlobalLibraryOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<ToolWithAssignments | null>(null);
   const [, startTransition] = useTransition();
 
@@ -136,9 +142,13 @@ export function StackCatalogClient({
               Import from Spreadsheet
             </Link>
           </Button>
+          <Button variant="outline" onClick={() => setGlobalLibraryOpen(true)}>
+            <Globe className="h-4 w-4 mr-2" />
+            Browse Global Library
+          </Button>
           <Button variant="outline" onClick={() => setLibraryOpen(true)}>
             <Library className="h-4 w-4 mr-2" />
-            Add from Library
+            Quick Add
           </Button>
           <Button asChild>
             <Link href="/tools/new">
@@ -243,7 +253,15 @@ export function StackCatalogClient({
         />
       )}
 
-      {/* Tool Library Modal */}
+      {/* Global Tool Library Sheet */}
+      <GlobalLibrarySheet
+        open={globalLibraryOpen}
+        onOpenChange={setGlobalLibraryOpen}
+        globalTools={globalTools}
+        existingToolNames={existingToolNames}
+      />
+
+      {/* Quick-add Tool Library Modal (local) */}
       <ToolLibraryModal
         open={libraryOpen}
         onOpenChange={setLibraryOpen}

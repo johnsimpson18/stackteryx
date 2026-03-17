@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, Wrench, FileText, Menu } from "lucide-react";
+import { LayoutDashboard, Package, Layers, FileText, Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -15,8 +15,8 @@ import { useState } from "react";
 
 const BOTTOM_TABS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Tools", href: "/stack-catalog", icon: Layers },
   { label: "Services", href: "/services", icon: Package },
-  { label: "Stack", href: "/stack-catalog", icon: Wrench },
   { label: "Studio", href: "/sales-studio", icon: FileText },
 ] as const;
 

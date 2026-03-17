@@ -11,13 +11,17 @@
     "supabase:start": "npx supabase start",
     "supabase:reset": "npx supabase db reset",
     "supabase:types": "npx supabase gen types typescript --local > lib/types/supabase.ts",
-    "gen:types": "supabase gen types typescript --local > types/supabase.ts"
+    "gen:types": "supabase gen types typescript --local > types/supabase.ts",
+    "stripe:setup": "npx tsx --env-file=.env.local scripts/stripe-setup.ts",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
+    "dev:full": "concurrently \"pnpm dev\" \"pnpm stripe:listen\""
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.53",
     "@ai-sdk/react": "^3.0.110",
     "@anthropic-ai/sdk": "^0.78.0",
     "@hookform/resolvers": "^3.10.0",
+    "@stripe/stripe-js": "^8.9.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "ai": "^6.0.108",
@@ -34,6 +38,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.71.2",
     "sonner": "^2.0.7",
+    "stripe": "^20.4.1",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",
     "zod": "^3.25.76"
@@ -53,6 +58,7 @@
     "@types/pdfkit": "^0.17.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "shadcn": "^3.8.5",

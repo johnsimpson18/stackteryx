@@ -45,7 +45,7 @@ interface ServicesListProps {
 
 // ── Layer bar constants (same as Dashboard PortfolioHealthGrid) ──────────────
 
-const LAYER_LABELS = ["Outcome", "Service", "Stack", "Economics", "Enablement"];
+const LAYER_LABELS = ["Outcome", "Service", "Stack", "Economics", "Sales Materials"];
 const LAYER_KEYS: (keyof ServiceCompleteness)[] = [
   "outcome_complete",
   "service_complete",

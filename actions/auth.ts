@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { profileSetupSchema } from "@/lib/schemas/profile";
 import { updateProfile } from "@/lib/db/profiles";
 import type { ActionResult } from "@/lib/types";
@@ -186,10 +185,9 @@ export async function signInWithPassword(
 
     if (error) return { success: false, error: error.message };
 
-    redirect("/dashboard");
-  } catch (err) {
-    // redirect() throws a special error — let it propagate
-    if (isRedirectError(err)) throw err;
+    // Return success — the client handles MFA check and navigation
+    return { success: true, data: undefined };
+  } catch {
     return { success: false, error: "An unexpected error occurred" };
   }
 }

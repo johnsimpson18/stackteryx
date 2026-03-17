@@ -57,6 +57,9 @@ export function StepCompany({
         <p className="mt-2 font-mono text-muted-foreground text-sm">
           First, tell us about your company.
         </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          We use this to tailor your service templates and pricing benchmarks to your market.
+        </p>
       </div>
 
       {/* Company Name */}

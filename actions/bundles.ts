@@ -12,7 +12,6 @@ import {
   archiveBundle as dbArchiveBundle,
 } from "@/lib/db/bundles";
 import { createVersion as dbCreateVersion } from "@/lib/db/bundle-versions";
-import { createApproval as dbCreateApproval } from "@/lib/db/approvals";
 import { getBundleById } from "@/lib/db/bundles";
 import { getToolById } from "@/lib/db/tools";
 import { getCurrentProfile } from "@/lib/db/profiles";
@@ -28,6 +27,7 @@ import type {
   PricingToolInput,
 } from "@/lib/types";
 import type { BundleRecommendation, ClientProfile } from "@/lib/types/recommend";
+import { checkLimit } from "@/actions/billing";
 
 export async function createBundleAction(
   formData: unknown
@@ -43,6 +43,12 @@ export async function createBundleAction(
         success: false,
         error: "You do not have permission to create bundles",
       };
+    }
+
+    // Plan limit check
+    const limitCheck = await checkLimit("services");
+    if (!limitCheck.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
     }
 
     const parsed = createBundleSchema.safeParse(formData);
@@ -215,38 +221,6 @@ export async function createVersionAction(
       version_number: result.version.version_number,
     }, orgId);
 
-    // Auto-create approval request if version requires it
-    const needsApproval = result.pricing.flags.some(
-      (f) => f.type === "approval_required"
-    );
-    if (needsApproval) {
-      const bundle = await getBundleById(bundleId);
-      await dbCreateApproval({
-        bundle_id: bundleId,
-        bundle_version_id: result.version.id,
-        requested_by: profile.id,
-        discount_pct: parsed.data.discount_pct,
-        margin_pct: result.pricing.margin_pct_post_discount,
-        mrr: result.pricing.total_mrr,
-        seat_count: parsed.data.seat_count,
-        bundle_name: bundle?.name ?? "",
-        version_number: result.version.version_number,
-        notes: parsed.data.notes ?? "",
-        org_id: orgId,
-      }).catch(() => {
-        // Non-fatal: approval creation failure should not block version save
-      });
-
-      await logAudit(profile.id, "approval_requested", "approval", null, {
-        bundle_id: bundleId,
-        bundle_name: bundle?.name ?? "",
-        version_number: result.version.version_number,
-        discount_pct: parsed.data.discount_pct,
-      }, orgId).catch(() => {});
-
-      revalidatePath("/approvals");
-    }
-
     revalidatePath(`/services/${bundleId}`);
     revalidatePath("/services");
     revalidatePath("/dashboard");
@@ -268,6 +242,12 @@ export async function createBundleFromRecommendation(
     const { orgId, membership } = await requireOrgMembership();
     if (!hasOrgPermission(membership.role, "create_bundles")) {
       return { success: false, error: "You do not have permission to create bundles" };
+    }
+
+    // Plan limit check
+    const limitCheck = await checkLimit("services");
+    if (!limitCheck.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
     }
 
     const settings = await getOrgSettingsOrDefaults(orgId);
@@ -361,5 +341,33 @@ export async function createBundleFromRecommendation(
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Failed to create bundle";
     return { success: false, error: msg };
+  }
+}
+
+/**
+ * Archive multiple bundles at once (used by onboarding to skip rejected suggestions).
+ */
+export async function archiveBundlesAction(
+  bundleIds: string[]
+): Promise<ActionResult<{ archived: number }>> {
+  try {
+    if (bundleIds.length === 0) return { success: true, data: { archived: 0 } };
+
+    const { orgId } = await requireOrgMembership();
+    let archived = 0;
+
+    for (const id of bundleIds) {
+      const bundle = await getBundleById(id);
+      if (bundle && bundle.org_id === orgId) {
+        await dbArchiveBundle(id);
+        archived++;
+      }
+    }
+
+    revalidatePath("/services");
+    revalidatePath("/dashboard");
+    return { success: true, data: { archived } };
+  } catch {
+    return { success: false, error: "Failed to archive bundles" };
   }
 }

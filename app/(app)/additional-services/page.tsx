@@ -6,7 +6,7 @@ import { getAdditionalServicesByOrgId, getAdditionalServiceUsages } from "@/lib/
 import { AdditionalServicesClient } from "@/components/additional-services/additional-services-client";
 import { PageHeader } from "@/components/shared/page-header";
 
-export const metadata: Metadata = { title: "Additional Services" };
+export const metadata: Metadata = { title: "Add-On Services" };
 
 export default async function AdditionalServicesPage() {
   const [profile, orgId] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function AdditionalServicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Additional Services"
+        title="Add-On Services"
         description="Consulting, retainers, and advisory services that compose into your packages"
       />
       <AdditionalServicesClient services={services} usageMap={usageMap} />

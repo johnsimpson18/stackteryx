@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { getAnthropicClient } from "@/lib/ai/client";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 export const maxDuration = 60;
 
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
   const membership = await getOrgMembership(orgId);
   if (!membership)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const aiLimit = await checkLimit("aiGenerationsPerMonth");
+  if (!aiLimit.allowed) {
+    return Response.json({ error: "LIMIT_REACHED" }, { status: 403 });
+  }
 
   // ── Parse body ──────────────────────────────────────────────────────────
   let body: SuggestTierRequest;
@@ -98,6 +104,7 @@ Select 2-4 services that form a natural progression from basic to comprehensive.
       .trim();
 
     const parsed = JSON.parse(cleaned);
+    await incrementUsage("ai_generation");
     return Response.json(parsed);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

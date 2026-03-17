@@ -1171,7 +1171,7 @@ export type Database = {
       org_role: "org_owner" | "admin" | "member" | "viewer"
       pricing_model: "per_seat" | "flat_monthly" | "tiered" | "per_user" | "per_org" | "annual_flat" | "tiered_by_metric"
       risk_tier: "low" | "medium" | "high"
-      tool_category: "edr" | "siem" | "email_security" | "identity" | "backup" | "vulnerability_management" | "dns_filtering" | "mfa" | "security_awareness_training" | "documentation" | "rmm" | "psa" | "network_monitoring" | "other"
+      tool_category: "edr" | "siem" | "email_security" | "identity" | "backup" | "vulnerability_management" | "dns_filtering" | "mfa" | "security_awareness_training" | "documentation" | "rmm" | "psa" | "network_monitoring" | "dark_web" | "mdr" | "other"
       user_role: "owner" | "finance" | "sales" | "viewer"
     }
     CompositeTypes: {

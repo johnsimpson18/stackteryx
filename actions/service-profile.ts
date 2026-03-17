@@ -172,8 +172,8 @@ export async function updateServiceOutcomeAction(
 
     revalidatePath(`/services/${bundleId}`);
     return { success: true, data: undefined };
-  } catch {
-    return { success: false, error: "Failed to update outcome" };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update outcome" };
   }
 }
 

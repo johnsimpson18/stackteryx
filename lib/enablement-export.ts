@@ -98,7 +98,7 @@ export async function generateEnablementPdf(
     doc
       .fontSize(16)
       .fillColor(BRAND.muted)
-      .text("Sales Enablement Package", { align: "center", width: contentWidth });
+      .text("Sales Materials Package", { align: "center", width: contentWidth });
 
     doc.moveDown(3);
     doc
@@ -257,7 +257,7 @@ export async function generateEnablementDocx(
       spacing: { before: 400 },
       children: [
         new TextRun({
-          text: "Sales Enablement Package",
+          text: "Sales Materials Package",
           size: 32,
           font: "Calibri",
           color: "666666",

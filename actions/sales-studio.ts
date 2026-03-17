@@ -6,6 +6,7 @@ import { getBundleById } from "@/lib/db/bundles";
 import { getServiceOutcome } from "@/lib/db/service-outcomes";
 import { getVersionsByBundleId, getVersionById } from "@/lib/db/bundle-versions";
 import { getPlaybookByBundleId } from "@/lib/db/enablement";
+import { buildSalesStudioContext } from "@/lib/ai/sales-studio-context";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { ActionResult, ToolCategory } from "@/lib/types";
 
@@ -110,5 +111,51 @@ export async function getCachedPlaybook(
     };
   } catch {
     return { success: false, error: "Failed to load cached playbook" };
+  }
+}
+
+// ── Service Context Preview ─────────────────────────────────────────────────
+
+export interface ServiceContextPreview {
+  serviceName: string;
+  serviceSubtitle: string | null;
+  complianceFrameworks: string[];
+  outcomes: { statement: string; description: string | null }[];
+  translatedCapabilities: { clientDescription: string; outcomeContribution: string }[];
+  additionalServices: { name: string; clientDescription: string }[];
+}
+
+export async function getServiceContextPreview(
+  bundleId: string
+): Promise<ActionResult<ServiceContextPreview>> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { success: false, error: "Not authenticated" };
+
+    const { orgId } = await requireOrgMembership();
+
+    const bundle = await getBundleById(bundleId);
+    if (!bundle || bundle.org_id !== orgId) {
+      return { success: false, error: "Service not found" };
+    }
+
+    const ctx = await buildSalesStudioContext(bundleId);
+
+    return {
+      success: true,
+      data: {
+        serviceName: ctx.serviceName,
+        serviceSubtitle: ctx.serviceSubtitle,
+        complianceFrameworks: ctx.complianceFrameworks,
+        outcomes: ctx.outcomes,
+        translatedCapabilities: ctx.toolsTranslated,
+        additionalServices: ctx.additionalServices.map((s) => ({
+          name: s.name,
+          clientDescription: s.clientDescription,
+        })),
+      },
+    };
+  } catch {
+    return { success: false, error: "Failed to load service context" };
   }
 }

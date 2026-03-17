@@ -106,7 +106,7 @@ export function EnablementSection({
         ...content,
       });
       if (result.success) {
-        toast.success("Enablement content saved");
+        toast.success("Sales materials saved");
         setEditing(false);
         router.refresh();
       } else {
@@ -155,7 +155,7 @@ export function EnablementSection({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between py-3">
-        <CardTitle className="text-sm">Sales Enablement</CardTitle>
+        <CardTitle className="text-sm">Sales Materials</CardTitle>
         <div className="flex items-center gap-2">
           <Button
             size="sm"

@@ -81,7 +81,10 @@ export function StepBusiness({
         <p
           className="mt-2 font-mono text-muted-foreground text-sm"
         >
-          This helps us build the right bundle structure for your business.
+          This helps us build the right service structure for your business.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          This shapes how your services are structured and how your sales materials are written.
         </p>
       </div>
 

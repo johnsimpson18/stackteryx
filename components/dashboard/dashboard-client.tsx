@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -12,27 +11,30 @@ import { BUNDLE_STATUS_LABELS } from "@/lib/constants";
 import {
   AlertTriangle,
   ArrowRight,
+  Brain,
+  Calendar,
   Check,
   ChevronRight,
   Circle,
   DollarSign,
+  FileText,
   Layers,
   Package,
   Plus,
   Rocket,
-  Target,
   TrendingUp,
   Users,
   X,
 } from "lucide-react";
-import { dismissActionCardAction } from "@/actions/service-profile";
-import { PricingHealthWidget } from "@/components/dashboard/pricing-health-widget";
-import type {
-  AIActionCard,
-  BundleWithMeta,
-  ServiceCompleteness,
-  ToolCategory,
-} from "@/lib/types";
+import { MetricCard } from "@/components/dashboard/metric-card";
+import { IntelligenceCard } from "@/components/dashboard/intelligence-card";
+import { AttentionFeed } from "@/components/dashboard/attention-feed";
+import { MRRBreakdown } from "@/components/dashboard/mrr-breakdown";
+import { RenewalList } from "@/components/dashboard/renewal-list";
+import type { AttentionItem } from "@/components/dashboard/attention-feed";
+import type { MRRServiceItem } from "@/components/dashboard/mrr-breakdown";
+import type { RenewalItem } from "@/components/dashboard/renewal-list";
+import type { BundleWithMeta, ServiceCompleteness } from "@/lib/types";
 import type { PricingHealthSummary } from "@/lib/db/dashboard";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -44,158 +46,103 @@ interface ChecklistSteps {
   hasClients: boolean;
 }
 
-interface DashboardStats {
-  activeServices: number;
+interface DashboardClientProps {
+  checklist: ChecklistSteps | null;
+  bundles: BundleWithMeta[];
+  completeness: ServiceCompleteness[];
+  defaultTargetMargin: number;
   portfolioMrr: number;
   avgMargin: number | null;
   activeClients: number;
-  outcomeTypeCoverage: number;
-  servicesNeedingAttention: number;
+  pricingHealth: PricingHealthSummary | null;
+  mrrByService: MRRServiceItem[];
+  renewals: RenewalItem[];
+  proposalStats: { total: number; drafts: number; sent: number };
+  ctoBriefCount: number;
+  attentionItems: AttentionItem[];
+  orgCreatedAt: string | null;
+  firstName: string | null;
 }
 
-interface DashboardClientProps {
-  checklist: ChecklistSteps | null;
-  actionCards: AIActionCard[];
-  stats: DashboardStats;
-  bundles: BundleWithMeta[];
-  completeness: ServiceCompleteness[];
-  toolsByCategory: Record<string, number>;
-  inProgressBundle: { id: string; name: string; updatedAt: string } | null;
-  defaultTargetMargin: number;
-  stalePricingCount?: number;
-  pricingHealth?: PricingHealthSummary | null;
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-// ── CTA route map for action card types ──────────────────────────────────────
-
-const ACTION_CARD_ROUTES: Record<string, string> = {
-  incomplete_service: "/services",
-  margin_risk: "/services",
-  renewal_alert: "/clients",
-  stale_proposal: "/sales-studio",
-  vendor_cost_change: "/stack-catalog",
-};
-
-// ── Outcome type labels ──────────────────────────────────────────────────────
-
-// ── Relative time helper ─────────────────────────────────────────────────────
-
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "yesterday";
-  return `${days}d ago`;
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function DashboardClient({
   checklist,
-  actionCards,
-  stats,
   bundles,
   completeness,
-  toolsByCategory,
-  inProgressBundle,
   defaultTargetMargin,
-  stalePricingCount = 0,
+  portfolioMrr,
+  avgMargin,
+  activeClients,
   pricingHealth,
+  mrrByService,
+  renewals,
+  proposalStats,
+  ctoBriefCount,
+  attentionItems,
+  orgCreatedAt,
+  firstName,
 }: DashboardClientProps) {
-  const [, startTransition] = useTransition();
-  const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
-  const [continueCardDismissed, setContinueCardDismissed] = useState(false);
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
-
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const hasServices = bundles.length > 0;
 
-  // ── Action card handlers ─────────────────────────────────────────────────
-
-  function handleDismissCard(cardId: string) {
-    setDismissedCards((prev) => new Set([...prev, cardId]));
-    startTransition(async () => {
-      const result = await dismissActionCardAction(cardId);
-      if (!result.success) {
-        setDismissedCards((prev) => {
-          const next = new Set(prev);
-          next.delete(cardId);
-          return next;
-        });
-        toast.error("Failed to dismiss");
-      }
-    });
-  }
-
-  function getCardCtaHref(card: AIActionCard): string {
-    if (card.cta_href) return card.cta_href;
-    const base = ACTION_CARD_ROUTES[card.card_type] ?? "/dashboard";
-    return card.entity_id ? `${base}/${card.entity_id}` : base;
-  }
-
-  const visibleCards = actionCards.filter((c) => !dismissedCards.has(c.id));
+  // Show welcome banner for 7 days after org creation
+  const showWelcome = (() => {
+    if (welcomeDismissed || !orgCreatedAt) return false;
+    const created = new Date(orgCreatedAt);
+    const daysSinceCreation = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceCreation <= 7;
+  })();
 
   // ── Portfolio Health Grid data ───────────────────────────────────────────
-
   const completenessMap = new Map(
-    completeness.map((c) => [c.bundle_id, c])
+    completeness.map((c) => [c.bundle_id, c]),
   );
-
   const gridBundles = bundles
     .filter((b) => b.status !== "archived")
     .map((b) => ({
       bundle: b,
       completeness: completenessMap.get(b.id) ?? null,
     }))
-    .sort((a, b) => {
-      const aLayers = a.completeness?.layers_complete ?? 0;
-      const bLayers = b.completeness?.layers_complete ?? 0;
-      return aLayers - bLayers;
-    });
-
+    .sort(
+      (a, b) =>
+        (a.completeness?.layers_complete ?? 0) -
+        (b.completeness?.layers_complete ?? 0),
+    );
   const filteredGridBundles = filterNeedingAttention
     ? gridBundles.filter((g) => (g.completeness?.layers_complete ?? 0) < 3)
     : gridBundles;
 
-  // ── Margin color helper ──────────────────────────────────────────────────
-
-  function marginAccent(): "emerald" | "amber" | "red" | "lime" {
-    if (stats.avgMargin === null) return "lime";
-    if (stats.avgMargin >= defaultTargetMargin) return "emerald";
-    if (stats.avgMargin >= defaultTargetMargin - 0.05) return "amber";
-    return "red";
-  }
-
-  // ── Severity sort value (for display ordering) ──────────────────────────
-
-  const severityOrder: Record<string, number> = {
-    critical: 0,
-    warning: 1,
-    info: 2,
-  };
-
-  const sortedCards = [...visibleCards].sort((a, b) => {
-    const aSev = severityOrder[a.severity] ?? 2;
-    const bSev = severityOrder[b.severity] ?? 2;
-    if (aSev !== bSev) return aSev - bSev;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Margin sub-value styling ─────────────────────────────────────────────
+  const marginSubType: "positive" | "negative" | "warning" | "neutral" =
+    avgMargin === null
+      ? "neutral"
+      : avgMargin >= defaultTargetMargin
+        ? "positive"
+        : avgMargin >= defaultTargetMargin - 0.05
+          ? "warning"
+          : "negative";
 
   return (
     <div className="space-y-7">
-      {/* Page Header */}
+      {/* ── 1. Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1
             className="text-2xl font-bold tracking-tight text-foreground"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Dashboard
+            {getGreeting()}.
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Your portfolio intelligence briefing
@@ -211,130 +158,271 @@ export function DashboardClient({
         )}
       </div>
 
-      {/* 1. Getting Started Checklist */}
-      {checklist && <GettingStartedChecklist steps={checklist} />}
-
-      {/* Continue Where You Left Off */}
-      {inProgressBundle && !continueCardDismissed && (
-        <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-          <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-            <Rocket className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">
-              You have an unfinished service
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {inProgressBundle.name} — last edited{" "}
-              {relativeTime(inProgressBundle.updatedAt)}
-            </p>
-          </div>
-          <Button size="sm" asChild className="shrink-0">
-            <Link href={`/services/new?resume=${inProgressBundle.id}`}>
-              Continue
-              <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Link>
-          </Button>
+      {/* ── Welcome Banner (post-onboarding, first 7 days) ────────────── */}
+      {showWelcome && (
+        <div
+          className="rounded-lg p-5 relative"
+          style={{
+            backgroundColor: "#111111",
+            border: "1px solid #1e1e1e",
+            borderLeft: "3px solid #A8FF3E",
+          }}
+        >
           <button
             type="button"
-            onClick={() => setContinueCardDismissed(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            onClick={() => setWelcomeDismissed(true)}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Dismiss welcome"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
-        </div>
-      )}
-
-      {/* Stale Pricing Alert */}
-      {stalePricingCount > 0 && (
-        <div className="flex items-start gap-3 rounded-lg border-l-[3px] border-l-amber-500 border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">
-              {stalePricingCount} service{stalePricingCount !== 1 ? "s have" : " has"} stale pricing
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Tool costs have changed since these prices were last calculated.
-            </p>
+          <p
+            className="font-bold uppercase tracking-tight"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 18,
+              color: "#FFFFFF",
+            }}
+          >
+            {firstName ? `Welcome, ${firstName}.` : "Welcome to Stackteryx."}
+          </p>
+          <p
+            className="mt-1"
+            style={{
+              fontFamily: "var(--font-mono-alt)",
+              fontSize: 13,
+              color: "#999999",
+              lineHeight: 1.6,
+            }}
+          >
+            {hasServices
+              ? "Your services are ready. Add your first client to start generating proposals."
+              : "You're starting fresh. Add your tools first, then build your first service."}
+          </p>
+          <div className="mt-3">
+            {hasServices ? (
+              <Link
+                href="/clients"
+                className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-tight transition-colors"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  color: "#A8FF3E",
+                }}
+              >
+                Add your first client
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <Link
+                href="/stack-catalog"
+                className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-tight transition-colors"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  color: "#A8FF3E",
+                }}
+              >
+                Add your tools
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
-          <Button size="sm" variant="outline" asChild className="h-7 text-xs shrink-0">
-            <Link href="/services?filter=stale">
-              Review
-              <ChevronRight className="h-3 w-3 ml-1" />
-            </Link>
-          </Button>
         </div>
       )}
 
-      {/* 2. AI Action Cards */}
-      <ActionCardsSection
-        cards={sortedCards}
-        onDismiss={handleDismissCard}
-        getCtaHref={getCardCtaHref}
-      />
+      {/* ── 2. Getting Started Checklist ────────────────────────────────── */}
+      {checklist && <GettingStartedChecklist steps={checklist} />}
 
-      {/* 3. Stat Cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard
-          label="Active Services"
-          value={String(stats.activeServices)}
-          sub={`${bundles.length} total`}
-          icon={<Package className="h-4 w-4" />}
-          accent="cyan"
-        />
-        <StatCard
+      {/* ── 3. Metric Cards ────────────────────────────────────────────── */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <MetricCard
           label="Portfolio MRR"
-          value={formatCurrency(stats.portfolioMrr)}
-          sub={`${formatCurrency(stats.portfolioMrr * 12)} ARR`}
-          icon={<DollarSign className="h-4 w-4" />}
-          accent="emerald"
+          value={formatCurrency(portfolioMrr)}
+          subValue={`${formatCurrency(portfolioMrr * 12)} ARR`}
+          subValueType="neutral"
+          href="/services"
+          icon={DollarSign}
         />
-        <StatCard
+        <MetricCard
           label="Avg Margin"
-          value={stats.avgMargin !== null ? formatPercent(stats.avgMargin) : "—"}
-          sub={
-            stats.avgMargin !== null
+          value={avgMargin !== null ? formatPercent(avgMargin) : "—"}
+          subValue={
+            avgMargin !== null
               ? `Target: ${formatPercent(defaultTargetMargin)}`
               : "No active configs"
           }
-          icon={<TrendingUp className="h-4 w-4" />}
-          accent={marginAccent()}
+          subValueType={marginSubType}
+          href="/services"
+          icon={TrendingUp}
         />
-        <StatCard
+        <MetricCard
           label="Active Clients"
-          value={String(stats.activeClients)}
-          sub="with active services"
-          icon={<Users className="h-4 w-4" />}
-          accent="lime"
+          value={String(activeClients)}
+          subValue="with active contracts"
+          subValueType="neutral"
+          href="/clients"
+          icon={Users}
         />
-        <StatCard
-          label="Portfolio Coverage"
-          value={`${stats.outcomeTypeCoverage} / 4`}
-          sub="outcome types"
-          icon={<Target className="h-4 w-4" />}
-          accent={stats.outcomeTypeCoverage >= 3 ? "emerald" : stats.outcomeTypeCoverage >= 2 ? "amber" : "lime"}
-        />
-        <StatCard
-          label="Needs Attention"
-          value={String(stats.servicesNeedingAttention)}
-          sub={stats.servicesNeedingAttention === 1 ? "service incomplete" : "services incomplete"}
-          icon={<Layers className="h-4 w-4" />}
-          accent={stats.servicesNeedingAttention > 0 ? "amber" : "emerald"}
-          onClick={
-            stats.servicesNeedingAttention > 0
-              ? () => setFilterNeedingAttention((prev) => !prev)
-              : undefined
-          }
-          active={filterNeedingAttention}
+        <MetricCard
+          label="Proposals"
+          value={String(proposalStats.total)}
+          subValue={proposalStats.sent > 0 ? `${proposalStats.sent} sent` : "none sent yet"}
+          subValueType={proposalStats.sent > 0 ? "positive" : "neutral"}
+          href="/sales-studio"
+          icon={FileText}
         />
       </div>
 
-      {/* Pricing Health Widget */}
-      {pricingHealth && (
-        <PricingHealthWidget data={pricingHealth} />
-      )}
+      {/* ── 4. Intelligence Cards (2×2) ────────────────────────────────── */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <IntelligenceCard
+          label="Pricing Health"
+          icon={AlertTriangle}
+          iconColor="#ef9f27"
+          cta={{ label: "View all →", href: "/services" }}
+          emptyState="Add active services with pricing to see health data."
+        >
+          {pricingHealth && <PricingHealthContent data={pricingHealth} />}
+        </IntelligenceCard>
 
-      {/* 4. Build a Service hero CTA (zero services state) */}
+        <IntelligenceCard
+          label="Upcoming Renewals"
+          icon={Calendar}
+          iconColor="#378add"
+          cta={{ label: "All clients →", href: "/clients" }}
+          emptyState="No renewals due in the next 90 days."
+        >
+          {renewals.length > 0 ? <RenewalList renewals={renewals} /> : null}
+        </IntelligenceCard>
+
+        <IntelligenceCard
+          label="Proposal Pipeline"
+          icon={FileText}
+          iconColor="#378add"
+          cta={{ label: "Sales Studio →", href: "/sales-studio" }}
+          emptyState="No proposals generated yet."
+        >
+          {proposalStats.total > 0 ? (
+            <ProposalStatsContent stats={proposalStats} />
+          ) : null}
+        </IntelligenceCard>
+
+        <IntelligenceCard
+          label="CTO Briefs"
+          icon={Brain}
+          iconColor="#c8f135"
+          cta={{ label: "Generate →", href: "/fractional-cto" }}
+          emptyState="No CTO briefs generated yet."
+        >
+          {ctoBriefCount > 0 ? (
+            <div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  fontFamily: "var(--font-mono-alt)",
+                  lineHeight: 1,
+                }}
+              >
+                {ctoBriefCount}
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#666666",
+                  fontFamily: "var(--font-mono-alt)",
+                  marginTop: 6,
+                }}
+              >
+                briefs generated
+              </div>
+            </div>
+          ) : null}
+        </IntelligenceCard>
+      </div>
+
+      {/* ── 5. Attention Feed ──────────────────────────────────────────── */}
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: 8,
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
+          <AlertTriangle style={{ width: 16, height: 16, color: "#ef9f27" }} />
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#ffffff",
+              fontFamily: "var(--font-display)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Needs Attention
+          </span>
+        </div>
+        <AttentionFeed items={attentionItems} />
+      </div>
+
+      {/* ── 6. Revenue by Service ──────────────────────────────────────── */}
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: 8,
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <DollarSign style={{ width: 16, height: 16, color: "#666666" }} />
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#ffffff",
+                fontFamily: "var(--font-display)",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Revenue by Service
+            </span>
+          </div>
+          <Link
+            href="/services"
+            style={{
+              fontSize: 12,
+              color: "#c8f135",
+              fontFamily: "var(--font-mono-alt)",
+              textDecoration: "none",
+            }}
+          >
+            View all →
+          </Link>
+        </div>
+        <MRRBreakdown services={mrrByService} totalMrr={portfolioMrr} />
+      </div>
+
+      {/* ── Zero-state hero ────────────────────────────────────────────── */}
       {!hasServices && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -356,16 +444,175 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* 5. Portfolio Health Grid */}
+      {/* ── 7. Portfolio Health Grid ──────────────────────────────────── */}
       <PortfolioHealthGrid
         items={filteredGridBundles}
         isFiltered={filterNeedingAttention}
         onClearFilter={() => setFilterNeedingAttention(false)}
+        onToggleFilter={() => setFilterNeedingAttention((prev) => !prev)}
         hasServices={hasServices}
       />
+    </div>
+  );
+}
 
-      {/* 6. Portfolio Coverage */}
-      <PortfolioCoverage toolsByCategory={toolsByCategory} />
+// ── Pricing Health Content ───────────────────────────────────────────────────
+
+function PricingHealthContent({ data }: { data: PricingHealthSummary }) {
+  const { marginBuckets, topRisks } = data;
+  const total =
+    marginBuckets.healthy +
+    marginBuckets.watch +
+    marginBuckets.atRisk +
+    marginBuckets.critical;
+
+  if (total === 0) return null;
+
+  const buckets = [
+    { label: "Healthy", count: marginBuckets.healthy, color: "#c8f135" },
+    { label: "Watch", count: marginBuckets.watch, color: "#ef9f27" },
+    { label: "At Risk", count: marginBuckets.atRisk, color: "#e24b4a" },
+    { label: "Critical", count: marginBuckets.critical, color: "#ff4444" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: topRisks.length > 0 ? 16 : 0 }}>
+        {buckets.map((b) => (
+          <div
+            key={b.label}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: b.color,
+                display: "inline-block",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 12,
+                color: "#888888",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              {b.label}
+            </span>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#ffffff",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              {b.count}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {topRisks.length > 0 && (
+        <div style={{ borderTop: "1px solid #1e1e1e", paddingTop: 12 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: "#666666",
+              fontFamily: "var(--font-mono-alt)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              marginBottom: 8,
+            }}
+          >
+            Lowest Margins
+          </div>
+          {topRisks.map((risk) => (
+            <div
+              key={risk.bundleId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "4px 0",
+              }}
+            >
+              <Link
+                href={`/services/${risk.bundleId}`}
+                style={{
+                  fontSize: 13,
+                  color: "#ffffff",
+                  fontFamily: "var(--font-mono-alt)",
+                  textDecoration: "none",
+                }}
+              >
+                {risk.bundleName}
+              </Link>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color:
+                    risk.currentMargin < 0.1
+                      ? "#e24b4a"
+                      : risk.currentMargin < 0.25
+                        ? "#ef9f27"
+                        : "#c8f135",
+                  fontFamily: "var(--font-mono-alt)",
+                }}
+              >
+                {(risk.currentMargin * 100).toFixed(0)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Proposal Stats Content ───────────────────────────────────────────────────
+
+function ProposalStatsContent({
+  stats,
+}: {
+  stats: { total: number; drafts: number; sent: number };
+}) {
+  const items = [
+    { label: "Total", value: stats.total, color: "#ffffff" },
+    { label: "Drafts", value: stats.drafts, color: "#ef9f27" },
+    { label: "Sent", value: stats.sent, color: "#c8f135" },
+  ];
+
+  return (
+    <div style={{ display: "flex", gap: 32 }}>
+      {items.map((item) => (
+        <div key={item.label}>
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              color: item.color,
+              fontFamily: "var(--font-mono-alt)",
+              lineHeight: 1,
+            }}
+          >
+            {item.value}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#666666",
+              fontFamily: "var(--font-mono-alt)",
+              marginTop: 6,
+            }}
+          >
+            {item.label}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -446,141 +693,9 @@ function GettingStartedChecklist({ steps }: { steps: ChecklistSteps }) {
   );
 }
 
-// ── AI Action Cards Section ──────────────────────────────────────────────────
-
-function ActionCardsSection({
-  cards,
-  onDismiss,
-  getCtaHref,
-}: {
-  cards: AIActionCard[];
-  onDismiss: (id: string) => void;
-  getCtaHref: (card: AIActionCard) => string;
-}) {
-  if (cards.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground px-1">
-        No issues flagged. Your portfolio looks healthy.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {cards.map((card) => (
-        <div
-          key={card.id}
-          className={cn(
-            "flex items-start gap-3 rounded-lg border-l-[3px] border px-4 py-3 transition-all duration-200",
-            card.severity === "critical"
-              ? "border-l-red-500 bg-red-500/5 border-red-500/20"
-              : card.severity === "warning"
-                ? "border-l-amber-500 bg-amber-500/5 border-amber-500/20"
-                : "border-l-blue-500 bg-blue-500/5 border-blue-500/20"
-          )}
-        >
-          <AlertTriangle
-            className={cn(
-              "h-4 w-4 mt-0.5 shrink-0",
-              card.severity === "critical"
-                ? "text-red-400"
-                : card.severity === "warning"
-                  ? "text-amber-400"
-                  : "text-blue-400"
-            )}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{card.title}</p>
-            {card.body && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {card.body}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button size="sm" variant="outline" asChild className="h-7 text-xs">
-              <Link href={getCtaHref(card)}>
-                {card.cta_label ?? "View"}
-              </Link>
-            </Button>
-            <button
-              type="button"
-              onClick={() => onDismiss(card.id)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Stat Card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon,
-  accent = "lime",
-  onClick,
-  active,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  icon: React.ReactNode;
-  accent?: "lime" | "emerald" | "amber" | "cyan" | "red";
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  const accentMap = {
-    lime: "via-[#A8FF3E]/40",
-    emerald: "via-emerald-500/40",
-    amber: "via-amber-500/40",
-    cyan: "via-cyan-500/40",
-    red: "via-red-500/40",
-  };
-
-  const Wrapper = onClick ? "button" : "div";
-
-  return (
-    <Wrapper
-      type={onClick ? "button" : undefined}
-      onClick={onClick}
-      className={cn(
-        "relative overflow-hidden rounded-xl border border-border bg-card p-4 text-left",
-        onClick && "cursor-pointer hover:border-primary/30 transition-colors",
-        active && "border-primary/40 bg-primary/5"
-      )}
-    >
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent",
-          accentMap[accent]
-        )}
-      />
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-          {label}
-        </p>
-        <div className="p-1 rounded-lg bg-white/5 text-muted-foreground">
-          {icon}
-        </div>
-      </div>
-      <p className="text-xl font-bold tracking-tight text-foreground">
-        {value}
-      </p>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>
-    </Wrapper>
-  );
-}
-
 // ── Portfolio Health Grid ────────────────────────────────────────────────────
 
-const LAYER_LABELS = ["Outcome", "Service", "Stack", "Economics", "Enablement"];
+const LAYER_LABELS = ["Outcome", "Service", "Stack", "Economics", "Sales Materials"];
 const LAYER_KEYS: (keyof ServiceCompleteness)[] = [
   "outcome_complete",
   "service_complete",
@@ -593,11 +708,16 @@ function PortfolioHealthGrid({
   items,
   isFiltered,
   onClearFilter,
+  onToggleFilter,
   hasServices,
 }: {
-  items: { bundle: BundleWithMeta; completeness: ServiceCompleteness | null }[];
+  items: {
+    bundle: BundleWithMeta;
+    completeness: ServiceCompleteness | null;
+  }[];
   isFiltered: boolean;
   onClearFilter: () => void;
+  onToggleFilter: () => void;
   hasServices: boolean;
 }) {
   if (!hasServices) {
@@ -608,9 +728,7 @@ function PortfolioHealthGrid({
         </h2>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <Layers className="h-7 w-7 text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">
-            No services yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No services yet.</p>
           <Button size="sm" asChild className="mt-3">
             <Link href="/services/new">
               Build your first service
@@ -622,22 +740,35 @@ function PortfolioHealthGrid({
     );
   }
 
+  const needsAttentionCount = items.filter(
+    (g) => (g.completeness?.layers_complete ?? 0) < 3,
+  ).length;
+
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-foreground">
           Portfolio Health
         </h2>
-        {isFiltered && (
-          <button
-            type="button"
-            onClick={onClearFilter}
-            className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-          >
-            Show all services
-            <X className="h-3 w-3" />
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {needsAttentionCount > 0 && (
+            <button
+              type="button"
+              onClick={onToggleFilter}
+              className={cn(
+                "text-xs transition-colors flex items-center gap-1",
+                isFiltered
+                  ? "text-primary hover:text-primary/80"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {isFiltered
+                ? "Show all services"
+                : `${needsAttentionCount} need attention`}
+              {isFiltered && <X className="h-3 w-3" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Header */}
@@ -677,7 +808,6 @@ function PortfolioHealthGrid({
                 key={bundle.id}
                 className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 items-center px-2 py-2.5 hover:bg-white/[0.02] transition-colors"
               >
-                {/* Name + outcome type */}
                 <div className="min-w-0">
                   <Link
                     href={`/services/${bundle.id}`}
@@ -687,7 +817,6 @@ function PortfolioHealthGrid({
                   </Link>
                 </div>
 
-                {/* Status */}
                 <div className="w-20 flex justify-center">
                   <StatusBadge
                     status={bundle.status as "draft" | "active" | "archived"}
@@ -695,29 +824,23 @@ function PortfolioHealthGrid({
                   />
                 </div>
 
-                {/* Five layer bar */}
                 <div className="w-[200px] flex items-center gap-1">
                   {layers.map((complete, i) => (
-                    <div
-                      key={i}
-                      className="relative group flex-1"
-                    >
+                    <div key={i} className="relative group flex-1">
                       <div
                         className={cn(
                           "h-5 rounded-sm transition-colors",
-                          complete
-                            ? "bg-emerald-500/60"
-                            : "bg-red-500/30"
+                          complete ? "bg-emerald-500/60" : "bg-red-500/30",
                         )}
                       />
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-popover border border-border text-[10px] text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
-                        {LAYER_LABELS[i]}: {complete ? "Complete" : "Incomplete"}
+                        {LAYER_LABELS[i]}:{" "}
+                        {complete ? "Complete" : "Incomplete"}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Score */}
                 <div className="w-12 text-right">
                   <span
                     className={cn(
@@ -726,102 +849,23 @@ function PortfolioHealthGrid({
                         ? "text-emerald-400"
                         : layersComplete >= 3
                           ? "text-amber-400"
-                          : "text-red-400"
+                          : "text-red-400",
                     )}
                   >
                     {layersComplete} / 5
                   </span>
                 </div>
 
-                {/* Arrow */}
-                <Link href={`/services/${bundle.id}`} className="w-5 flex justify-center">
+                <Link
+                  href={`/services/${bundle.id}`}
+                  className="w-5 flex justify-center"
+                >
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                 </Link>
               </div>
             );
           })
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Portfolio Coverage ───────────────────────────────────────────────────────
-
-function PortfolioCoverage({
-  toolsByCategory,
-}: {
-  toolsByCategory: Record<string, number>;
-}) {
-  const DOMAINS: { label: string; categories: ToolCategory[] }[] = [
-    { label: "Identity", categories: ["identity", "mfa"] },
-    { label: "Endpoint", categories: ["edr"] },
-    { label: "Network", categories: ["dns_filtering", "network_monitoring"] },
-    { label: "Cloud", categories: ["other"] },
-    { label: "Data", categories: ["backup"] },
-    { label: "SOC / SIEM", categories: ["siem"] },
-    { label: "Backup", categories: ["backup"] },
-    { label: "Compliance", categories: ["security_awareness_training", "documentation"] },
-    { label: "Productivity", categories: ["rmm", "psa"] },
-  ];
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Portfolio Coverage
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Security domains in your tool library
-          </p>
-        </div>
-        <Link
-          href="/stack-catalog"
-          className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-0.5"
-        >
-          View stack catalog
-          <ChevronRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
-        {DOMAINS.map((domain) => {
-          const count = domain.categories.reduce(
-            (sum, cat) => sum + (toolsByCategory[cat] ?? 0),
-            0
-          );
-          const covered = count > 0;
-
-          return (
-            <div
-              key={domain.label}
-              className={cn(
-                "rounded-lg border p-3 text-center transition-colors",
-                covered
-                  ? "bg-emerald-500/5 border-emerald-500/20"
-                  : "bg-red-500/5 border-red-500/20"
-              )}
-            >
-              <div
-                className={cn(
-                  "h-2 w-2 rounded-full mx-auto mb-2",
-                  covered ? "bg-emerald-500" : "bg-red-500/40"
-                )}
-              />
-              <p className="text-xs font-medium text-foreground">
-                {domain.label}
-              </p>
-              <p
-                className={cn(
-                  "text-[10px] mt-0.5",
-                  covered ? "text-emerald-400" : "text-red-400/60"
-                )}
-              >
-                {covered ? `${count} tool${count !== 1 ? "s" : ""}` : "Uncovered"}
-              </p>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

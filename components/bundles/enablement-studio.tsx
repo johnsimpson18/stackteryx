@@ -214,7 +214,7 @@ export function EnablementStudio({
     });
 
     if (result.success) {
-      toast.success("Enablement content saved");
+      toast.success("Sales materials saved");
       setIsDirty(false);
       router.refresh();
     } else {
@@ -289,10 +289,10 @@ export function EnablementStudio({
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <h3 className="text-base font-semibold text-foreground">
-            Sales Enablement Package
+            Sales Materials Package
           </h3>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-md leading-relaxed">
-            Generate a complete sales enablement package for this bundle version.
+            Generate a complete sales materials package for this bundle version.
             AI will create a service overview, tool breakdown, talking points,
             pricing narrative, and competitive positioning.
           </p>

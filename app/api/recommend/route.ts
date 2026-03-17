@@ -4,6 +4,7 @@ import { getTools } from "@/lib/db/tools";
 import { getOrgSettings } from "@/lib/db/org-settings";
 import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { recommendRequestSchema } from "@/lib/schemas/recommend";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 export const maxDuration = 60;
 
@@ -92,6 +93,11 @@ export async function POST(request: Request) {
   const membership = await getOrgMembership(orgId);
   if (!membership) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const aiLimit = await checkLimit("aiGenerationsPerMonth");
+  if (!aiLimit.allowed) {
+    return Response.json({ error: "LIMIT_REACHED" }, { status: 403 });
   }
 
   if (membership.role === "viewer") {
@@ -263,6 +269,7 @@ ${JSON.stringify(toolCatalog, null, 2)}`;
     },
   });
 
+  await incrementUsage("ai_generation");
   return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",

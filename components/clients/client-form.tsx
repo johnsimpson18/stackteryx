@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { createClientAction, updateClientAction } from "@/actions/clients";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABELS, INDUSTRY_OPTIONS } from "@/lib/constants";
+import { FileText, Eye, ArrowRight, Check } from "lucide-react";
 import type { Client, ClientStatus } from "@/lib/types";
 
 interface ClientFormProps {
@@ -36,6 +38,7 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
   const [contactEmail, setContactEmail] = useState(client?.contact_email ?? "");
   const [status, setStatus] = useState<ClientStatus>(client?.status ?? "prospect");
   const [notes, setNotes] = useState(client?.notes ?? "");
+  const [createdClient, setCreatedClient] = useState<{ id: string; name: string } | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,16 +49,56 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
         : await createClientAction(data);
 
       if (result.success) {
-        toast.success(isEditing ? "Client updated" : "Client created");
-        if (onSuccess) {
-          onSuccess();
+        if (isEditing) {
+          toast.success("Client updated");
+          if (onSuccess) onSuccess();
+          else router.push(`/clients/${client.id}`);
         } else {
-          router.push(isEditing ? `/clients/${client.id}` : `/clients/${result.data.id}`);
+          // Show post-creation next-step prompt
+          if (onSuccess) {
+            toast.success("Client created");
+            onSuccess();
+          } else {
+            setCreatedClient({ id: result.data.id, name: data.name });
+          }
         }
       } else {
         toast.error(result.error);
       }
     });
+  }
+
+  // Post-creation next-step screen
+  if (createdClient) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
+        <div
+          className="h-16 w-16 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: "#A8FF3E" }}
+        >
+          <Check className="h-8 w-8" style={{ color: "#0A0A0A" }} />
+        </div>
+
+        <h2 className="text-2xl font-bold text-foreground">Client added.</h2>
+
+        <div className="flex flex-col gap-3 w-full max-w-sm">
+          <Button asChild className="gap-2 justify-start">
+            <Link href={`/sales-studio?client=${createdClient.id}`}>
+              <FileText className="h-4 w-4" />
+              Generate a proposal for {createdClient.name}
+              <ArrowRight className="h-4 w-4 ml-auto" />
+            </Link>
+          </Button>
+          <Button variant="outline" className="gap-2 justify-start" asChild>
+            <Link href={`/clients/${createdClient.id}`}>
+              <Eye className="h-4 w-4" />
+              View client record
+              <ArrowRight className="h-4 w-4 ml-auto" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

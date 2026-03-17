@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { CompAccessSection } from "@/components/admin/comp-access-section";
 
 async function checkSupabaseConnection(): Promise<boolean> {
   try {
@@ -31,12 +33,40 @@ function EnvCheck({ name, present }: { name: string; present: boolean }) {
   );
 }
 
+interface FreeToolLead {
+  id: string;
+  email: string;
+  first_name: string | null;
+  company_name: string | null;
+  client_domain: string | null;
+  converted_to_org_id: string | null;
+  created_at: string;
+}
+
+async function getFreeToolLeads(): Promise<FreeToolLead[]> {
+  try {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("free_tool_leads")
+      .select("id, email, first_name, company_name, client_domain, converted_to_org_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) return [];
+    return data ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function AdminPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
   if (profile.role !== "owner") redirect("/dashboard");
 
-  const isConnected = await checkSupabaseConnection();
+  const [isConnected, leads] = await Promise.all([
+    checkSupabaseConnection(),
+    getFreeToolLeads(),
+  ]);
 
   const envVars = [
     {
@@ -125,6 +155,59 @@ export default async function AdminPage() {
           </Card>
         </div>
       </div>
+
+      {/* Comp Access Management */}
+      <CompAccessSection />
+
+      {/* Free Tool Leads */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Free Tool Leads ({leads.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {leads.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No leads captured yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-2 pr-4 font-medium text-muted-foreground">Email</th>
+                    <th className="pb-2 pr-4 font-medium text-muted-foreground">Name</th>
+                    <th className="pb-2 pr-4 font-medium text-muted-foreground">Company</th>
+                    <th className="pb-2 pr-4 font-medium text-muted-foreground">Domain</th>
+                    <th className="pb-2 pr-4 font-medium text-muted-foreground">Date</th>
+                    <th className="pb-2 font-medium text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {leads.map((lead) => (
+                    <tr key={lead.id}>
+                      <td className="py-2 pr-4">{lead.email}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{lead.first_name ?? "—"}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{lead.company_name ?? "—"}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{lead.client_domain || "—"}</td>
+                      <td className="py-2 pr-4 text-muted-foreground whitespace-nowrap">
+                        {new Date(lead.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-2">
+                        {lead.converted_to_org_id ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Converted
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Lead</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

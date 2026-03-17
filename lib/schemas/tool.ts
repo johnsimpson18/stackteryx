@@ -30,6 +30,8 @@ export const toolFormSchema = z
       "rmm",
       "psa",
       "network_monitoring",
+      "dark_web",
+      "mdr",
       "other",
     ]),
     pricing_model: z.enum([

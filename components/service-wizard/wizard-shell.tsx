@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ChevronRight, ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import type {
   ServiceOutcome,
   BundleVersion,
   AdditionalService,
+  SelectedOutcomeRecord,
 } from "@/lib/types";
 
 // ── Wizard form state ────────────────────────────────────────────────────────
@@ -46,9 +47,12 @@ export interface WizardFormData {
   outcome_statement: string;
   target_vertical: string;
   target_persona: string;
+  selected_outcomes: SelectedOutcomeRecord[];
   // Step 2: Service Definition
   service_capabilities: { name: string; description: string }[];
   bundle_type: BundleType;
+  subtitle: string;
+  compliance_frameworks: string[];
   // Step 3: Stack
   selectedToolIds: Set<string>;
   toolQuantities: Record<string, number>;
@@ -77,8 +81,11 @@ const DEFAULTS: WizardFormData = {
   outcome_statement: "",
   target_vertical: "",
   target_persona: "",
+  selected_outcomes: [],
   service_capabilities: [],
   bundle_type: "custom",
+  subtitle: "",
+  compliance_frameworks: [],
   selectedToolIds: new Set(),
   toolQuantities: {},
   seat_count: 25,
@@ -121,13 +128,17 @@ interface ServiceWizardShellProps {
     red_zone_margin_pct: number;
     max_discount_no_approval_pct: number;
   };
+  activeServiceCount?: number;
   initialData?: {
     bundleId: string;
+    bundleName: string;
     step: number;
     outcome: ServiceOutcome | null;
     version: BundleVersion | null;
     versionToolIds: string[];
     bundleType: BundleType;
+    subtitle: string | null;
+    complianceFrameworks: string[];
   };
 }
 
@@ -135,6 +146,7 @@ export function ServiceWizardShell({
   tools,
   additionalServices,
   defaults: pricingDefaults,
+  activeServiceCount = 0,
   initialData,
 }: ServiceWizardShellProps) {
   const router = useRouter();
@@ -144,6 +156,8 @@ export function ServiceWizardShell({
   );
   const [launched, setLaunched] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
+  const [showOutcomeSkipWarning, setShowOutcomeSkipWarning] = useState(false);
+  const outcomeSkipConfirmedRef = useRef(false);
 
   const [form, setForm] = useState<WizardFormData>(() => {
     const d = { ...DEFAULTS };
@@ -154,13 +168,17 @@ export function ServiceWizardShell({
     if (initialData) {
       d.bundleId = initialData.bundleId;
       d.bundle_type = initialData.bundleType;
+      d.subtitle = initialData.subtitle ?? "";
+      d.compliance_frameworks = initialData.complianceFrameworks ?? [];
+
+      d.name = initialData.bundleName;
 
       if (initialData.outcome) {
-        d.name = initialData.outcome.bundle_id ? "" : ""; // name comes from bundle
         d.outcome_type = (initialData.outcome.outcome_type as WizardFormData["outcome_type"]) || "security";
         d.outcome_statement = initialData.outcome.outcome_statement ?? "";
         d.target_vertical = initialData.outcome.target_vertical ?? "";
         d.target_persona = initialData.outcome.target_persona ?? "";
+        d.selected_outcomes = initialData.outcome.selected_outcomes ?? [];
         d.service_capabilities = (initialData.outcome.service_capabilities ?? []).map((c) => ({
           name: c.name,
           description: c.description,
@@ -205,7 +223,7 @@ export function ServiceWizardShell({
       case 2:
         return form.service_capabilities.length > 0;
       case 3:
-        return form.selectedToolIds.size > 0;
+        return true; // Allow advancing with zero tools (user gets warning toast)
       case 4:
         return form.seat_count > 0 && form.selectedToolIds.size > 0;
       case 5:
@@ -222,6 +240,19 @@ export function ServiceWizardShell({
   const handleContinue = () => {
     if (!canContinue()) return;
 
+    // Show skip warning if no outcomes on step 1 (unless already confirmed)
+    if (
+      step === 1 &&
+      !outcomeSkipConfirmedRef.current &&
+      form.selected_outcomes.length === 0 &&
+      !form.outcome_statement.trim()
+    ) {
+      setShowOutcomeSkipWarning(true);
+      return;
+    }
+    setShowOutcomeSkipWarning(false);
+    outcomeSkipConfirmedRef.current = false;
+
     startTransition(async () => {
       try {
         switch (step) {
@@ -232,6 +263,7 @@ export function ServiceWizardShell({
               outcome_statement: form.outcome_statement,
               target_vertical: form.target_vertical,
               target_persona: form.target_persona,
+              selected_outcomes: form.selected_outcomes,
             };
 
             if (form.bundleId) {
@@ -256,6 +288,8 @@ export function ServiceWizardShell({
             const result = await saveServiceStepAction(form.bundleId, {
               service_capabilities: form.service_capabilities,
               bundle_type: form.bundle_type,
+              subtitle: form.subtitle,
+              compliance_frameworks: form.compliance_frameworks,
             });
             if (!result.success) {
               toast.error(result.error);
@@ -419,11 +453,19 @@ export function ServiceWizardShell({
               outcomeStatement={form.outcome_statement}
               targetVertical={form.target_vertical}
               targetPersona={form.target_persona}
+              selectedOutcomes={form.selected_outcomes}
               onNameChange={(v) => update("name", v)}
               onOutcomeTypeChange={(v) => update("outcome_type", v)}
               onOutcomeStatementChange={(v) => update("outcome_statement", v)}
               onTargetVerticalChange={(v) => update("target_vertical", v)}
               onTargetPersonaChange={(v) => update("target_persona", v)}
+              onSelectedOutcomesChange={(v) => update("selected_outcomes", v)}
+              showSkipWarning={showOutcomeSkipWarning}
+              onDismissSkipWarning={() => {
+                outcomeSkipConfirmedRef.current = true;
+                setShowOutcomeSkipWarning(false);
+                handleContinue();
+              }}
             />
           )}
           {step === 2 && (
@@ -433,8 +475,14 @@ export function ServiceWizardShell({
               outcomeType={form.outcome_type}
               outcomeName={form.name}
               outcomeStatement={form.outcome_statement}
+              selectedOutcomeIds={form.selected_outcomes.map((o) => o.id)}
+              subtitle={form.subtitle}
+              complianceFrameworks={form.compliance_frameworks}
               onCapabilitiesChange={(v) => update("service_capabilities", v)}
               onBundleTypeChange={(v) => update("bundle_type", v)}
+              onNameChange={(v) => update("name", v)}
+              onSubtitleChange={(v) => update("subtitle", v)}
+              onComplianceFrameworksChange={(v) => update("compliance_frameworks", v)}
             />
           )}
           {step === 3 && (
@@ -448,6 +496,10 @@ export function ServiceWizardShell({
                   else next.add(id);
                   return { ...prev, selectedToolIds: next };
                 });
+              }}
+              onSkipTools={() => {
+                toast.info("You can add tools later — your pricing will be estimated until tools are added.");
+                handleContinue();
               }}
             />
           )}
@@ -504,9 +556,7 @@ export function ServiceWizardShell({
               isPending={isPending}
               bundleId={form.bundleId}
               onLaunch={handleLaunch}
-              onViewService={() => router.push(`/services/${form.bundleId}`)}
-              onCreateAnother={() => router.push("/services/new")}
-              onGoToDashboard={() => router.push("/dashboard")}
+              activeServiceCount={activeServiceCount}
             />
           )}
         </div>

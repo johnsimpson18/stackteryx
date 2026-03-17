@@ -46,6 +46,7 @@ import {
   Brain,
   ChevronDown,
   Check,
+  HelpCircle,
   Pencil,
   Plus,
   Target,
@@ -618,7 +619,7 @@ export function ServiceProfileClient({
           onClick={() => handleLayerClick("economics")}
         />
         <LayerCard
-          label="Enablement"
+          label="Sales Materials"
           icon={Megaphone}
           complete={completeness?.enablement_complete ?? false}
           summary={
@@ -639,14 +640,30 @@ export function ServiceProfileClient({
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
               <DollarSign className="h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm font-medium text-foreground">No pricing versions</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-foreground">No pricing configs</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/50 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">
+                        A Pricing Config is a pricing scenario for this service — try
+                        different seat counts, margins, or tools without changing your
+                        live pricing.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Add tools and model pricing to complete your service.
               </p>
               <Button size="sm" asChild className="mt-4">
                 <Link href={`/services/${bundle.id}/versions/new`}>
                   <Plus className="h-3 w-3 mr-1" />
-                  Create Pricing Version
+                  Create Pricing Config
                 </Link>
               </Button>
             </CardContent>
@@ -654,11 +671,27 @@ export function ServiceProfileClient({
         ) : (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between py-3">
-              <CardTitle className="text-sm">Pricing Versions</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-sm">Pricing Configs</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/50 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p className="text-xs">
+                        A Pricing Config is a pricing scenario for this service — try
+                        different seat counts, margins, or tools without changing your
+                        live pricing.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/services/${bundle.id}/versions/new`}>
                   <Plus className="h-3 w-3 mr-1" />
-                  New Version
+                  New Pricing Config
                 </Link>
               </Button>
             </CardHeader>
@@ -666,13 +699,13 @@ export function ServiceProfileClient({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Version</TableHead>
+                    <TableHead>Pricing Config</TableHead>
                     <TableHead className="text-right">Seats</TableHead>
                     <TableHead className="text-right">Margin</TableHead>
                     <TableHead className="text-right">MRR</TableHead>
                     <TableHead className="text-right">Discount</TableHead>
                     <TableHead>Risk Tier</TableHead>
-                    <TableHead>Enablement</TableHead>
+                    <TableHead>Sales Materials</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Flags</TableHead>
                   </TableRow>

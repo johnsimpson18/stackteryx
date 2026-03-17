@@ -250,10 +250,17 @@ export function StepEconomics({
   // Price overrides for additional services (bundle-level, lifted to wizard shell)
   const priceOverrides = additionalServiceOverrides;
 
+  // Auto-open advanced section if any advanced field has been changed from defaults
   useEffect(() => {
     const stored = localStorage.getItem(ADVANCED_KEY);
-    if (stored === "true") setAdvancedOpen(true);
-  }, []);
+    const hasNonDefaultAdvanced =
+      riskTier !== "medium" ||
+      contractTermMonths !== 12 ||
+      overheadPct !== 0.10 ||
+      laborPct !== 0.15 ||
+      discountPct !== 0;
+    if (stored === "true" || hasNonDefaultAdvanced) setAdvancedOpen(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleAdvanced(open: boolean) {
     setAdvancedOpen(open);
@@ -435,39 +442,14 @@ export function StepEconomics({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left: Form fields */}
         <div className="space-y-4">
+          {/* ── Simple fields (always visible) ──────────────────────── */}
           <div className="space-y-2">
-            <Label>Seat count</Label>
+            <Label>How many seats does this service cover?</Label>
             <Input
               type="number"
               min={1}
               value={seatCount}
               onChange={(e) => onSeatCountChange(parseInt(e.target.value) || 1)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Risk tier</Label>
-            <Select value={riskTier} onValueChange={(v) => onRiskTierChange(v as RiskTier)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {RISK_TIERS.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {RISK_TIER_LABELS[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Contract term (months)</Label>
-            <Input
-              type="number"
-              min={1}
-              value={contractTermMonths}
-              onChange={(e) => onContractTermChange(parseInt(e.target.value) || 12)}
             />
           </div>
 
@@ -488,7 +470,7 @@ export function StepEconomics({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Set My Price
+                I know my price
               </button>
               <button
                 type="button"
@@ -504,7 +486,7 @@ export function StepEconomics({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Use Margin Target
+                Help me calculate my price
               </button>
             </div>
           </div>
@@ -535,10 +517,10 @@ export function StepEconomics({
 
               <Label>
                 {directSellStrategy === "monthly_flat_rate"
-                  ? "Your monthly flat price"
+                  ? "What monthly price do you want to charge?"
                   : directSellStrategy === "per_endpoint_monthly"
-                    ? "Your price per endpoint / mo"
-                    : "Your sell price per seat / mo"}
+                    ? "What price per endpoint / mo?"
+                    : "What price per seat / mo?"}
               </Label>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-mono text-muted-foreground">$</span>
@@ -558,9 +540,14 @@ export function StepEconomics({
               </div>
               {pricing && directSellPrice > 0 && (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">Back-calculated margin:</span>
+                  <span className="text-xs text-muted-foreground">Your estimated margin:</span>
                   <MarginHealthBadge margin={pricing.margin_pct_post_discount} />
                 </div>
+              )}
+              {pricing && directSellPrice > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Your monthly revenue: {formatCurrency(pricing.total_mrr)}
+                </p>
               )}
               {pricing && directSellPrice > 0 && directSellStrategy !== "monthly_flat_rate" && directSellPrice < pricing.true_cost_per_seat && (
                 <div className="flex items-start gap-2 rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2">
@@ -588,78 +575,114 @@ export function StepEconomics({
                 onChange={(e) => onTargetMarginChange(parseFloat(e.target.value))}
                 className="w-full accent-primary"
               />
-              {pricing && pricing.suggested_price_per_seat > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Suggested price: {formatCurrency(pricing.suggested_price_per_seat)}/seat{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDirectSellPrice(pricing.suggested_price_per_seat);
-                      setPricingMode("set_price");
-                      setDirectSellStrategy("per_user_monthly");
-                      onSellStrategyChange?.("per_user_monthly");
-                      onSellConfigChange?.({
-                        strategy: "per_user_monthly",
-                        per_user_sell_price: pricing.suggested_price_per_seat,
-                      });
-                    }}
-                    className="text-primary hover:underline ml-1"
-                  >
-                    lock this price
-                  </button>
-                </p>
+              {pricing && (
+                <div className="space-y-1">
+                  {pricing.suggested_price_per_seat > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Suggested price: {formatCurrency(pricing.suggested_price_per_seat)}/seat{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDirectSellPrice(pricing.suggested_price_per_seat);
+                          setPricingMode("set_price");
+                          setDirectSellStrategy("per_user_monthly");
+                          onSellStrategyChange?.("per_user_monthly");
+                          onSellConfigChange?.({
+                            strategy: "per_user_monthly",
+                            per_user_sell_price: pricing.suggested_price_per_seat,
+                          });
+                        }}
+                        className="text-primary hover:underline ml-1"
+                      >
+                        lock this price
+                      </button>
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Your estimated margin: {formatPercent(pricing.margin_pct_post_discount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Your monthly revenue: {formatCurrency(pricing.total_mrr)}
+                  </p>
+                </div>
               )}
             </div>
           )}
 
+          {/* ── Advanced options ─────────────────────────────────────── */}
           <Collapsible open={advancedOpen} onOpenChange={toggleAdvanced}>
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-white/5 transition-colors">
-              <span className="font-medium text-foreground">Advanced pricing settings</span>
-              <span className="flex items-center gap-2">
-                {!advancedOpen && (
-                  <span className="text-xs text-muted-foreground">3 settings</span>
-                )}
-                <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium text-foreground">
+                {advancedOpen ? "\u2212 Hide advanced options" : "+ Show advanced options"}
               </span>
+              <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 pt-3">
-              <div className="space-y-2">
-                <Label>Overhead ({formatPercent(overheadPct)})</Label>
-                <input
-                  type="range"
-                  min={0}
-                  max={0.3}
-                  step={0.01}
-                  value={overheadPct}
-                  onChange={(e) => onOverheadChange(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
-              </div>
+            <CollapsibleContent>
+              <div className="mt-3 space-y-4 rounded-lg border-l-2 border-primary/20 bg-muted/10 pl-4 pr-2 py-3">
+                <div className="space-y-2">
+                  <Label>Risk tier</Label>
+                  <Select value={riskTier} onValueChange={(v) => onRiskTierChange(v as RiskTier)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RISK_TIERS.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {RISK_TIER_LABELS[t]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Labor ({formatPercent(laborPct)})</Label>
-                <input
-                  type="range"
-                  min={0}
-                  max={0.3}
-                  step={0.01}
-                  value={laborPct}
-                  onChange={(e) => onLaborChange(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label>Contract term (months)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={contractTermMonths}
+                    onChange={(e) => onContractTermChange(parseInt(e.target.value) || 12)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label>Discount ({formatPercent(discountPct)})</Label>
-                <input
-                  type="range"
-                  min={0}
-                  max={0.3}
-                  step={0.01}
-                  value={discountPct}
-                  onChange={(e) => onDiscountChange(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
+                <div className="space-y-2">
+                  <Label>Overhead ({formatPercent(overheadPct)})</Label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.3}
+                    step={0.01}
+                    value={overheadPct}
+                    onChange={(e) => onOverheadChange(parseFloat(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Labor ({formatPercent(laborPct)})</Label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.3}
+                    step={0.01}
+                    value={laborPct}
+                    onChange={(e) => onLaborChange(parseFloat(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Discount ({formatPercent(discountPct)})</Label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.3}
+                    step={0.01}
+                    value={discountPct}
+                    onChange={(e) => onDiscountChange(parseFloat(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -669,7 +692,7 @@ export function StepEconomics({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Additional Services</span>
+                <span className="text-sm font-medium text-foreground">Add-On Services</span>
                 {addSvcTotals.count > 0 && (
                   <Badge variant="secondary" className="text-[10px] h-5">
                     {addSvcTotals.count}
@@ -697,7 +720,7 @@ export function StepEconomics({
 
             {selectedAddSvcs.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-4 text-center">
-                <p className="text-sm text-muted-foreground">No additional services added.</p>
+                <p className="text-sm text-muted-foreground">No add-on services added.</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Add consulting, retainers, or advisory services that are delivered as part of this offering.
                 </p>
@@ -771,7 +794,7 @@ export function StepEconomics({
                   </TableBody>
                 </Table>
                 <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-muted/10">
-                  <span className="text-xs font-medium text-muted-foreground">Additional Services MRR</span>
+                  <span className="text-xs font-medium text-muted-foreground">Add-On Services MRR</span>
                   <span className="text-sm font-bold font-mono text-foreground">
                     {formatCurrency(addSvcTotals.total_mrr)}/mo
                   </span>
@@ -839,16 +862,6 @@ export function StepEconomics({
                       )}
                     >
                       {w.message}
-                      {w.code === "discount_requires_approval" && (
-                        <a
-                          href="/approvals"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-1 underline hover:no-underline"
-                        >
-                          Review pending approvals &rarr;
-                        </a>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -860,7 +873,7 @@ export function StepEconomics({
                     <span className="font-mono">{formatCurrency(pricing.total_mrr)}</span>
                   </div>
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-muted-foreground">Additional Services MRR</span>
+                    <span className="text-muted-foreground">Add-On Services MRR</span>
                     <span className="font-mono">{formatCurrency(addSvcTotals.total_mrr)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t border-border/30">

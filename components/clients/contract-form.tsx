@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ import { createContractAction } from "@/actions/clients";
 import { calculatePricing } from "@/lib/pricing/engine";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
-import { TrendingUp, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronRight, AlertTriangle, ArrowRight } from "lucide-react";
 import { MarginHealthBadge } from "@/components/ui/margin-health-badge";
 import { CostBreakdown, mapPricingOutputToBreakdownProps } from "@/components/pricing/cost-breakdown";
 import type {
@@ -152,9 +153,18 @@ export function ContractForm({
                   </SelectContent>
                 </Select>
                 {activeBundles.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No active bundles. Create and activate a bundle first.
-                  </p>
+                  <div className="rounded-lg border border-dashed border-border p-4 space-y-2">
+                    <p className="text-sm font-medium text-foreground">No services built yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                      You&apos;ll need to build and activate a service before creating a contract.
+                    </p>
+                    <Button size="sm" asChild className="mt-1 gap-1.5">
+                      <Link href="/services/new">
+                        Build your first service
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
                 )}
               </div>
 

@@ -17,6 +17,7 @@ import { logAudit } from "@/lib/db/audit";
 import { hasOrgPermission } from "@/lib/constants";
 import { requireOrgMembership } from "@/lib/org-context";
 import type { ActionResult, Client, ClientContract } from "@/lib/types";
+import { checkLimit } from "@/actions/billing";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Client name is required").max(200),
@@ -45,6 +46,12 @@ export async function createClientAction(
     const { orgId, membership } = await requireOrgMembership();
     if (!hasOrgPermission(membership.role, "create_clients"))
       return { success: false, error: "You do not have permission to create clients" };
+
+    // Plan limit check
+    const limitCheck = await checkLimit("clients");
+    if (!limitCheck.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
 
     const parsed = clientSchema.safeParse(formData);
     if (!parsed.success)

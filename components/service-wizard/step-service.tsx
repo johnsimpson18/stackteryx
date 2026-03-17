@@ -14,12 +14,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BUNDLE_TYPE_LABELS, BUNDLE_TYPES } from "@/lib/constants";
-import { Loader2, Plus, Sparkles, X, Check } from "lucide-react";
+import { Loader2, Plus, Sparkles, X, Check, Wand2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { BundleType } from "@/lib/types";
 import {
   getTemplatesForOutcome,
   OUTCOME_CATEGORY_LABELS,
 } from "@/lib/data/capability-templates";
+import { getSuggestedTemplates, type ServiceTemplate } from "@/lib/service-templates";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,14 +38,22 @@ interface SelectedCapability {
   key: string;
 }
 
+const COMPLIANCE_FRAMEWORKS = ["HIPAA", "PCI DSS", "CMMC"] as const;
+
 interface StepServiceProps {
   capabilities: ServiceCapability[];
   bundleType: BundleType;
   outcomeType: string;
   outcomeName: string;
   outcomeStatement: string;
+  selectedOutcomeIds: string[];
+  subtitle: string;
+  complianceFrameworks: string[];
   onCapabilitiesChange: (v: ServiceCapability[]) => void;
   onBundleTypeChange: (v: BundleType) => void;
+  onNameChange: (v: string) => void;
+  onSubtitleChange: (v: string) => void;
+  onComplianceFrameworksChange: (v: string[]) => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,8 +75,14 @@ export function StepService({
   outcomeType,
   outcomeName,
   outcomeStatement,
+  selectedOutcomeIds,
+  subtitle,
+  complianceFrameworks,
   onCapabilitiesChange,
   onBundleTypeChange,
+  onNameChange,
+  onSubtitleChange,
+  onComplianceFrameworksChange,
 }: StepServiceProps) {
   // Selected capabilities — internal state synced to parent
   const [selected, setSelected] = useState<SelectedCapability[]>(() =>
@@ -87,8 +104,14 @@ export function StepService({
   // Inline editing
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
+  // Template suggestions dismissed
+  const [templateDismissed, setTemplateDismissed] = useState(false);
+
   // Template data
   const templateGroups = getTemplatesForOutcome(outcomeType);
+
+  // Service template suggestions based on selected outcomes
+  const suggestedTemplates = getSuggestedTemplates(selectedOutcomeIds);
 
   // Sync to parent whenever selected changes
   const syncToParent = useCallback(
@@ -195,6 +218,39 @@ export function StepService({
     syncToParent(next);
   }
 
+  // Apply service template
+  function applyTemplate(template: ServiceTemplate) {
+    onNameChange(template.name);
+    onSubtitleChange(template.subtitle);
+
+    // Set capabilities from template components
+    const newCaps: SelectedCapability[] = template.components.map((comp) => ({
+      name: comp,
+      description: "",
+      source: "template" as const,
+      key: capabilityKey(comp, "template"),
+    }));
+    setSelected(newCaps);
+    syncToParent(newCaps);
+
+    // Set compliance frameworks if template has them
+    if (template.complianceFrameworks) {
+      onComplianceFrameworksChange(template.complianceFrameworks);
+    }
+
+    setTemplateDismissed(true);
+    toast.success("Template applied — customize to match your delivery");
+  }
+
+  // Toggle compliance framework
+  function toggleFramework(fw: string) {
+    if (complianceFrameworks.includes(fw)) {
+      onComplianceFrameworksChange(complianceFrameworks.filter((f) => f !== fw));
+    } else {
+      onComplianceFrameworksChange([...complianceFrameworks, fw]);
+    }
+  }
+
   // AI suggest handler
   async function handleSuggestCapabilities() {
     setAiLoading(true);
@@ -251,8 +307,67 @@ export function StepService({
         </p>
       </div>
 
-      {/* ── Service type selector ───────────────────────────────────────── */}
+      {/* ── Template Suggestion Panel ─────────────────────────────────── */}
+      {!templateDismissed && suggestedTemplates.length > 0 && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium text-foreground">
+              Suggested templates based on your outcomes
+            </p>
+          </div>
+          <div className="space-y-2">
+            {suggestedTemplates.slice(0, 3).map((tmpl) => (
+              <div
+                key={tmpl.id}
+                className="flex items-center justify-between rounded-md border border-border bg-background p-3"
+              >
+                <div className="flex-1 min-w-0 mr-3">
+                  <p className="text-sm font-medium text-foreground">
+                    {tmpl.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {tmpl.subtitle}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => applyTemplate(tmpl)}
+                  className="shrink-0"
+                >
+                  Use this template
+                </Button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setTemplateDismissed(true)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Build from scratch instead
+          </button>
+        </div>
+      )}
+
       <div className="space-y-4">
+        {/* ── Subtitle/tagline field ────────────────────────────────────── */}
+        <div className="space-y-2">
+          <Label htmlFor="service-subtitle">Service subtitle</Label>
+          <Input
+            id="service-subtitle"
+            placeholder="e.g. Combining EDR, MDR, SIEM, and Identity Protection"
+            value={subtitle}
+            onChange={(e) => onSubtitleChange(e.target.value.slice(0, 120))}
+            maxLength={120}
+          />
+          <p className="text-xs text-muted-foreground">
+            Appears below the service name in proposals and client materials
+          </p>
+        </div>
+
+        {/* ── Service type selector ───────────────────────────────────────── */}
         <div className="space-y-2">
           <Label htmlFor="bundle-type">Service type</Label>
           <Select
@@ -489,6 +604,31 @@ export function StepService({
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Compliance Frameworks ──────────────────────────────────── */}
+        <div className="space-y-2 pt-2">
+          <Label>Compliance frameworks this service supports</Label>
+          <div className="flex gap-2">
+            {COMPLIANCE_FRAMEWORKS.map((fw) => {
+              const isActive = complianceFrameworks.includes(fw);
+              return (
+                <button
+                  key={fw}
+                  type="button"
+                  onClick={() => toggleFramework(fw)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-medium border transition-colors",
+                    isActive
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-muted border-border text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {fw}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

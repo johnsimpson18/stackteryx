@@ -183,7 +183,7 @@ export function AdditionalServicesClient({ services, usageMap = {} }: Additional
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Additional Services</h2>
+          <h2 className="text-lg font-semibold text-foreground">Add-On Services</h2>
           <p className="text-sm text-muted-foreground">
             Consulting, retainers, and professional services that power your margin
           </p>
@@ -197,7 +197,7 @@ export function AdditionalServicesClient({ services, usageMap = {} }: Additional
       {activeServices.length === 0 ? (
         <div className="space-y-4">
           <EmptyState
-            title="No additional services yet"
+            title="No add-on services yet"
             description="Add consulting, retainers, and professional services to complete your business model."
           />
           <div className="space-y-3">

@@ -17,6 +17,7 @@ import type {
   ProposalServiceRef,
   ProposalStatus,
 } from "@/lib/types";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -159,6 +160,12 @@ export async function exportProposalPdfAction(
       return { success: false, error: "Proposal not found" };
     }
 
+    // Plan limit check — export
+    const exportLimit = await checkLimit("exportsPerMonth");
+    if (!exportLimit.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
+
     const { generateProposalPdf } = await import("@/lib/proposal-export");
     const orgName = settings?.workspace_name ?? "Our MSP";
     const recipientName =
@@ -170,6 +177,8 @@ export async function exportProposalPdfAction(
       recipientName,
       content: proposal.content,
     });
+
+    await incrementUsage("export");
 
     const slug = recipientName
       .toLowerCase()
@@ -203,6 +212,12 @@ export async function exportProposalDocxAction(
       return { success: false, error: "Proposal not found" };
     }
 
+    // Plan limit check — export
+    const exportLimit = await checkLimit("exportsPerMonth");
+    if (!exportLimit.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
+
     const { generateProposalDocx } = await import("@/lib/proposal-export");
     const orgName = settings?.workspace_name ?? "Our MSP";
     const recipientName =
@@ -214,6 +229,8 @@ export async function exportProposalDocxAction(
       recipientName,
       content: proposal.content,
     });
+
+    await incrementUsage("export");
 
     const slug = recipientName
       .toLowerCase()

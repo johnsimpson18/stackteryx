@@ -185,7 +185,10 @@ export function StepTools({
         <p
           className="mt-2 font-mono text-muted-foreground text-sm"
         >
-          Select the security tools your team uses to deliver services. Organize them by the domains they cover.
+          Select the security tools your team uses to deliver services.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          These are the vendor tools that power your services. Adding them here lets Stackteryx calculate your real delivery costs and model accurate margins.
         </p>
       </div>
 

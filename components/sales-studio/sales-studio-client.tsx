@@ -37,11 +37,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   Download,
   FileText,
   Loader2,
   RefreshCw,
+  Shield,
   Sparkles,
+  Target,
 } from "lucide-react";
 import {
   createProposalAction,
@@ -49,6 +54,10 @@ import {
   exportProposalPdfAction,
   exportProposalDocxAction,
 } from "@/actions/proposals";
+import {
+  getServiceContextPreview,
+  type ServiceContextPreview,
+} from "@/actions/sales-studio";
 import { SalesEnablementPanel } from "./sales-enablement-panel";
 import { FractionalCTOStudioPanel } from "./fractional-cto-studio-panel";
 import { ContextQualityBadge } from "@/components/ui/context-quality-badge";
@@ -202,6 +211,26 @@ export function SalesStudioClient({
   // ── Export state ───────────────────────────────────────────────────────
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingDocx, setExportingDocx] = useState(false);
+
+  // ── Service context preview state ──────────────────────────────────────
+  const [contextPreviews, setContextPreviews] = useState<
+    Record<string, ServiceContextPreview>
+  >({});
+  const [contextLoading, setContextLoading] = useState<Set<string>>(new Set());
+
+  const fetchContextPreview = useCallback(async (bundleId: string) => {
+    if (contextPreviews[bundleId] || contextLoading.has(bundleId)) return;
+    setContextLoading((prev) => new Set([...prev, bundleId]));
+    const result = await getServiceContextPreview(bundleId);
+    if (result.success) {
+      setContextPreviews((prev) => ({ ...prev, [bundleId]: result.data }));
+    }
+    setContextLoading((prev) => {
+      const next = new Set(prev);
+      next.delete(bundleId);
+      return next;
+    });
+  }, [contextPreviews, contextLoading]);
 
   // ── Client selection handler ───────────────────────────────────────────
   function handleClientSelect(id: string) {
@@ -578,11 +607,13 @@ export function SalesStudioClient({
                   services={clientServices}
                   onToggleService={(idx) => {
                     const updated = [...clientServices];
+                    const toggled = !updated[idx].checked;
                     updated[idx] = {
                       ...updated[idx],
-                      checked: !updated[idx].checked,
+                      checked: toggled,
                     };
                     setClientServices(updated);
+                    if (toggled) fetchContextPreview(updated[idx].bundle_id);
                   }}
                   onOverridePrice={(idx, price) => {
                     const updated = [...clientServices];
@@ -594,6 +625,16 @@ export function SalesStudioClient({
                   bundleVersions={bundleVersions}
                   onSwitchToEnablement={() => handleTabChange("playbooks")}
                 />
+
+                {/* Service context preview */}
+                {checkedServices.length > 0 && (
+                  <ServiceContextPreviewPanel
+                    services={checkedServices}
+                    contextPreviews={contextPreviews}
+                    contextLoading={contextLoading}
+                    bundleOutcomes={bundleOutcomes}
+                  />
+                )}
 
                 {/* Published packages hint */}
                 {publishedPackages.length > 0 && (
@@ -693,22 +734,28 @@ export function SalesStudioClient({
 
           {/* Proposal output */}
           {proposal && !generating && (
-            <ProposalOutput
-              content={proposal}
-              proposalId={proposalId}
-              onUpdateSection={updateSection}
-              onRegenSection={handleRegenSection}
-              onRegenFull={handleRegenFull}
-              editingSection={editingSection}
-              onEditSection={setEditingSection}
-              regenSection={regenSection}
-              saveStatus={saveStatus}
-              checkedServices={checkedServices}
-              onExportPdf={() => handleExportPdf()}
-              onExportDocx={() => handleExportDocx()}
-              exportingPdf={exportingPdf}
-              exportingDocx={exportingDocx}
-            />
+            <>
+              <GenerationContextHeader
+                services={checkedServices}
+                contextPreviews={contextPreviews}
+              />
+              <ProposalOutput
+                content={proposal}
+                proposalId={proposalId}
+                onUpdateSection={updateSection}
+                onRegenSection={handleRegenSection}
+                onRegenFull={handleRegenFull}
+                editingSection={editingSection}
+                onEditSection={setEditingSection}
+                regenSection={regenSection}
+                saveStatus={saveStatus}
+                checkedServices={checkedServices}
+                onExportPdf={() => handleExportPdf()}
+                onExportDocx={() => handleExportDocx()}
+                exportingPdf={exportingPdf}
+                exportingDocx={exportingDocx}
+              />
+            </>
           )}
         </TabsContent>
 
@@ -731,11 +778,13 @@ export function SalesStudioClient({
                   matchedServices={matchedServices}
                   onToggleService={(idx) => {
                     const updated = [...matchedServices];
+                    const toggled = !updated[idx].checked;
                     updated[idx] = {
                       ...updated[idx],
-                      checked: !updated[idx].checked,
+                      checked: toggled,
                     };
                     setMatchedServices(updated);
+                    if (toggled) fetchContextPreview(updated[idx].bundle_id);
                   }}
                   onOverridePrice={(idx, price) => {
                     const updated = [...matchedServices];
@@ -748,6 +797,16 @@ export function SalesStudioClient({
                   bundleVersions={bundleVersions}
                   onSwitchToEnablement={() => handleTabChange("playbooks")}
                 />
+
+                {/* Service context preview */}
+                {checkedServices.length > 0 && (
+                  <ServiceContextPreviewPanel
+                    services={checkedServices}
+                    contextPreviews={contextPreviews}
+                    contextLoading={contextLoading}
+                    bundleOutcomes={bundleOutcomes}
+                  />
+                )}
 
                 {/* Published packages hint */}
                 {publishedPackages.length > 0 && (
@@ -847,22 +906,28 @@ export function SalesStudioClient({
 
           {/* Proposal output */}
           {proposal && !generating && (
-            <ProposalOutput
-              content={proposal}
-              proposalId={proposalId}
-              onUpdateSection={updateSection}
-              onRegenSection={handleRegenSection}
-              onRegenFull={handleRegenFull}
-              editingSection={editingSection}
-              onEditSection={setEditingSection}
-              regenSection={regenSection}
-              saveStatus={saveStatus}
-              checkedServices={checkedServices}
-              onExportPdf={() => handleExportPdf()}
-              onExportDocx={() => handleExportDocx()}
-              exportingPdf={exportingPdf}
-              exportingDocx={exportingDocx}
-            />
+            <>
+              <GenerationContextHeader
+                services={checkedServices}
+                contextPreviews={contextPreviews}
+              />
+              <ProposalOutput
+                content={proposal}
+                proposalId={proposalId}
+                onUpdateSection={updateSection}
+                onRegenSection={handleRegenSection}
+                onRegenFull={handleRegenFull}
+                editingSection={editingSection}
+                onEditSection={setEditingSection}
+                regenSection={regenSection}
+                saveStatus={saveStatus}
+                checkedServices={checkedServices}
+                onExportPdf={() => handleExportPdf()}
+                onExportDocx={() => handleExportDocx()}
+                exportingPdf={exportingPdf}
+                exportingDocx={exportingDocx}
+              />
+            </>
           )}
         </TabsContent>
 
@@ -1195,7 +1260,7 @@ function ServiceChecklist({
                   </TooltipTrigger>
                   <TooltipContent side="top">
                     <p className="text-xs">
-                      Build a playbook in Sales Enablement to improve proposals for
+                      Build a playbook in Sales Materials to improve proposals for
                       this service
                     </p>
                   </TooltipContent>
@@ -1699,5 +1764,289 @@ function PastProposals({
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Service Context Preview Panel ─────────────────────────────────────────────
+
+function ServiceContextPreviewPanel({
+  services,
+  contextPreviews,
+  contextLoading,
+  bundleOutcomes,
+}: {
+  services: ServiceSelection[];
+  contextPreviews: Record<string, ServiceContextPreview>;
+  contextLoading: Set<string>;
+  bundleOutcomes: Record<string, boolean>;
+}) {
+  const [expandedServices, setExpandedServices] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set()
+  );
+
+  function toggleService(bundleId: string) {
+    setExpandedServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(bundleId)) next.delete(bundleId);
+      else next.add(bundleId);
+      return next;
+    });
+  }
+
+  function toggleSection(key: string) {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Check for services missing outcomes
+  const missingOutcomes = services.filter(
+    (s) => s.checked && !bundleOutcomes[s.bundle_id]
+  );
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs text-muted-foreground">
+        Generation context
+      </Label>
+
+      {/* No outcomes warning */}
+      {missingOutcomes.length > 0 && (
+        <div className="flex items-start gap-2 text-xs rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="text-amber-400 font-medium">
+              {missingOutcomes.length === 1
+                ? `${missingOutcomes[0].service_name} has no outcomes defined`
+                : `${missingOutcomes.length} services have no outcomes defined`}
+            </span>
+            <span className="text-muted-foreground">
+              {" — "}proposals are stronger with outcome statements.{" "}
+              <a
+                href={`/services/${missingOutcomes[0].bundle_id}/edit?step=outcome`}
+                className="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+              >
+                Add outcomes
+              </a>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Service context cards */}
+      {services
+        .filter((s) => s.checked)
+        .map((s) => {
+          const ctx = contextPreviews[s.bundle_id];
+          const loading = contextLoading.has(s.bundle_id);
+          const expanded = expandedServices.has(s.bundle_id);
+
+          return (
+            <div
+              key={s.bundle_id}
+              className="rounded-lg border border-border bg-card/50"
+            >
+              <button
+                type="button"
+                onClick={() => toggleService(s.bundle_id)}
+                className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+              >
+                {expanded ? (
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="text-sm font-medium text-foreground flex-1">
+                  {ctx?.serviceName ?? s.service_name}
+                  {ctx?.serviceSubtitle && (
+                    <span className="text-muted-foreground font-normal">
+                      {" "}
+                      — {ctx.serviceSubtitle}
+                    </span>
+                  )}
+                </span>
+                {loading && (
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                )}
+                {ctx && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {ctx.outcomes.length} outcome
+                    {ctx.outcomes.length !== 1 ? "s" : ""}
+                    {ctx.translatedCapabilities.length > 0 &&
+                      ` · ${ctx.translatedCapabilities.length} capabilities`}
+                  </span>
+                )}
+              </button>
+
+              {expanded && ctx && (
+                <div className="px-3 pb-3 space-y-2">
+                  {/* Compliance frameworks */}
+                  {ctx.complianceFrameworks.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {ctx.complianceFrameworks.map((fw) => (
+                        <span
+                          key={fw}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded"
+                        >
+                          <Shield className="h-2.5 w-2.5" />
+                          {fw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Outcomes */}
+                  {ctx.outcomes.length > 0 && (
+                    <DisclosureList
+                      label="Outcomes"
+                      icon={<Target className="h-3 w-3" />}
+                      items={ctx.outcomes.map((o) => o.statement)}
+                      sectionKey={`${s.bundle_id}-outcomes`}
+                      expandedSections={expandedSections}
+                      onToggle={toggleSection}
+                    />
+                  )}
+
+                  {/* Translated capabilities */}
+                  {ctx.translatedCapabilities.length > 0 && (
+                    <DisclosureList
+                      label="Capabilities (client-facing)"
+                      items={ctx.translatedCapabilities.map(
+                        (c) => `${c.clientDescription}: ${c.outcomeContribution}`
+                      )}
+                      sectionKey={`${s.bundle_id}-capabilities`}
+                      expandedSections={expandedSections}
+                      onToggle={toggleSection}
+                    />
+                  )}
+
+                  {/* Additional services */}
+                  {ctx.additionalServices.length > 0 && (
+                    <DisclosureList
+                      label="Add-on services"
+                      items={ctx.additionalServices.map(
+                        (a) => `${a.name}: ${a.clientDescription}`
+                      )}
+                      sectionKey={`${s.bundle_id}-addsvcs`}
+                      expandedSections={expandedSections}
+                      onToggle={toggleSection}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
+// ── Disclosure List (collapsible sub-section) ─────────────────────────────────
+
+function DisclosureList({
+  label,
+  icon,
+  items,
+  sectionKey,
+  expandedSections,
+  onToggle,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  items: string[];
+  sectionKey: string;
+  expandedSections: Set<string>;
+  onToggle: (key: string) => void;
+}) {
+  const expanded = expandedSections.has(sectionKey);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => onToggle(sectionKey)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {expanded ? (
+          <ChevronDown className="h-3 w-3" />
+        ) : (
+          <ChevronRight className="h-3 w-3" />
+        )}
+        {icon}
+        {label}
+        <span className="text-[10px]">({items.length})</span>
+      </button>
+      {expanded && (
+        <ul className="mt-1 ml-5 space-y-0.5">
+          {items.map((item, i) => (
+            <li
+              key={i}
+              className="text-xs text-muted-foreground leading-relaxed"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Generation Context Header ─────────────────────────────────────────────────
+
+function GenerationContextHeader({
+  services,
+  contextPreviews,
+}: {
+  services: ServiceSelection[];
+  contextPreviews: Record<string, ServiceContextPreview>;
+}) {
+  const checked = services.filter((s) => s.checked);
+  const totalOutcomes = checked.reduce((sum, s) => {
+    const ctx = contextPreviews[s.bundle_id];
+    return sum + (ctx?.outcomes.length ?? 0);
+  }, 0);
+  const totalCapabilities = checked.reduce((sum, s) => {
+    const ctx = contextPreviews[s.bundle_id];
+    return sum + (ctx?.translatedCapabilities.length ?? 0);
+  }, 0);
+  const frameworks = [
+    ...new Set(
+      checked.flatMap(
+        (s) => contextPreviews[s.bundle_id]?.complianceFrameworks ?? []
+      )
+    ),
+  ];
+
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground rounded-lg border border-border bg-card/50 px-3 py-2">
+      <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+      <span>
+        Generated from {totalOutcomes} outcome
+        {totalOutcomes !== 1 ? "s" : ""}
+        {totalCapabilities > 0 &&
+          `, ${totalCapabilities} translated capabilit${totalCapabilities !== 1 ? "ies" : "y"}`}
+        {frameworks.length > 0 && (
+          <>
+            {" · "}
+            {frameworks.map((fw) => (
+              <span
+                key={fw}
+                className="inline-flex items-center gap-0.5 text-blue-400"
+              >
+                <Shield className="h-2.5 w-2.5" />
+                {fw}
+              </span>
+            ))}
+          </>
+        )}
+      </span>
+    </div>
   );
 }

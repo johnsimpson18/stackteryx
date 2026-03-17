@@ -4,6 +4,7 @@ import { getActiveOrgId } from "@/lib/org-context";
 import { getGeneratedBundlesJson, getOnboardingProfile } from "@/lib/db/org-settings";
 import { getBundles } from "@/lib/db/bundles";
 import { getTools } from "@/lib/db/tools";
+import { getOrgById } from "@/lib/db/orgs";
 import { ResultsReveal } from "@/components/onboarding/results-reveal";
 
 interface GeneratedBundle {
@@ -34,11 +35,12 @@ export default async function ResultsPage() {
   const orgId = await getActiveOrgId();
   if (!orgId) redirect("/login");
 
-  const [generatedData, profile, bundles, allTools] = await Promise.all([
+  const [generatedData, profile, bundles, allTools, org] = await Promise.all([
     getGeneratedBundlesJson(orgId),
     getOnboardingProfile(orgId),
     getBundles(orgId),
     getTools(orgId),
+    getOrgById(orgId),
   ]);
 
   // If no generated data exists, skip to dashboard
@@ -71,6 +73,7 @@ export default async function ResultsPage() {
       complianceTargets={profile?.compliance_targets ?? []}
       toolCount={allTools.length}
       outcomeTypes={profile?.services_offered ?? []}
+      companyName={org?.name}
     />
   );
 }

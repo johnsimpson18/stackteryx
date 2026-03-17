@@ -3,6 +3,7 @@ import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { buildAIContext } from "@/lib/ai/context";
 import { callAI } from "@/lib/ai/validate";
 import { matchServicesPrompt } from "@/lib/ai/prompts";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 export const maxDuration = 60;
 
@@ -19,6 +20,11 @@ export async function POST(request: Request) {
   const membership = await getOrgMembership(orgId);
   if (!membership)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const aiLimit = await checkLimit("aiGenerationsPerMonth");
+  if (!aiLimit.allowed) {
+    return Response.json({ error: "LIMIT_REACHED" }, { status: 403 });
+  }
 
   let body: {
     prospect_industry?: string;
@@ -72,6 +78,7 @@ export async function POST(request: Request) {
       validIds.has(m.bundle_id)
     );
 
+    await incrementUsage("ai_generation");
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

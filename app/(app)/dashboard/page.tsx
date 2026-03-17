@@ -2,19 +2,21 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Dashboard" };
+
 import { getActiveOrgId } from "@/lib/org-context";
 import { getOnboardingProfile, getOrgSettings } from "@/lib/db/org-settings";
-import { getBundles, getInProgressBundle } from "@/lib/db/bundles";
+import { getBundles } from "@/lib/db/bundles";
 import { getClients } from "@/lib/db/clients";
-import { getTools } from "@/lib/db/tools";
 import { getOrgVendors } from "@/lib/db/vendors";
-import { getOrgActionCards } from "@/lib/db/action-cards";
 import { getAllServiceCompleteness } from "@/lib/db/service-completeness";
 import { getStaleVersionsByOrgId } from "@/lib/db/bundle-versions";
 import { getPricingHealthSummary } from "@/lib/db/dashboard";
+import { getProposals } from "@/lib/db/proposals";
+import { getOrgById } from "@/lib/db/orgs";
+import { getCurrentProfile } from "@/lib/db/profiles";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
-import type { ToolCategory } from "@/lib/types";
+import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
 export default async function DashboardPage() {
   const orgId = await getActiveOrgId();
@@ -30,57 +32,81 @@ export default async function DashboardPage() {
     }
   }
 
-  // ── Parallel data fetches ─────────────────────────────────────────────────
+  // ── Phase 1: Parallel data fetches ──────────────────────────────────────
 
   const [
     bundlesResult,
     clientsResult,
-    toolsResult,
     vendorsResult,
-    actionCardsResult,
     completenessResult,
-    inProgressResult,
     settingsResult,
-    proposalCountResult,
     staleVersionsResult,
-    pricingHealthResult,
+    proposalsResult,
+    ctoBriefCountResult,
+    orgResult,
+    profileResult,
   ] = await Promise.allSettled([
     getBundles(orgId ?? undefined),
     getClients(orgId ?? undefined),
-    getTools(orgId ?? undefined, { is_active: true }),
     orgId ? getOrgVendors(orgId) : Promise.resolve([]),
-    orgId ? getOrgActionCards(orgId) : Promise.resolve([]),
     orgId ? getAllServiceCompleteness(orgId) : Promise.resolve([]),
-    orgId ? getInProgressBundle(orgId) : Promise.resolve(null),
     orgId ? getOrgSettings(orgId) : Promise.resolve(null),
-    getProposalCount(orgId),
     orgId ? getStaleVersionsByOrgId(orgId) : Promise.resolve([]),
-    orgId ? getPricingHealthSummary(orgId) : Promise.resolve(null),
+    orgId ? getProposals(orgId) : Promise.resolve([]),
+    getCTOBriefCount(orgId),
+    orgId ? getOrgById(orgId) : Promise.resolve(null),
+    getCurrentProfile(),
   ]);
 
-  const bundles = bundlesResult.status === "fulfilled" ? bundlesResult.value : [];
-  const clients = clientsResult.status === "fulfilled" ? clientsResult.value : [];
-  const tools = toolsResult.status === "fulfilled" ? toolsResult.value : [];
-  const vendors = vendorsResult.status === "fulfilled" ? vendorsResult.value : [];
-  const actionCards = actionCardsResult.status === "fulfilled" ? actionCardsResult.value : [];
-  const completeness = completenessResult.status === "fulfilled" ? completenessResult.value : [];
-  const inProgressBundle = inProgressResult.status === "fulfilled" ? inProgressResult.value : null;
-  const settings = settingsResult.status === "fulfilled" ? settingsResult.value : null;
-  const proposalCount = proposalCountResult.status === "fulfilled" ? proposalCountResult.value : 0;
-  const staleVersions = staleVersionsResult.status === "fulfilled" ? staleVersionsResult.value : [];
-  const stalePricingCount = staleVersions.length;
-  const pricingHealth = pricingHealthResult.status === "fulfilled" ? pricingHealthResult.value : null;
+  const bundles =
+    bundlesResult.status === "fulfilled" ? bundlesResult.value : [];
+  const clients =
+    clientsResult.status === "fulfilled" ? clientsResult.value : [];
+  const vendors =
+    vendorsResult.status === "fulfilled" ? vendorsResult.value : [];
+  const completeness =
+    completenessResult.status === "fulfilled"
+      ? completenessResult.value
+      : [];
+  const settings =
+    settingsResult.status === "fulfilled" ? settingsResult.value : null;
+  const staleVersions =
+    staleVersionsResult.status === "fulfilled"
+      ? staleVersionsResult.value
+      : [];
+  const proposals =
+    proposalsResult.status === "fulfilled" ? proposalsResult.value : [];
+  const ctoBriefCount =
+    ctoBriefCountResult.status === "fulfilled"
+      ? ctoBriefCountResult.value
+      : 0;
+  const org =
+    orgResult.status === "fulfilled" ? orgResult.value : null;
+  const profile =
+    profileResult.status === "fulfilled" ? profileResult.value : null;
 
-  // ── Compute stat card values ──────────────────────────────────────────────
+  // ── Phase 2: Pricing health (depends on bundles) ────────────────────────
+
+  let pricingHealth = null;
+  if (orgId && bundles.length > 0) {
+    try {
+      pricingHealth = await getPricingHealthSummary(
+        bundles,
+        staleVersions.length,
+      );
+    } catch {
+      // degrade gracefully
+    }
+  }
+
+  // ── Compute derived values ──────────────────────────────────────────────
 
   const activeServices = bundles.filter((b) => b.status === "active").length;
 
-  // Portfolio MRR: sum of latest computed_mrr for all active bundles
   const portfolioMrr = bundles
     .filter((b) => b.status === "active" && b.latest_mrr !== null)
     .reduce((sum, b) => sum + (b.latest_mrr ?? 0), 0);
 
-  // Avg margin across active pricing configs
   const activeMargins = bundles
     .filter((b) => b.status === "active" && b.latest_margin !== null)
     .map((b) => b.latest_margin as number);
@@ -89,49 +115,126 @@ export default async function DashboardPage() {
       ? activeMargins.reduce((sum, m) => sum + m, 0) / activeMargins.length
       : null;
 
-  // Active clients: those with at least one active contract
-  const activeClients = clients.filter((c) => c.active_contract !== null).length;
+  const activeClients = clients.filter(
+    (c) => c.active_contract !== null,
+  ).length;
 
-  // Portfolio coverage: distinct outcome_types across active services
-  let outcomeTypeCoverage = 0;
-  if (orgId) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase
-        .from("service_outcomes")
-        .select("outcome_type")
-        .eq("org_id", orgId);
-      if (data) {
-        const types = new Set(
-          data
-            .map((d) => d.outcome_type as string)
-            .filter((t) => ["compliance", "efficiency", "security", "growth"].includes(t))
-        );
-        outcomeTypeCoverage = types.size;
+  const defaultTargetMargin = settings
+    ? Number(settings.default_target_margin_pct)
+    : 0.35;
+
+  // ── MRR by service ─────────────────────────────────────────────────────
+
+  const mrrByService = bundles
+    .filter(
+      (b) => b.status === "active" && b.latest_mrr != null && b.latest_mrr > 0,
+    )
+    .sort((a, b) => (b.latest_mrr ?? 0) - (a.latest_mrr ?? 0))
+    .map((b) => ({
+      serviceId: b.id,
+      serviceName: b.name,
+      mrr: b.latest_mrr ?? 0,
+      margin: b.latest_margin ?? 0,
+    }));
+
+  // ── Renewals (contracts ending within 90 days) ──────────────────────────
+
+  const now = new Date();
+  const in90Days = new Date();
+  in90Days.setDate(now.getDate() + 90);
+
+  const renewals = clients
+    .filter((c) => c.active_contract?.end_date)
+    .filter((c) => {
+      const end = new Date(c.active_contract!.end_date);
+      return end >= now && end <= in90Days;
+    })
+    .map((c) => ({
+      clientId: c.id,
+      clientName: c.name,
+      endDate: c.active_contract!.end_date,
+      contractValue: c.active_contract!.monthly_revenue
+        ? Number(c.active_contract!.monthly_revenue)
+        : undefined,
+    }))
+    .sort(
+      (a, b) =>
+        new Date(a.endDate).getTime() - new Date(b.endDate).getTime(),
+    );
+
+  // ── Proposal stats ─────────────────────────────────────────────────────
+
+  const proposalStats = {
+    total: proposals.length,
+    drafts: proposals.filter((p) => p.status === "draft").length,
+    sent: proposals.filter((p) => p.status === "sent").length,
+  };
+
+  // ── Attention items (assembled server-side) ─────────────────────────────
+
+  const attentionItems: AttentionItem[] = [];
+  const stalePricingCount = staleVersions.length;
+
+  if (stalePricingCount > 0) {
+    attentionItems.push({
+      id: "stale-pricing",
+      severity: "warning",
+      title: `${stalePricingCount} service${stalePricingCount !== 1 ? "s have" : " has"} stale pricing`,
+      description:
+        "Tool costs have changed since prices were last calculated.",
+      cta: { label: "Review", href: "/services?filter=stale" },
+      category: "pricing",
+    });
+  }
+
+  if (pricingHealth?.topRisks) {
+    for (const risk of pricingHealth.topRisks) {
+      if (risk.currentMargin < 0.1) {
+        attentionItems.push({
+          id: `margin-critical-${risk.bundleId}`,
+          severity: "critical",
+          title: `${risk.bundleName} has critically low margin`,
+          description: `Current margin: ${(risk.currentMargin * 100).toFixed(0)}%`,
+          cta: { label: "Fix pricing", href: `/services/${risk.bundleId}` },
+          category: "pricing",
+        });
+      } else if (risk.currentMargin < 0.25) {
+        attentionItems.push({
+          id: `margin-watch-${risk.bundleId}`,
+          severity: "warning",
+          title: `${risk.bundleName} margin is below target`,
+          description: `Current margin: ${(risk.currentMargin * 100).toFixed(0)}%`,
+          cta: { label: "Review", href: `/services/${risk.bundleId}` },
+          category: "pricing",
+        });
       }
-    } catch {
-      // Degrade gracefully
     }
   }
 
-  // Services needing attention: layers_complete < 3
-  const servicesNeedingAttention = completeness.filter(
-    (c) => c.layers_complete < 3
-  ).length;
-
-  // Tool category coverage for Portfolio Coverage section
-  const toolsByCategory: Record<string, number> = {};
-  for (const tool of tools) {
-    const cat = tool.category as ToolCategory;
-    toolsByCategory[cat] = (toolsByCategory[cat] ?? 0) + 1;
+  for (const r of renewals) {
+    const days = Math.ceil(
+      (new Date(r.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+    if (days <= 30) {
+      attentionItems.push({
+        id: `renewal-${r.clientId}`,
+        severity: days <= 14 ? "critical" : "warning",
+        title: `${r.clientName} renewal in ${days} days`,
+        description: r.contractValue
+          ? `$${r.contractValue.toLocaleString()} MRR at risk`
+          : "Contract expiring soon",
+        cta: { label: "View", href: `/clients/${r.clientId}` },
+        category: "client",
+      });
+    }
   }
 
-  // ── Onboarding checklist ──────────────────────────────────────────────────
+  // ── Onboarding checklist ────────────────────────────────────────────────
 
   const checklistSteps = {
     hasVendors: vendors.length > 0,
     hasServices: bundles.length > 0,
-    hasProposals: proposalCount > 0,
+    hasProposals: proposals.length > 0,
     hasClients: clients.length > 0,
   };
   const allChecklistComplete =
@@ -140,46 +243,37 @@ export default async function DashboardPage() {
     checklistSteps.hasProposals &&
     checklistSteps.hasClients;
 
-  const defaultTargetMargin = settings ? Number(settings.default_target_margin_pct) : 0.35;
-
   return (
     <DashboardClient
       checklist={allChecklistComplete ? null : checklistSteps}
-      actionCards={actionCards}
-      stats={{
-        activeServices,
-        portfolioMrr,
-        avgMargin,
-        activeClients,
-        outcomeTypeCoverage,
-        servicesNeedingAttention,
-      }}
       bundles={bundles}
       completeness={completeness}
-      toolsByCategory={toolsByCategory}
-      inProgressBundle={
-        inProgressBundle
-          ? { id: inProgressBundle.id, name: inProgressBundle.name, updatedAt: inProgressBundle.updated_at }
-          : null
-      }
       defaultTargetMargin={defaultTargetMargin}
-      stalePricingCount={stalePricingCount}
+      portfolioMrr={portfolioMrr}
+      avgMargin={avgMargin}
+      activeClients={activeClients}
       pricingHealth={pricingHealth}
+      mrrByService={mrrByService}
+      renewals={renewals}
+      proposalStats={proposalStats}
+      ctoBriefCount={ctoBriefCount}
+      attentionItems={attentionItems}
+      orgCreatedAt={org?.created_at ?? null}
+      firstName={profile?.display_name?.split(" ")[0] ?? null}
     />
   );
 }
 
-// ── Helper: proposal count ──────────────────────────────────────────────────
+// ── Helper: CTO brief count ──────────────────────────────────────────────────
 
-async function getProposalCount(orgId: string | null): Promise<number> {
+async function getCTOBriefCount(orgId: string | null): Promise<number> {
   if (!orgId) return 0;
   try {
     const supabase = await createClient();
-    const { count, error } = await supabase
-      .from("proposals")
+    const { count } = await supabase
+      .from("fractional_cto_briefs")
       .select("id", { count: "exact", head: true })
       .eq("org_id", orgId);
-    if (error) return 0;
     return count ?? 0;
   } catch {
     return 0;

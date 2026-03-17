@@ -1,6 +1,5 @@
-import { getBundles } from "@/lib/db/bundles";
-import { getStaleVersionsByOrgId } from "@/lib/db/bundle-versions";
 import { createClient } from "@/lib/supabase/server";
+import type { BundleWithMeta } from "@/lib/types";
 
 export interface PricingHealthSummary {
   marginBuckets: {
@@ -18,15 +17,14 @@ export interface PricingHealthSummary {
   }>;
 }
 
+/**
+ * Accepts pre-fetched bundles + stale count to avoid duplicate queries.
+ * Fixes N+1 by batching the version lookups into one query.
+ */
 export async function getPricingHealthSummary(
-  orgId: string,
+  bundles: BundleWithMeta[],
+  staleCount: number,
 ): Promise<PricingHealthSummary> {
-  const [bundles, staleVersions] = await Promise.all([
-    getBundles(orgId),
-    getStaleVersionsByOrgId(orgId),
-  ]);
-
-  // Bucket thresholds matching MarginHealthBadge
   const buckets = { healthy: 0, watch: 0, atRisk: 0, critical: 0 };
 
   const activeBundles = bundles.filter(
@@ -47,37 +45,49 @@ export async function getPricingHealthSummary(
   );
   const top3 = sorted.slice(0, 3);
 
-  // For each top risk, find margin delta from previous version
-  const supabase = await createClient();
+  // Batch fetch: get top 2 versions per bundle in one query (fixes N+1)
   const topRisks: PricingHealthSummary["topRisks"] = [];
 
-  for (const b of top3) {
-    let previousMargin: number | null = null;
+  if (top3.length > 0) {
+    const supabase = await createClient();
+    const bundleIds = top3.map((b) => b.id);
 
-    const { data: versions } = await supabase
+    const { data: allVersions } = await supabase
       .from("bundle_versions")
-      .select("computed_margin_post_discount")
-      .eq("bundle_id", b.id)
-      .order("version_number", { ascending: false })
-      .limit(2);
+      .select("bundle_id, version_number, computed_margin_post_discount")
+      .in("bundle_id", bundleIds)
+      .order("version_number", { ascending: false });
 
-    if (versions && versions.length >= 2) {
-      previousMargin = versions[1].computed_margin_post_discount
-        ? Number(versions[1].computed_margin_post_discount)
-        : null;
+    // Group by bundle_id, take first 2 per bundle
+    const versionsByBundle = new Map<string, { margin: number | null }[]>();
+    if (allVersions) {
+      for (const v of allVersions) {
+        const list = versionsByBundle.get(v.bundle_id) ?? [];
+        if (list.length < 2) {
+          list.push({
+            margin: v.computed_margin_post_discount
+              ? Number(v.computed_margin_post_discount)
+              : null,
+          });
+          versionsByBundle.set(v.bundle_id, list);
+        }
+      }
     }
 
-    topRisks.push({
-      bundleId: b.id,
-      bundleName: b.name,
-      currentMargin: b.latest_margin!,
-      previousMargin,
-    });
+    for (const b of top3) {
+      const versions = versionsByBundle.get(b.id) ?? [];
+      topRisks.push({
+        bundleId: b.id,
+        bundleName: b.name,
+        currentMargin: b.latest_margin!,
+        previousMargin: versions.length >= 2 ? versions[1].margin : null,
+      });
+    }
   }
 
   return {
     marginBuckets: buckets,
-    staleCount: staleVersions.length,
+    staleCount,
     topRisks,
   };
 }

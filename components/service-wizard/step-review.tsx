@@ -267,7 +267,7 @@ export function StepReview({ form, tools, additionalServices, launched, onEditSt
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-            Sales Enablement
+            Sales Materials
           </h3>
           {launched ? (
             <Button

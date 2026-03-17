@@ -41,8 +41,8 @@ export async function getActiveOrgId(): Promise<string | null> {
     const isMember = await verifyOrgMembership(user.id, fromCookie);
     if (isMember) return fromCookie;
 
-    // Cookie was invalid — fall through to profile/membership resolution
-    cookieStore.delete(ORG_COOKIE);
+    // Cookie was invalid — ignore and resolve org from profile.
+    // The cookie will be overwritten when a valid org is next set via setActiveOrg().
   }
 
   const supabase = await createClient();
@@ -62,14 +62,6 @@ export async function getActiveOrgId(): Promise<string | null> {
     if (uuidPattern.test(profile.active_org_id)) {
       const isMember = await verifyOrgMembership(user.id, profile.active_org_id);
       if (isMember) {
-        // Set the cookie for future requests
-        cookieStore.set(ORG_COOKIE, profile.active_org_id, {
-          path: "/",
-          httpOnly: true,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 60 * 60 * 24 * 365, // 1 year
-        });
         return profile.active_org_id;
       }
     }
@@ -84,18 +76,11 @@ export async function getActiveOrgId(): Promise<string | null> {
     .single();
 
   if (membership?.org_id) {
-    // Persist to profile and cookie
+    // Persist to profile (cookie will be set on next setActiveOrg call)
     await supabase
       .from("profiles")
       .update({ active_org_id: membership.org_id })
       .eq("id", user.id);
-    cookieStore.set(ORG_COOKIE, membership.org_id, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 365,
-    });
     return membership.org_id;
   }
 
@@ -153,8 +138,8 @@ export async function getOrgMembership(
 
 /**
  * Require org membership. Returns orgId and membership, or throws redirect.
- * If the cookie points to a stale org the user isn't a member of, clears
- * the cookie and retries from profile / first membership.
+ * If the cookie points to a stale org the user isn't a member of,
+ * retries from profile / first membership.
  */
 export async function requireOrgMembership(): Promise<{
   orgId: string;
@@ -170,10 +155,8 @@ export async function requireOrgMembership(): Promise<{
     return { orgId, membership };
   }
 
-  // Cookie was stale — clear it and resolve from profile/membership
-  const cookieStore = await cookies();
-  cookieStore.delete(ORG_COOKIE);
-
+  // Cookie was stale — resolve from profile/membership
+  // (cannot delete cookie during render; it will be overwritten on next setActiveOrg)
   const retryOrgId = await getActiveOrgId();
   if (!retryOrgId) {
     throw new Error("No active org");

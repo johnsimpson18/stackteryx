@@ -73,6 +73,8 @@ const CATEGORY_TO_DOMAINS: Record<ToolCategory, ToolDomain[]> = {
   rmm: ["MDM", "EDR"],
   psa: [],
   network_monitoring: ["Network"],
+  dark_web: [],
+  mdr: ["MDR"],
   other: [],
 };
 

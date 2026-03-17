@@ -143,7 +143,7 @@ export function VersionBuilder({
   const [isSavingScenario, startScenarioTransition] = useTransition();
 
   // Core state
-  const [name, setName] = useState(`${bundleName} — New Version`);
+  const [name, setName] = useState(`${bundleName} — New Pricing Config`);
   const [selectedTools, setSelectedTools] = useState<Tool[]>([]);
   const [assumptions, setAssumptions] =
     useState<BundleAssumptions>(DEFAULT_ASSUMPTIONS);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Stack & Pricing" };
+export const metadata: Metadata = { title: "Tools & Costs" };
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { getActiveOrgId } from "@/lib/org-context";
 import {
@@ -17,6 +17,7 @@ import { getStaleVersionsByOrgId } from "@/lib/db/bundle-versions";
 import { getOrgSettings } from "@/lib/db/org-settings";
 import { computePricingStatus } from "@/lib/pricing/status";
 import { getOrgVendors } from "@/lib/db/vendors";
+import { getGlobalToolLibrary } from "@/actions/global-tool-library";
 import { StackCatalogTabs } from "@/components/stack-catalog/stack-catalog-tabs";
 import type { PricingStatus } from "@/lib/pricing/status";
 
@@ -34,7 +35,7 @@ export default async function StackCatalogPage({
   const params = await searchParams;
 
   // Fetch all data in parallel
-  const [tools, bundles, completeness, staleVersions, settings, vendors] =
+  const [tools, bundles, completeness, staleVersions, settings, vendors, globalTools] =
     await Promise.all([
       getToolsWithServiceAssignments(orgId),
       getBundles(orgId),
@@ -42,6 +43,7 @@ export default async function StackCatalogPage({
       getStaleVersionsByOrgId(orgId),
       getOrgSettings(orgId),
       getOrgVendors(orgId),
+      getGlobalToolLibrary(),
     ]);
 
   // Stack catalog derivations
@@ -89,6 +91,7 @@ export default async function StackCatalogPage({
       defaultTargetMargin={defaultTargetMargin}
       staleCount={staleVersions.length}
       vendors={vendors}
+      globalTools={globalTools}
       initialTab={params.tab ?? "catalog"}
     />
   );

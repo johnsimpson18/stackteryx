@@ -54,7 +54,7 @@ export function VersionTabs({
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="pricing">Pricing</TabsTrigger>
-        <TabsTrigger value="enablement">Enablement</TabsTrigger>
+        <TabsTrigger value="enablement">Sales Materials</TabsTrigger>
       </TabsList>
 
       {/* Enablement discovery banner */}
@@ -75,7 +75,7 @@ export function VersionTabs({
             </p>
           </div>
           <span className="text-xs text-primary/70 group-hover:text-primary transition-colors flex items-center gap-0.5 flex-shrink-0">
-            Go to Enablement
+            Go to Sales Materials
             <ChevronRight className="h-3.5 w-3.5" />
           </span>
         </button>

@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Loader2, Rocket, ArrowRight, Plus, LayoutDashboard, Megaphone } from "lucide-react";
+import { Loader2, Rocket, ArrowRight, Users, FileText, Eye, Plus, Package } from "lucide-react";
 
 interface StepLaunchProps {
   launched: boolean;
   isPending: boolean;
   bundleId: string | null;
   onLaunch: () => void;
-  onViewService: () => void;
-  onCreateAnother: () => void;
-  onGoToDashboard: () => void;
+  activeServiceCount?: number;
 }
 
 export function StepLaunch({
@@ -19,9 +17,7 @@ export function StepLaunch({
   isPending,
   bundleId,
   onLaunch,
-  onViewService,
-  onCreateAnother,
-  onGoToDashboard,
+  activeServiceCount = 0,
 }: StepLaunchProps) {
   if (!launched) {
     return (
@@ -60,6 +56,9 @@ export function StepLaunch({
     );
   }
 
+  // The newly launched service brings total to activeServiceCount + 1
+  const totalServices = activeServiceCount + 1;
+
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-8">
       {/* Success animation */}
@@ -83,35 +82,65 @@ export function StepLaunch({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-foreground">Service Launched!</h2>
+        <h2 className="text-3xl font-bold text-foreground">Your service is live.</h2>
         <p className="text-sm text-muted-foreground max-w-md">
-          Your service is now active. All five layers are complete and
-          your team can start selling immediately.
+          What would you like to do next?
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button onClick={onViewService} className="gap-2">
-          <ArrowRight className="h-4 w-4" />
-          View Service
+      <div className="flex flex-col gap-3 w-full max-w-sm">
+        <Button asChild className="gap-2 justify-start">
+          <Link href="/clients">
+            <Users className="h-4 w-4" />
+            Assign to a client
+            <ArrowRight className="h-4 w-4 ml-auto" />
+          </Link>
         </Button>
+
         {bundleId && (
-          <Button variant="outline" className="gap-2" asChild>
-            <Link href={`/sales-studio?tab=playbooks&bundle=${bundleId}`}>
-              <Megaphone className="h-4 w-4" />
-              Generate Sales Playbook
+          <Button variant="outline" className="gap-2 justify-start" asChild>
+            <Link href={`/sales-studio?bundle=${bundleId}`}>
+              <FileText className="h-4 w-4" />
+              Create a proposal
+              <ArrowRight className="h-4 w-4 ml-auto" />
             </Link>
           </Button>
         )}
-        <Button onClick={onCreateAnother} variant="outline" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Another
-        </Button>
-        <Button onClick={onGoToDashboard} variant="ghost" className="gap-2">
-          <LayoutDashboard className="h-4 w-4" />
-          Dashboard
+
+        {bundleId && (
+          <Button variant="outline" className="gap-2 justify-start" asChild>
+            <Link href={`/services/${bundleId}`}>
+              <Eye className="h-4 w-4" />
+              View your service
+              <ArrowRight className="h-4 w-4 ml-auto" />
+            </Link>
+          </Button>
+        )}
+
+        <Button variant="ghost" className="gap-2 justify-start" asChild>
+          <Link href="/services/new">
+            <Plus className="h-4 w-4" />
+            Build another service
+            <ArrowRight className="h-4 w-4 ml-auto" />
+          </Link>
         </Button>
       </div>
+
+      {/* Packaging hint — shows when org has 2+ active services */}
+      {totalServices >= 2 && (
+        <div className="rounded-xl border border-border bg-card px-5 py-4 max-w-sm w-full text-left">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Have multiple services? You can package them into tiers (Good / Better / Best) from the Services page.
+          </p>
+          <Button variant="link" size="sm" className="px-0 h-auto mt-1 text-xs gap-1" asChild>
+            <Link href="/services?tab=packages">
+              <Package className="h-3 w-3" />
+              Create a Package
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

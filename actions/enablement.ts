@@ -12,6 +12,7 @@ import {
   generateEnablementDocx,
 } from "@/lib/enablement-export";
 import type { ActionResult } from "@/lib/types";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 const enablementSchema = z.object({
   bundle_version_id: z.string().uuid(),
@@ -141,12 +142,18 @@ export async function exportEnablementPdfAction(
   bundleVersionId: string
 ): Promise<ActionResult<{ base64: string; filename: string }>> {
   try {
+    const exportLimit = await checkLimit("exportsPerMonth");
+    if (!exportLimit.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
+
     const data = await resolveExportData(bundleVersionId);
     if (!data.ok) {
       return { success: false, error: data.error };
     }
 
     const buffer = await generateEnablementPdf(data);
+    await incrementUsage("export");
     const filename = `${slugify(data.bundleName)}-enablement.pdf`;
 
     return {
@@ -164,12 +171,18 @@ export async function exportEnablementDocxAction(
   bundleVersionId: string
 ): Promise<ActionResult<{ base64: string; filename: string }>> {
   try {
+    const exportLimit = await checkLimit("exportsPerMonth");
+    if (!exportLimit.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
+
     const data = await resolveExportData(bundleVersionId);
     if (!data.ok) {
       return { success: false, error: data.error };
     }
 
     const buffer = await generateEnablementDocx(data);
+    await incrementUsage("export");
     const filename = `${slugify(data.bundleName)}-enablement.docx`;
 
     return {

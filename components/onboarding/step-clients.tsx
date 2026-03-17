@@ -161,6 +161,9 @@ export function StepClients({
         <p className="mt-2 font-mono text-muted-foreground text-sm">
           Tell us about the clients you serve.
         </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          Understanding your clients helps us suggest the right service structures and sales language for your proposals.
+        </p>
       </div>
 
       {/* Verticals grid */}

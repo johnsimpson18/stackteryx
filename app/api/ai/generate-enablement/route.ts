@@ -14,6 +14,7 @@ import {
 } from "@/lib/ai/language-rules";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { ToolCategory } from "@/lib/types";
+import { checkLimit, incrementUsage } from "@/actions/billing";
 
 export const maxDuration = 60;
 
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
   const membership = await getOrgMembership(orgId);
   if (!membership)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const aiLimit = await checkLimit("aiGenerationsPerMonth");
+  if (!aiLimit.allowed) {
+    return Response.json({ error: "LIMIT_REACHED" }, { status: 403 });
+  }
 
   let body: { bundle_id?: string; bundle_version_id?: string } = {};
   try {
@@ -156,6 +162,7 @@ export async function POST(request: Request) {
       systemPrompt: ENABLEMENT_SYSTEM_PROMPT,
     });
 
+    await incrementUsage("ai_generation");
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Loader2, Sparkles, Search, Library, Plus, ChevronDown, ChevronUp, AlertTriangle, DollarSign } from "lucide-react";
+import { Check, Loader2, Sparkles, Search, Library, Plus, ChevronDown, ChevronUp, AlertTriangle, DollarSign, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import type { Tool, ToolCategory } from "@/lib/types";
 import {
@@ -30,6 +30,7 @@ interface StepStackProps {
   selectedToolIds: Set<string>;
   onToggle: (id: string) => void;
   onToolsAdded?: (tools: Tool[]) => void;
+  onSkipTools?: () => void;
 }
 
 function billingLabel(unit: BillingUnit) {
@@ -40,7 +41,7 @@ function billingLabel(unit: BillingUnit) {
   }
 }
 
-export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: StepStackProps) {
+export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded, onSkipTools }: StepStackProps) {
   const [aiLoading, setAiLoading] = useState(false);
   const [tab, setTab] = useState<"stack" | "library">("stack");
   const [librarySearch, setLibrarySearch] = useState("");
@@ -272,7 +273,7 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
     <div className="space-y-5">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Select your stack</h2>
+          <h2 className="text-2xl font-bold text-foreground">Select your tools</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Choose the tools to include in this service. Selected:{" "}
             <span className="text-foreground font-medium">{selectedToolIds.size}</span>
@@ -320,19 +321,58 @@ export function StepStack({ tools, selectedToolIds, onToggle, onToolsAdded }: St
       {tab === "stack" && (
         <div className="space-y-5">
           {allTools.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card/60 p-8 text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                No tools in your stack yet.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTab("library")}
-                className="gap-1.5"
-              >
-                <Library className="h-3.5 w-3.5" />
-                Browse Tool Library
-              </Button>
+            <div className="rounded-lg border border-border bg-card/60 p-8 space-y-4">
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">
+                  You haven&apos;t added any tools yet.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed max-w-md mx-auto">
+                  Tools are the vendor products that power your service (e.g. CrowdStrike
+                  for endpoint protection, Datto for backup).
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="gap-1.5"
+                >
+                  <a href="/stack-catalog" target="_blank" rel="noopener noreferrer">
+                    Add your tools first
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="h-px w-8 bg-border" />
+                  or
+                  <span className="h-px w-8 bg-border" />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInlineOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add a tool right now
+                  </Button>
+                  {onSkipTools && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onSkipTools}
+                      className="text-muted-foreground"
+                    >
+                      Continue without tools
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           ) : (
             Array.from(toolsByCategory.entries()).map(([category, categoryTools]) => {

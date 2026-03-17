@@ -9,7 +9,7 @@ import { ServicesList } from "./services-list";
 import { PackagesList } from "@/components/packages/packages-list";
 import { AdditionalServicesClient } from "@/components/additional-services/additional-services-client";
 import { Button } from "@/components/ui/button";
-import { Plus, Brain, ArrowRight, Loader2 } from "lucide-react";
+import { Plus, Brain, ArrowRight, Loader2, ChevronRight, Lightbulb, X, Layers2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { addFractionalCTOService } from "@/actions/fractional-cto-template";
@@ -52,6 +52,10 @@ export function ServicesTabs({
   const router = useRouter();
   const [hasAdvisory, setHasAdvisory] = useState(initialHasAdvisory);
   const [adding, startAdding] = useTransition();
+  const [packageCtaDismissed, setPackageCtaDismissed] = useState(false);
+
+  const activeServicesCount = bundles.filter((b) => b.status === "active").length;
+  const showPackageCta = activeServicesCount >= 2 && packages.length === 0 && !packageCtaDismissed;
 
   function handleAddTemplate() {
     startAdding(async () => {
@@ -79,17 +83,38 @@ export function ServicesTabs({
     <div className="space-y-6">
       <PageHeader
         title="Services"
-        description="Build and manage your security service portfolio"
+        description="Design, price, and manage the services you sell"
       >
         <RoleGate role={userRole} permission="create_bundles">
-          <Button asChild>
-            <Link href="/services/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Build a Service
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="lg" className="gap-2 px-5">
+              <Link href="/stack-builder">
+                <Layers2 className="h-4 w-4" />
+                Stack Builder
+              </Link>
+            </Button>
+            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-6 font-semibold">
+              <Link href="/services/new">
+                Build a Service
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </RoleGate>
       </PageHeader>
+
+      {/* Zero-services guidance */}
+      {bundles.length === 0 && (
+        <div className="rounded-xl border border-border bg-card px-5 py-4">
+          <p className="text-sm text-muted-foreground">
+            Start by building your first service. Add your tools in{" "}
+            <Link href="/stack-catalog" className="text-primary hover:underline font-medium">
+              Tools &amp; Costs
+            </Link>{" "}
+            first, then come back here to design a service around what you deliver.
+          </p>
+        </div>
+      )}
 
       {/* Fractional CTO Template Card */}
       {!hasAdvisory && (
@@ -127,10 +152,48 @@ export function ServicesTabs({
         </div>
       )}
 
+      {/* Package discovery callout */}
+      {showPackageCta && (
+        <div
+          className="rounded-xl px-5 py-4 flex items-start gap-3 relative"
+          style={{
+            backgroundColor: "#111111",
+            borderLeft: "3px solid #A8FF3E",
+          }}
+        >
+          <Lightbulb className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground font-medium">
+              You have {activeServicesCount} active services.
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Ready to package them into tiers your clients can choose from?
+            </p>
+            <Link
+              href="/packages/new"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors mt-2"
+            >
+              Create a Package
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPackageCtaDismissed(true)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="packages">Packages</TabsTrigger>
+          <TabsTrigger value="packages">
+            Packages{packages.length > 0 ? ` (${packages.length})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="add-ons">Add-Ons</TabsTrigger>
         </TabsList>
 

@@ -2,12 +2,21 @@ import { z } from "zod";
 
 // ── Step 1: Outcome ──────────────────────────────────────────────────────────
 
+const selectedOutcomeSchema = z.object({
+  id: z.string(),
+  statement: z.string(),
+  description: z.string().optional(),
+  isCustom: z.boolean(),
+  complianceFrameworks: z.array(z.string()).optional(),
+});
+
 export const outcomeStepSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   outcome_type: z.enum(["compliance", "efficiency", "security", "growth", "custom"]),
   outcome_statement: z.string().max(2000).default(""),
   target_vertical: z.string().max(200).default(""),
   target_persona: z.string().max(200).default(""),
+  selected_outcomes: z.array(selectedOutcomeSchema).default([]),
 });
 
 export type OutcomeStepValues = z.infer<typeof outcomeStepSchema>;
@@ -22,6 +31,8 @@ export const serviceCapabilitySchema = z.object({
 export const serviceStepSchema = z.object({
   service_capabilities: z.array(serviceCapabilitySchema).default([]),
   bundle_type: z.enum(["ala_carte", "tiered", "vertical", "custom"]),
+  subtitle: z.string().max(120).default(""),
+  compliance_frameworks: z.array(z.string()).default([]),
 });
 
 export type ServiceStepValues = z.infer<typeof serviceStepSchema>;

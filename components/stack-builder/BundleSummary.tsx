@@ -309,7 +309,7 @@ export function BundleSummary({ bundleState, pricing, onChange }: BundleSummaryP
             onClick={() => toast.info("Create Version — connect to DB to enable")}
           >
             <GitBranch className="h-3 w-3 mr-1" />
-            Version
+            Pricing Config
           </Button>
           <Button
             variant="outline"

@@ -9,6 +9,10 @@ import { getOrgVendorDiscounts } from "@/lib/db/vendors";
 import { PageHeader } from "@/components/shared/page-header";
 import { SettingsForm } from "./settings-form";
 import { VendorDiscountsSection } from "@/components/settings/vendor-discounts-section";
+import { Suspense } from "react";
+import { UpgradeSuccessHandler } from "@/components/billing/upgrade-success-handler";
+import { BillingSection } from "@/components/settings/billing-section";
+import { MFASection } from "@/components/settings/mfa-section";
 
 export default async function SettingsPage() {
   const [profile, orgId] = await Promise.all([
@@ -38,10 +42,15 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Suspense>
+        <UpgradeSuccessHandler />
+      </Suspense>
       <PageHeader
         title="Workspace Settings"
         description="Configure default pricing parameters for your MSP"
       />
+      <BillingSection />
+      <MFASection />
       <SettingsForm settings={settings} userRole={profile.role} />
       <VendorDiscountsSection
         vendors={vendorDiscountData.map((v) => ({

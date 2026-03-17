@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 // ── Status lines ────────────────────────────────────────────────────────────
 
 const STEP_LABELS = [
-  "Mapping your outcome types...",
-  "Organizing your service capabilities...",
-  "Cataloging your stack by domain...",
-  "Modeling your cost floor...",
-  "Calculating your margin targets...",
+  "Analyzing your tool stack and delivery costs...",
+  "Identifying service opportunities for your market...",
+  "Preparing service suggestions based on your outcomes...",
+  "Calculating margin scenarios for your pricing targets...",
+  "Building your sales materials framework...",
   "Scoring your portfolio coverage...",
-  "Configuring your intelligence layer...",
-  "Your platform is ready.",
+  "Preparing your workspace...",
+  "Your suggestions are ready.",
 ];
 
 type StepStatus = "pending" | "active" | "complete";
@@ -108,7 +108,7 @@ export function BuildingScreen({ orgId }: { orgId: string }) {
             fontSize: 48,
           }}
         >
-          BUILDING YOUR STACKTERYX
+          PREPARING YOUR SUGGESTIONS
         </h1>
 
         {/* Terminal log */}

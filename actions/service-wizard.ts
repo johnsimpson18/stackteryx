@@ -23,6 +23,7 @@ import {
   enablementStepSchema,
 } from "@/lib/schemas/service-wizard";
 import type { ActionResult } from "@/lib/types";
+import { checkLimit } from "@/actions/billing";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,12 @@ export async function saveOutcomeStepAction(
 ): Promise<ActionResult<{ bundleId: string }>> {
   try {
     const { profile, orgId } = await requireAuth();
+
+    // Plan limit check
+    const limitCheck = await checkLimit("services");
+    if (!limitCheck.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
+    }
 
     const parsed = outcomeStepSchema.safeParse(data);
     if (!parsed.success) {
@@ -73,6 +80,7 @@ export async function saveOutcomeStepAction(
       outcome_statement: parsed.data.outcome_statement,
       target_vertical: parsed.data.target_vertical,
       target_persona: parsed.data.target_persona,
+      selected_outcomes: parsed.data.selected_outcomes,
     });
 
     await logAudit(profile.id, "bundle_created", "bundle", bundle.id, {
@@ -120,6 +128,7 @@ export async function updateOutcomeStepAction(
       outcome_statement: parsed.data.outcome_statement,
       target_vertical: parsed.data.target_vertical,
       target_persona: parsed.data.target_persona,
+      selected_outcomes: parsed.data.selected_outcomes,
     });
 
     await logAudit(profile.id, "bundle_updated", "bundle", bundleId, {
@@ -155,6 +164,8 @@ export async function saveServiceStepAction(
     await updateBundle(bundleId, {
       bundle_type: parsed.data.bundle_type,
       wizard_step_completed: Math.max(bundle.wizard_step_completed, 2),
+      subtitle: parsed.data.subtitle || null,
+      compliance_frameworks: parsed.data.compliance_frameworks ?? [],
     });
 
     // Update service_capabilities on the outcome row

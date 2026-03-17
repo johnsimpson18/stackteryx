@@ -8,6 +8,7 @@ import { getCurrentProfile } from "@/lib/db/profiles";
 import { logAudit } from "@/lib/db/audit";
 import { setActiveOrg, getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { hasOrgPermission } from "@/lib/constants";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { ActionResult, Org } from "@/lib/types";
 
 export async function createOrgAction(data: {
@@ -34,6 +35,12 @@ export async function createOrgAction(data: {
 
     // Create org_settings row so the onboarding gate triggers
     await ensureOrgSettings(org.id);
+
+    // Initialize free-tier subscription
+    const service = createServiceClient();
+    await service
+      .from("subscriptions")
+      .insert({ org_id: org.id, plan: "free", status: "active" });
 
     // Set as active org
     await setActiveOrg(org.id);

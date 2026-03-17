@@ -242,7 +242,7 @@ export function BundleList({ bundles, userRole, enablementMap = {} }: BundleList
                         <Button variant="ghost" size="icon" asChild>
                           <Link
                             href={`/services/${bundle.id}/versions/${enablementMap[bundle.id].latestVersionId}?tab=enablement`}
-                            title="Generate Enablement"
+                            title="Generate Sales Materials"
                           >
                             <FileText className="h-4 w-4 text-primary" />
                           </Link>

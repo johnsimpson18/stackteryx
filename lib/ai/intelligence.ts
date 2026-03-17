@@ -81,7 +81,7 @@ export async function checkServiceIncompleteness(
     if (!service.service_complete) missingLayers.push("Service");
     if (!service.stack_complete) missingLayers.push("Stack");
     if (!service.economics_complete) missingLayers.push("Economics");
-    if (!service.enablement_complete) missingLayers.push("Enablement");
+    if (!service.enablement_complete) missingLayers.push("Sales Materials");
 
     await upsertActionCard(orgId, "incomplete_service", bundleId, {
       severity: service.layers_complete <= 2 ? "critical" : "warning",

@@ -5,10 +5,14 @@ import { getUserOrgMemberships, getOrgMemberCount } from "@/lib/db/org-members";
 import { getActiveOrgId } from "@/lib/org-context";
 import { getOrgById } from "@/lib/db/orgs";
 import { getOnboardingTools } from "@/lib/db/onboarding-tools";
+import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { WorkflowBanner } from "@/components/layout/workflow-banner";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
+import { PlanProvider } from "@/components/providers/plan-provider";
+import { UpgradeModalProvider } from "@/components/billing/upgrade-modal";
 
 export default async function AppLayout({
   children,
@@ -71,6 +75,30 @@ export default async function AppLayout({
     }
   }
 
+  // ── Workflow banner step checks (lightweight count queries) ────────────
+  let workflowSteps = { hasTools: true, hasServices: true, hasClients: true, hasProposals: true };
+  if (orgId && onboardingComplete) {
+    try {
+      const supabase = await createClient();
+      const [toolsRes, bundlesRes, clientsRes, proposalsRes] = await Promise.all([
+        supabase.from("tools").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "active"),
+        supabase.from("bundles").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "active"),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("org_id", orgId),
+        supabase.from("proposals").select("id", { count: "exact", head: true }).eq("org_id", orgId),
+      ]);
+      workflowSteps = {
+        hasTools: (toolsRes.count ?? 0) > 0,
+        hasServices: (bundlesRes.count ?? 0) > 0,
+        hasClients: (clientsRes.count ?? 0) > 0,
+        hasProposals: (proposalsRes.count ?? 0) > 0,
+      };
+    } catch {
+      // Degrade gracefully — don't show banner
+    }
+  }
+
+  const allWorkflowComplete = workflowSteps.hasTools && workflowSteps.hasServices && workflowSteps.hasClients && workflowSteps.hasProposals;
+
   const appContent = (
     <div className="flex h-screen overflow-hidden">
       <Sidebar profile={profile} memberCount={memberCount} />
@@ -81,6 +109,7 @@ export default async function AppLayout({
           userOrgs={userOrgs}
         />
         <main className="flex-1 overflow-y-auto app-grid-bg p-6 pb-20 md:pb-6">
+          {!allWorkflowComplete && <WorkflowBanner steps={workflowSteps} />}
           {children}
         </main>
       </div>
@@ -89,16 +118,20 @@ export default async function AppLayout({
   );
 
   return (
-    <OnboardingGate
-      onboardingComplete={onboardingComplete}
-      orgId={orgId ?? ""}
-      defaultOrgName={orgName}
-      defaultDisplayName={profile.display_name ?? ""}
-      savedProfile={onboardingProfile}
-      savedStep={savedStep}
-      savedTools={savedTools}
-    >
-      {appContent}
-    </OnboardingGate>
+    <PlanProvider>
+      <UpgradeModalProvider>
+        <OnboardingGate
+          onboardingComplete={onboardingComplete}
+          orgId={orgId ?? ""}
+          defaultOrgName={orgName}
+          defaultDisplayName={profile.display_name ?? ""}
+          savedProfile={onboardingProfile}
+          savedStep={savedStep}
+          savedTools={savedTools}
+        >
+          {appContent}
+        </OnboardingGate>
+      </UpgradeModalProvider>
+    </PlanProvider>
   );
 }

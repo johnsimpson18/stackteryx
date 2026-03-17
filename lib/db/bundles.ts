@@ -113,6 +113,8 @@ export async function updateBundle(
     economics_layer_complete: boolean;
     enablement_layer_complete: boolean;
     last_ai_analysis_at: string;
+    subtitle: string | null;
+    compliance_frameworks: string[];
   }>
 ): Promise<Bundle> {
   const supabase = await createClient();

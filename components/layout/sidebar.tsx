@@ -8,10 +8,14 @@ import { NAV_ITEMS } from "@/lib/constants";
 import type { NavGroup } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Gift, LogOut, PanelLeftClose, PanelLeft, Zap, CreditCard } from "lucide-react";
 import { signOut } from "@/actions/auth";
 import type { Profile } from "@/lib/types";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { usePlanContext } from "@/components/providers/plan-provider";
+import { useUpgradeModal } from "@/components/billing/upgrade-modal";
+import { UsageBar } from "@/components/billing/usage-bar";
+import { createBillingPortalSession } from "@/actions/billing";
 
 interface SidebarProps {
   profile: Profile;
@@ -30,6 +34,9 @@ const GROUP_ORDER: NavGroup[] = ["primary", "secondary"];
 export function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { plan, loading, comped } = usePlanContext();
+  const { openUpgradeModal } = useUpgradeModal();
+  const [billingPending, startBillingTransition] = useTransition();
 
   const initials = profile.display_name
     ? profile.display_name
@@ -52,6 +59,17 @@ export function Sidebar({ profile }: SidebarProps) {
   }
   for (const item of visibleItems) {
     grouped.get(item.group)!.push(item);
+  }
+
+  function handleManageBilling() {
+    startBillingTransition(async () => {
+      try {
+        const { url } = await createBillingPortalSession();
+        window.location.href = url;
+      } catch {
+        // No billing account yet
+      }
+    });
   }
 
   return (
@@ -103,7 +121,6 @@ export function Sidebar({ profile }: SidebarProps) {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== "/dashboard" &&
-                     item.href !== "/services/new" &&
                      pathname.startsWith(item.href + "/"));
                   const Icon = item.icon;
 
@@ -171,6 +188,78 @@ export function Sidebar({ profile }: SidebarProps) {
           >
             <PanelLeft className="h-3.5 w-3.5" />
           </Button>
+        </div>
+      )}
+
+      {/* Plan badge */}
+      {!collapsed && !loading && (
+        <div className="px-3 pb-2 flex-shrink-0">
+          <div className="rounded-lg border border-sidebar-border p-2.5 space-y-2">
+            {plan === "enterprise" ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border" style={{ backgroundColor: "rgba(90,158,0,0.1)", color: "#5a9e00", borderColor: "rgba(90,158,0,0.2)" }}>
+                    Enterprise Plan
+                  </span>
+                  <span style={{ color: "#5a9e00" }} className="text-[10px]">&#10003;</span>
+                  {comped && <Gift className="h-3 w-3 text-amber-400" />}
+                </div>
+                {!comped && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-7 text-[10px]"
+                    onClick={handleManageBilling}
+                    disabled={billingPending}
+                  >
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Manage Billing
+                  </Button>
+                )}
+              </>
+            ) : plan === "pro" ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border" style={{ backgroundColor: "rgba(90,158,0,0.1)", color: "#5a9e00", borderColor: "rgba(90,158,0,0.2)" }}>
+                    Pro Plan
+                  </span>
+                  <span style={{ color: "#5a9e00" }} className="text-[10px]">&#10003;</span>
+                  {comped && <Gift className="h-3 w-3 text-amber-400" />}
+                </div>
+                <UsageBar limitKey="aiGenerationsPerMonth" compact showLabel />
+                {!comped && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-7 text-[10px]"
+                    onClick={handleManageBilling}
+                    disabled={billingPending}
+                  >
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Manage Billing
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    Free Plan
+                  </span>
+                </div>
+                <UsageBar limitKey="aiGenerationsPerMonth" compact showLabel />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full h-7 text-[10px] text-primary hover:text-primary"
+                  onClick={() => openUpgradeModal()}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  Upgrade to Pro
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       )}
 

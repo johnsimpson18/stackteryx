@@ -13,7 +13,9 @@ import {
   Trash2,
   MoreHorizontal,
   Layers,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import {
   deleteTierPackageAction,
   duplicateTierPackageAction,
@@ -58,17 +60,36 @@ export function PackagesList({ packages }: PackagesListProps) {
   if (packages.length === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-4">
-            <Layers className="h-6 w-6 text-muted-foreground" />
+        <CardContent className="py-12 px-8">
+          <div className="flex flex-col items-center text-center max-w-lg mx-auto">
+            <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center mb-4">
+              <Layers className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Package your services into tiers
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Most MSPs sell services at three levels &mdash; a base package, a standard
+              package, and a premium package. This lets clients choose what fits their
+              budget while you upsell naturally.
+            </p>
+            <div className="mt-5 rounded-lg border border-border bg-card/60 px-5 py-4 w-full text-left">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                Example
+              </p>
+              <div className="space-y-1.5 text-sm text-muted-foreground">
+                <p><span className="text-foreground font-medium">Essential</span> &rarr; EDR + Backup</p>
+                <p><span className="text-foreground font-medium">Standard</span> &rarr; EDR + Backup + SIEM</p>
+                <p><span className="text-foreground font-medium">Premium</span> &rarr; EDR + Backup + SIEM + Compliance Advisory</p>
+              </div>
+            </div>
+            <Button asChild className="mt-5 gap-1.5">
+              <Link href="/packages/new">
+                Create your first package
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
-            No packages yet
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Create a tiered package to bundle your services into
-            good-better-best pricing tiers for your clients.
-          </p>
         </CardContent>
       </Card>
     );

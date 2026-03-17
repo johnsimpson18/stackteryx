@@ -208,6 +208,9 @@ export interface Bundle {
   enablement_layer_complete: boolean;
   last_ai_analysis_at: string | null;
   wizard_in_progress: boolean;
+  // Service template fields (migration 041)
+  subtitle: string | null;
+  compliance_frameworks: string[];
 }
 
 export interface BundleWithMeta extends Bundle {
@@ -640,6 +643,14 @@ export interface ServiceCapability {
   met_by_tools: string[];
 }
 
+export interface SelectedOutcomeRecord {
+  id: string;
+  statement: string;
+  description?: string;
+  isCustom: boolean;
+  complianceFrameworks?: string[];
+}
+
 export interface ServiceOutcome {
   id: string;
   bundle_id: string;
@@ -649,6 +660,7 @@ export interface ServiceOutcome {
   target_vertical: string | null;
   target_persona: string | null;
   service_capabilities: ServiceCapability[];
+  selected_outcomes: SelectedOutcomeRecord[];
   ai_drafted: boolean;
   created_at: string;
   updated_at: string;

@@ -10,7 +10,7 @@ function formatDate(iso: string): string {
 
 export async function generateBriefDocx(
   brief: BriefOutput,
-  options?: { branded?: boolean },
+  options?: { branded?: boolean; whiteLabel?: boolean },
 ): Promise<Buffer> {
   const {
     Document,
@@ -28,9 +28,14 @@ export async function generateBriefDocx(
     ShadingType,
   } = await import("docx");
 
-  const footerText = options?.branded
+  // Enterprise (whiteLabel): MSP name only, no Stackteryx reference
+  // Pro (branded): MSP name + subtle Stackteryx mention
+  // Free: full Stackteryx attribution
+  const footerText = options?.whiteLabel
     ? brief.mspName
-    : `${brief.mspName} | Prepared by Stackteryx Fractional CTO Intelligence`;
+    : options?.branded
+      ? `${brief.mspName} | Powered by Stackteryx`
+      : `${brief.mspName} | Prepared by Stackteryx Fractional CTO Intelligence`;
 
   // ── Helpers ────────────────────────────────────────────────────────────
 

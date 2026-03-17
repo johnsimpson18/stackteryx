@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition, Suspense } from "react";
+import { useState, useTransition, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   signInWithEmail,
   signInWithGoogleAction,
@@ -10,17 +11,12 @@ import {
   requestPasswordReset,
   resendConfirmation,
 } from "@/actions/auth";
-import { toast } from "sonner";
-import {
-  Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft,
-  Brain, TrendingDown, Table, Target, Wrench, Package,
-  DollarSign, FileText, BarChart2, Sparkles,
-} from "lucide-react";
-
+import { Mail, ArrowRight, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 /* ─────────────────────────────────────────────────────────────
-   STACKTERYX LANDING PAGE
-   Industrial-premium marketing + login entry point.
+   STACKTERYX LOGIN PAGE
+   Premium, enterprise-grade authentication screen.
    ───────────────────────────────────────────────────────────── */
 
 // ── Password strength helpers ────────────────────────────────
@@ -35,14 +31,14 @@ function getPasswordStrength(pw: string): number {
   return 2;
 }
 
-const strengthColors = ["#1E1E1E", "#EF4444", "#F59E0B", "#F59E0B", "#A8FF3E"];
+const strengthColors = ["#1E1E1E", "#EF4444", "#F59E0B", "#F59E0B", "#c8f135"];
 const strengthLabels = ["", "Too short", "Weak", "Almost there", "Strong"];
 
-// ── Shared styled input focus/blur handlers ──────────────────
+// ── Shared styled input ──────────────────────────────────────
 
 function handleFocusRing(e: React.FocusEvent<HTMLInputElement>) {
-  e.currentTarget.style.borderColor = "#A8FF3E";
-  e.currentTarget.style.boxShadow = "0 0 0 2px #A8FF3E25";
+  e.currentTarget.style.borderColor = "#c8f135";
+  e.currentTarget.style.boxShadow = "0 0 0 2px #c8f13525";
 }
 function handleBlurRing(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.borderColor = "#1E1E1E";
@@ -76,11 +72,11 @@ function GoogleIcon() {
 
 // ── Divider ──────────────────────────────────────────────────
 
-function OrDivider() {
+function OrDivider({ text = "or continue with email" }: { text?: string }) {
   return (
     <div className="flex items-center gap-3" style={{ margin: "16px 0" }}>
       <div className="flex-1 h-px" style={{ background: "#1E1E1E" }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#444444" }}>or</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#444444" }}>{text}</span>
       <div className="flex-1 h-px" style={{ background: "#1E1E1E" }} />
     </div>
   );
@@ -134,7 +130,7 @@ function GoogleButton({
         fontFamily: "var(--font-mono)",
         fontWeight: 500,
         fontSize: 13,
-        borderRadius: "var(--radius, 2px)",
+        borderRadius: "var(--radius, 6px)",
       }}
       onMouseEnter={(e) => {
         if (!pending) e.currentTarget.style.background = "#F5F5F5";
@@ -171,26 +167,29 @@ function PrimaryButton({
       type={type}
       disabled={pending || disabled}
       onClick={onClick}
-      className="w-full h-10 rounded text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+      className="w-full h-10 rounded text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
       style={{
-        background: "#A8FF3E",
-        color: "#0A0A0A",
+        background: "#c8f135",
+        color: "#2a4500",
         fontFamily: "var(--font-display)",
       }}
       onMouseEnter={(e) => {
-        if (!pending && !disabled) e.currentTarget.style.background = "#BFFF5C";
+        if (!pending && !disabled) e.currentTarget.style.background = "#d4f55c";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "#A8FF3E";
+        e.currentTarget.style.background = "#c8f135";
       }}
     >
       {pending ? (
-        <span className="flex items-center justify-center gap-2">
+        <>
           <Loader2 className="h-4 w-4 animate-spin" />
           {loadingLabel}
-        </span>
+        </>
       ) : (
-        label
+        <>
+          {label}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </>
       )}
     </button>
   );
@@ -216,7 +215,7 @@ function PasswordInput({
     <div className="space-y-2">
       <label
         htmlFor={id}
-        className="text-xs uppercase tracking-widest"
+        className="text-xs font-medium"
         style={labelStyle}
       >
         {label}
@@ -247,22 +246,19 @@ function PasswordInput({
   );
 }
 
-// ── Auth Card (extracted for Suspense boundary) ──────────────
+// ── Auth Card ────────────────────────────────────────────────
 
 function AuthCard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // ── Shared state ──────────────────────────────────────────
-  const [isGooglePending, startGoogleTransition] = useTransition();
-
-  // ── Tab state — "signin" | "signup" ───────────────────────
+  // Tab state
   const [tab, setTab] = useState<"signin" | "signup">(() =>
     searchParams.get("tab") === "signup" ? "signup" : "signin"
   );
 
-  // ── Mode state for sign-in card ───────────────────────────
-  type SignInMode = "default" | "forgot" | "forgot-sent" | "magic-sent";
+  // Sign-in mode (includes MFA challenge)
+  type SignInMode = "default" | "forgot" | "forgot-sent" | "magic-link" | "magic-sent" | "mfa-challenge";
   const [signInMode, setSignInMode] = useState<SignInMode>(() => {
     const mode = searchParams.get("mode");
     if (mode === "forgot") {
@@ -271,36 +267,46 @@ function AuthCard() {
     return "default";
   });
 
-  // ── Sign-in form state ────────────────────────────────────
+  // Shared
+  const [isGooglePending, startGoogleTransition] = useTransition();
+
+  // Sign-in form
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signInError, setSignInError] = useState("");
   const [isUnconfirmed, setIsUnconfirmed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // ── Sign-up form state ────────────────────────────────────
+  // Sign-up form
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirm, setSignUpConfirm] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [signUpDone, setSignUpDone] = useState(false);
+  const [signUpError, setSignUpError] = useState("");
   const [isSignUpPending, startSignUpTransition] = useTransition();
 
-  // ── Forgot password state ─────────────────────────────────
+  // Forgot password
   const [forgotEmail, setForgotEmail] = useState("");
   const [isForgotPending, startForgotTransition] = useTransition();
 
-  // ── Magic link state ──────────────────────────────────────
+  // Magic link
   const [isMagicPending, startMagicTransition] = useTransition();
 
-  // ── Resend state ──────────────────────────────────────────
+  // Resend
   const [isResending, startResendTransition] = useTransition();
 
-  // ── URL sync ──────────────────────────────────────────────
+  // MFA
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaError, setMfaError] = useState("");
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [isMfaPending, setIsMfaPending] = useState(false);
+  const mfaInputRef = useRef<HTMLInputElement>(null);
+
+  // URL sync
   function updateUrl(params: Record<string, string | undefined>) {
     const url = new URL(window.location.href);
-    // Clear existing auth params
     url.searchParams.delete("tab");
     url.searchParams.delete("mode");
     url.searchParams.delete("sent");
@@ -313,6 +319,7 @@ function AuthCard() {
   function switchTab(t: "signin" | "signup") {
     setTab(t);
     setSignInError("");
+    setSignUpError("");
     setIsUnconfirmed(false);
     if (t === "signup") {
       updateUrl({ tab: "signup" });
@@ -333,15 +340,39 @@ function AuthCard() {
     updateUrl({});
   }
 
-  // ── Google auth handler ───────────────────────────────────
+  // Google auth
   function handleGoogle() {
     startGoogleTransition(async () => {
       const result = await signInWithGoogleAction();
-      if (result?.error) toast.error(result.error);
+      if (result?.error) setSignInError(result.error);
     });
   }
 
-  // ── Sign in handler ───────────────────────────────────────
+  // MFA check after sign-in
+  async function checkMFAAndNavigate() {
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      if (data && data.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+        // User has MFA — get factors and show challenge
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const totpFactor = factorsData?.totp?.[0];
+        if (totpFactor) {
+          setMfaFactorId(totpFactor.id);
+          setSignInMode("mfa-challenge");
+          return;
+        }
+      }
+
+      // No MFA or already at AAL2 — navigate to dashboard
+      router.push("/dashboard");
+    } catch {
+      router.push("/dashboard");
+    }
+  }
+
+  // Sign in
   function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setSignInError("");
@@ -356,11 +387,64 @@ function AuthCard() {
         } else {
           setSignInError("Incorrect email or password.");
         }
+      } else {
+        // Successful sign-in — check MFA
+        await checkMFAAndNavigate();
       }
     });
   }
 
-  // ── Sign up handler ───────────────────────────────────────
+  // MFA verify
+  async function handleMFAVerify() {
+    if (mfaCode.length !== 6 || isMfaPending) return;
+    setIsMfaPending(true);
+    setMfaError("");
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data: challengeData, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+
+      if (challengeError || !challengeData) {
+        setMfaError("Verification failed. Please try again.");
+        setMfaCode("");
+        setIsMfaPending(false);
+        mfaInputRef.current?.focus();
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaCode,
+      });
+
+      if (verifyError) {
+        setMfaError("Incorrect code. Please try again.");
+        setMfaCode("");
+        setIsMfaPending(false);
+        mfaInputRef.current?.focus();
+        return;
+      }
+
+      // MFA verified — redirect to dashboard
+      router.push("/dashboard");
+    } catch {
+      setMfaError("Something went wrong. Please try again.");
+      setMfaCode("");
+      setIsMfaPending(false);
+    }
+  }
+
+  // Auto-submit MFA on 6 digits
+  useEffect(() => {
+    if (mfaCode.length === 6 && signInMode === "mfa-challenge") {
+      handleMFAVerify();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mfaCode]);
+
+  // Sign up
   const signUpStrength = getPasswordStrength(signUpPassword);
   const passwordsMatch = signUpPassword === signUpConfirm;
   const canSignUp =
@@ -372,17 +456,18 @@ function AuthCard() {
   function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     if (!canSignUp) return;
+    setSignUpError("");
     startSignUpTransition(async () => {
       const result = await signUpWithPassword(signUpEmail, signUpPassword, signUpName);
       if (result.success) {
         setSignUpDone(true);
       } else {
-        toast.error(result.error);
+        setSignUpError(result.error);
       }
     });
   }
 
-  // ── Forgot password handler ───────────────────────────────
+  // Forgot password
   function handleForgotSubmit(e: React.FormEvent) {
     e.preventDefault();
     startForgotTransition(async () => {
@@ -392,76 +477,209 @@ function AuthCard() {
     });
   }
 
-  // ── Magic link handler ────────────────────────────────────
+  // Magic link
   function handleMagicLink() {
     if (!email) return;
     startMagicTransition(async () => {
       const result = await signInWithEmail(email);
       if (result.success) {
         setSignInMode("magic-sent");
-        toast.success("Check your email for the magic link!");
       } else {
-        toast.error(result.error);
+        setSignInError(result.error);
       }
     });
   }
 
-  // ── Resend confirmation handler ───────────────────────────
+  // Resend confirmation
   function handleResendConfirmation() {
     const targetEmail = tab === "signin" ? email : signUpEmail;
     startResendTransition(async () => {
-      const result = await resendConfirmation(targetEmail);
-      if (result.success) {
-        toast.success("Confirmation email resent!");
-      } else {
-        toast.error(result.error);
-      }
+      await resendConfirmation(targetEmail);
     });
   }
 
-  // ── Render card body ──────────────────────────────────────
+  // ── Render: MFA Challenge ──────────────────────────────────
+
+  if (signInMode === "mfa-challenge") {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <h2
+            className="text-xl font-medium"
+            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+          >
+            Enter your verification code
+          </h2>
+          <p
+            className="text-sm"
+            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+          >
+            Open your authenticator app and enter the 6-digit code.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <input
+            ref={mfaInputRef}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={mfaCode}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              setMfaCode(val);
+              setMfaError("");
+            }}
+            className="w-full h-14 px-4 rounded text-center text-2xl tracking-[0.5em] font-mono outline-none transition-all"
+            style={inputStyle}
+            onFocus={handleFocusRing}
+            onBlur={handleBlurRing}
+            autoFocus
+            placeholder="000000"
+          />
+          {mfaError && (
+            <p style={{ color: "#EF4444", fontFamily: "var(--font-mono)", fontSize: 12, textAlign: "center" }}>
+              {mfaError}
+            </p>
+          )}
+        </div>
+
+        <PrimaryButton
+          label="Verify"
+          loadingLabel="Verifying..."
+          pending={isMfaPending}
+          disabled={mfaCode.length !== 6}
+          type="button"
+          onClick={handleMFAVerify}
+        />
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setSignInMode("default");
+              setMfaCode("");
+              setMfaError("");
+            }}
+            className="text-xs transition-colors"
+            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
+          >
+            <ArrowLeft className="h-3 w-3 inline mr-1" />
+            Use a different sign in method
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render: Sign In ────────────────────────────────────────
 
   function renderSignInContent() {
-    // Magic link sent state
+    // Magic link sent
     if (signInMode === "magic-sent") {
       return (
         <div className="text-center space-y-5 py-4">
           <div className="flex justify-center">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-full"
-              style={{ background: "#A8FF3E15" }}
+              style={{ background: "#c8f13515" }}
             >
-              <Mail className="h-7 w-7" style={{ color: "#A8FF3E" }} />
+              <Mail className="h-7 w-7" style={{ color: "#c8f135" }} />
             </div>
           </div>
           <h3
-            className="text-lg font-bold"
+            className="text-lg font-medium"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            CHECK YOUR EMAIL
+            Check your email
           </h3>
           <p
             className="text-sm"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
           >
-            We sent a magic link to{" "}
-            <strong style={{ color: "#A8FF3E" }}>{email}</strong>.
+            We sent a login link to{" "}
+            <strong style={{ color: "#c8f135" }}>{email}</strong>.
             Click the link to sign in.
           </p>
           <button
             onClick={() => setSignInMode("default")}
-            className="text-xs underline underline-offset-4 transition-colors"
+            className="text-xs transition-colors"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
           >
+            <ArrowLeft className="h-3 w-3 inline mr-1" />
             Try a different email
           </button>
         </div>
       );
     }
 
-    // Forgot password states
+    // Magic link input mode
+    if (signInMode === "magic-link") {
+      return (
+        <div className="space-y-5">
+          <button
+            type="button"
+            onClick={() => setSignInMode("default")}
+            className="flex items-center gap-1.5 text-xs transition-colors"
+            style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
+          >
+            <ArrowLeft className="h-3 w-3" /> Back to sign in
+          </button>
+
+          <div className="space-y-1">
+            <h2
+              className="text-xl font-medium"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Sign in with magic link
+            </h2>
+            <p
+              className="text-sm"
+              style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+            >
+              We&apos;ll send a login link to your email.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="magic-email" className="text-xs font-medium" style={labelStyle}>
+                Email address
+              </label>
+              <input
+                id="magic-email"
+                type="email"
+                required
+                placeholder="you@yourcompany.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full h-10 px-3 rounded text-sm outline-none transition-all"
+                style={inputStyle}
+                onFocus={handleFocusRing}
+                onBlur={handleBlurRing}
+              />
+            </div>
+            <PrimaryButton
+              label="Send magic link"
+              loadingLabel="Sending..."
+              pending={isMagicPending}
+              disabled={!email}
+              type="button"
+              onClick={handleMagicLink}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Forgot password
     if (signInMode === "forgot" || signInMode === "forgot-sent") {
       if (signInMode === "forgot-sent") {
         return (
@@ -471,7 +689,7 @@ function AuthCard() {
               onClick={switchBackToSignIn}
               className="flex items-center gap-1.5 text-xs transition-colors"
               style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
             >
               <ArrowLeft className="h-3 w-3" /> Back to sign in
@@ -480,16 +698,16 @@ function AuthCard() {
               <div className="flex justify-center">
                 <div
                   className="flex h-14 w-14 items-center justify-center rounded-full"
-                  style={{ background: "#A8FF3E15" }}
+                  style={{ background: "#c8f13515" }}
                 >
-                  <Mail className="h-7 w-7" style={{ color: "#A8FF3E" }} />
+                  <Mail className="h-7 w-7" style={{ color: "#c8f135" }} />
                 </div>
               </div>
               <h3
-                className="text-lg font-bold"
+                className="text-lg font-medium"
                 style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
               >
-                CHECK YOUR EMAIL
+                Check your email
               </h3>
               <p
                 className="text-sm"
@@ -504,7 +722,6 @@ function AuthCard() {
         );
       }
 
-      // Forgot password form
       return (
         <div className="space-y-5">
           <button
@@ -512,39 +729,32 @@ function AuthCard() {
             onClick={switchBackToSignIn}
             className="flex items-center gap-1.5 text-xs transition-colors"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
           >
             <ArrowLeft className="h-3 w-3" /> Back to sign in
           </button>
           <div className="space-y-1">
             <h2
-              className="text-xl font-bold uppercase tracking-wide"
-              style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
+              className="text-xl font-medium"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              RESET YOUR PASSWORD
+              Reset your password
             </h2>
-            <p
-              className="text-xs"
-              style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-            >
+            <p className="text-sm" style={{ color: "#666666", fontFamily: "var(--font-mono)" }}>
               Enter your email and we&apos;ll send you a reset link.
             </p>
           </div>
           <form onSubmit={handleForgotSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label
-                htmlFor="forgot-email"
-                className="text-xs uppercase tracking-widest"
-                style={labelStyle}
-              >
-                EMAIL
+              <label htmlFor="forgot-email" className="text-xs font-medium" style={labelStyle}>
+                Email address
               </label>
               <input
                 id="forgot-email"
                 type="email"
                 required
-                placeholder="you@yourmsp.com"
+                placeholder="you@yourcompany.com"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 className="w-full h-10 px-3 rounded text-sm outline-none transition-all"
@@ -554,7 +764,7 @@ function AuthCard() {
               />
             </div>
             <PrimaryButton
-              label="SEND RESET LINK"
+              label="Send reset link"
               loadingLabel="Sending..."
               pending={isForgotPending}
             />
@@ -567,13 +777,17 @@ function AuthCard() {
     return (
       <div className="space-y-5">
         <div className="space-y-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/stackteryx-logo.svg" alt="Stackteryx" height={32} style={{ height: 32, width: "auto" }} />
+          <h2
+            className="text-xl font-medium"
+            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+          >
+            Welcome back
+          </h2>
           <p
-            className="text-xs"
+            className="text-sm"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
           >
-            Sign in to your workspace
+            Sign in to your Stackteryx workspace
           </p>
         </div>
 
@@ -583,18 +797,14 @@ function AuthCard() {
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-2">
-            <label
-              htmlFor="signin-email"
-              className="text-xs uppercase tracking-widest"
-              style={labelStyle}
-            >
-              EMAIL
+            <label htmlFor="signin-email" className="text-xs font-medium" style={labelStyle}>
+              Email address
             </label>
             <input
               id="signin-email"
               type="email"
               required
-              placeholder="you@yourmsp.com"
+              placeholder="you@yourcompany.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full h-10 px-3 rounded text-sm outline-none transition-all"
@@ -607,7 +817,7 @@ function AuthCard() {
           <div className="space-y-1.5">
             <PasswordInput
               id="signin-password"
-              label="PASSWORD"
+              label="Password"
               value={password}
               onChange={setPassword}
             />
@@ -617,7 +827,7 @@ function AuthCard() {
                 onClick={switchToForgot}
                 style={{ color: "#666666", fontFamily: "var(--font-mono)", fontSize: 11 }}
                 className="transition-colors"
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
               >
                 Forgot password?
@@ -626,96 +836,96 @@ function AuthCard() {
           </div>
 
           {signInError && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
-              <p style={{ color: "#EF4444" }}>{signInError}</p>
+            <p style={{ color: "#EF4444", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+              {signInError}
               {isUnconfirmed && (
-                <button
-                  type="button"
-                  onClick={handleResendConfirmation}
-                  disabled={isResending}
-                  className="transition-colors mt-1"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono)", fontSize: 11 }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
-                >
-                  {isResending ? "Resending..." : "Resend confirmation →"}
-                </button>
+                <>
+                  <br />
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={isResending}
+                    className="transition-colors mt-1"
+                    style={{ color: "#666666", fontFamily: "var(--font-mono)", fontSize: 11 }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
+                  >
+                    {isResending ? "Resending..." : "Resend confirmation \u2192"}
+                  </button>
+                </>
               )}
-            </div>
+            </p>
           )}
 
           <PrimaryButton
-            label="SIGN IN"
+            label="Sign in"
             loadingLabel="Signing in..."
             pending={isPending}
           />
         </form>
 
-        <OrDivider />
-
-        <button
-          type="button"
-          onClick={handleMagicLink}
-          disabled={isMagicPending || !email}
-          className="w-full h-10 rounded text-sm font-medium transition-all disabled:opacity-50"
-          style={{
-            background: "transparent",
-            border: "1px solid #1E1E1E",
-            color: "#FFFFFF",
-            fontFamily: "var(--font-mono)",
-          }}
-          onMouseEnter={(e) => {
-            if (!isMagicPending) e.currentTarget.style.borderColor = "#333333";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "#1E1E1E";
-          }}
-        >
-          {isMagicPending ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Sending...
-            </span>
-          ) : (
-            "Send Magic Link"
-          )}
-        </button>
-
         <p
-          className="text-[10px]"
-          style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
+          className="text-center text-xs"
+          style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
         >
-          By signing in you agree to our Terms of Service
+          Prefer a magic link?{" "}
+          <button
+            type="button"
+            onClick={() => setSignInMode("magic-link")}
+            className="transition-colors underline underline-offset-2"
+            style={{ color: "#666666" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
+          >
+            Send me a login link
+          </button>
         </p>
+
+        <div className="text-center pt-2" style={{ borderTop: "1px solid #1E1E1E" }}>
+          <p className="text-sm pt-4" style={{ color: "#666666", fontFamily: "var(--font-mono)" }}>
+            Don&apos;t have an account?{" "}
+            <button
+              type="button"
+              onClick={() => switchTab("signup")}
+              className="font-medium transition-colors"
+              style={{ color: "#c8f135" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#d4f55c")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#c8f135")}
+            >
+              Sign up free
+            </button>
+          </p>
+        </div>
       </div>
     );
   }
 
+  // ── Render: Sign Up ────────────────────────────────────────
+
   function renderSignUpContent() {
-    // Success state — email confirmation
     if (signUpDone) {
       return (
         <div className="text-center space-y-5 py-4">
           <div className="flex justify-center">
             <div
               className="flex h-14 w-14 items-center justify-center rounded-full"
-              style={{ background: "#A8FF3E15" }}
+              style={{ background: "#c8f13515" }}
             >
-              <Mail className="h-7 w-7" style={{ color: "#A8FF3E" }} />
+              <Mail className="h-7 w-7" style={{ color: "#c8f135" }} />
             </div>
           </div>
           <h3
-            className="text-lg font-bold"
+            className="text-lg font-medium"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            CHECK YOUR EMAIL
+            Check your email
           </h3>
           <p
             className="text-sm"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
           >
             We sent a confirmation link to{" "}
-            <strong style={{ color: "#A8FF3E" }}>{signUpEmail}</strong>.
+            <strong style={{ color: "#c8f135" }}>{signUpEmail}</strong>.
             Click the link to activate your account.
           </p>
           <div className="space-y-2">
@@ -725,7 +935,7 @@ function AuthCard() {
               disabled={isResending}
               className="text-xs transition-colors"
               style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
             >
               {isResending ? "Resending..." : "Resend confirmation email"}
@@ -737,11 +947,12 @@ function AuthCard() {
                 setSignUpDone(false);
                 switchTab("signin");
               }}
-              className="text-xs underline underline-offset-4 transition-colors"
+              className="text-xs transition-colors"
               style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#A8FF3E")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666666")}
             >
+              <ArrowLeft className="h-3 w-3 inline mr-1" />
               Back to sign in
             </button>
           </div>
@@ -753,16 +964,16 @@ function AuthCard() {
       <div className="space-y-5">
         <div className="space-y-1">
           <h2
-            className="text-xl font-bold uppercase tracking-wide"
-            style={{ color: "#A8FF3E", fontFamily: "var(--font-display)" }}
+            className="text-xl font-medium"
+            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            CREATE ACCOUNT
+            Create your account
           </h2>
           <p
-            className="text-xs"
+            className="text-sm"
             style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
           >
-            Set up your Stackteryx workspace
+            Start your free Stackteryx account
           </p>
         </div>
 
@@ -772,12 +983,8 @@ function AuthCard() {
 
         <form onSubmit={handleSignUp} className="space-y-4">
           <div className="space-y-2">
-            <label
-              htmlFor="signup-name"
-              className="text-xs uppercase tracking-widest"
-              style={labelStyle}
-            >
-              FULL NAME
+            <label htmlFor="signup-name" className="text-xs font-medium" style={labelStyle}>
+              Full name
             </label>
             <input
               id="signup-name"
@@ -794,18 +1001,14 @@ function AuthCard() {
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="signup-email"
-              className="text-xs uppercase tracking-widest"
-              style={labelStyle}
-            >
-              EMAIL
+            <label htmlFor="signup-email" className="text-xs font-medium" style={labelStyle}>
+              Email address
             </label>
             <input
               id="signup-email"
               type="email"
               required
-              placeholder="you@yourmsp.com"
+              placeholder="you@yourcompany.com"
               value={signUpEmail}
               onChange={(e) => setSignUpEmail(e.target.value)}
               className="w-full h-10 px-3 rounded text-sm outline-none transition-all"
@@ -818,7 +1021,7 @@ function AuthCard() {
           <div>
             <PasswordInput
               id="signup-password"
-              label="PASSWORD"
+              label="Password"
               value={signUpPassword}
               onChange={setSignUpPassword}
             />
@@ -828,7 +1031,7 @@ function AuthCard() {
           <div>
             <PasswordInput
               id="signup-confirm"
-              label="CONFIRM PASSWORD"
+              label="Confirm password"
               value={signUpConfirm}
               onChange={(v) => {
                 setSignUpConfirm(v);
@@ -845,1210 +1048,96 @@ function AuthCard() {
             )}
           </div>
 
+          {signUpError && (
+            <p style={{ color: "#EF4444", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+              {signUpError}
+            </p>
+          )}
+
           <PrimaryButton
-            label="CREATE ACCOUNT"
+            label="Create account"
             loadingLabel="Creating account..."
             pending={isSignUpPending}
             disabled={!canSignUp}
           />
         </form>
 
-        <p
-          className="text-[10px]"
-          style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
-        >
-          By creating an account you agree to our Terms of Service
-        </p>
+        <div className="text-center pt-2" style={{ borderTop: "1px solid #1E1E1E" }}>
+          <p className="text-sm pt-4" style={{ color: "#666666", fontFamily: "var(--font-mono)" }}>
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => switchTab("signin")}
+              className="font-medium transition-colors"
+              style={{ color: "#c8f135" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#d4f55c")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#c8f135")}
+            >
+              Sign in
+            </button>
+          </p>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div
-      className="landing-fade-in landing-glow rounded-lg p-6 relative"
-      style={{
-        animationDelay: "700ms",
-        background: "#111111",
-        border: "1px solid #1E1E1E",
-        scrollMarginTop: "80px",
-      }}
-    >
-      {/* Top glow line */}
-      <div
-        className="absolute inset-x-0 top-0 h-px"
-        style={{
-          background: "linear-gradient(90deg, transparent, #A8FF3E60, transparent)",
-        }}
-      />
-
-      {/* Tab toggle */}
-      <div className="flex mb-5" style={{ borderBottom: "1px solid #1E1E1E" }}>
-        <button
-          type="button"
-          onClick={() => switchTab("signin")}
-          className="flex-1 pb-3 text-xs uppercase tracking-widest font-medium transition-colors"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: tab === "signin" ? "#A8FF3E" : "#444444",
-            borderBottom: tab === "signin" ? "2px solid #A8FF3E" : "2px solid transparent",
-          }}
-        >
-          Sign In
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTab("signup")}
-          className="flex-1 pb-3 text-xs uppercase tracking-widest font-medium transition-colors"
-          style={{
-            fontFamily: "var(--font-mono)",
-            color: tab === "signup" ? "#A8FF3E" : "#444444",
-            borderBottom: tab === "signup" ? "2px solid #A8FF3E" : "2px solid transparent",
-          }}
-        >
-          Create Account
-        </button>
-      </div>
-
-      {tab === "signin" ? renderSignInContent() : renderSignUpContent()}
-    </div>
-  );
+  return tab === "signin" ? renderSignInContent() : renderSignUpContent();
 }
-
 
 // ── Main page component ──────────────────────────────────────
 
 export default function LoginPage() {
-  function scrollToLogin(e: React.MouseEvent) {
-    e.preventDefault();
-    document.getElementById("login")?.scrollIntoView({ behavior: "smooth" });
-  }
-
-  function scrollToSection(e: React.MouseEvent, id: string) {
-    e.preventDefault();
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  }
-
   return (
-    <div className="min-h-screen" style={{ background: "#0A0A0A", scrollPaddingTop: "80px" }}>
-
-      {/* ═══════════════════════════════════════════════════════
-          NAVIGATION BAR
-          ═══════════════════════════════════════════════════════ */}
-      <nav
-        className="sticky top-0 z-50 flex items-center justify-between h-16 px-6"
-        style={{
-          background: "#0A0A0AEE",
-          borderBottom: "1px solid #1E1E1E",
-          backdropFilter: "blur(12px)",
-        }}
-      >
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      style={{ background: "#0A0A0A" }}
+    >
+      {/* Logo + tagline */}
+      <div className="text-center mb-8 space-y-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
+        <img
+          src="/stackteryx-logo.svg"
+          alt="Stackteryx"
+          height={28}
+          style={{ height: 28, width: "auto" }}
+          className="mx-auto"
+        />
+        <p
+          className="text-[13px]"
+          style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
+        >
+          The service economics platform for MSPs
+        </p>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="/fractional-cto"
-            className="h-8 px-4 flex items-center gap-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
-            style={{
-              color: "#c8f135",
-              border: "1px solid #c8f13540",
-              fontFamily: "var(--font-display)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#c8f135";
-              e.currentTarget.style.background = "#c8f13510";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#c8f13540";
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            Free CTO Brief
-          </a>
-          <a
-            href="#login"
-            onClick={scrollToLogin}
-            className="h-8 px-4 flex items-center rounded text-xs font-bold uppercase tracking-wider transition-all"
-            style={{
-              color: "#FFFFFF",
-              border: "1px solid #1E1E1E",
-              fontFamily: "var(--font-display)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#c8f135";
-              e.currentTarget.style.color = "#c8f135";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#1E1E1E";
-              e.currentTarget.style.color = "#FFFFFF";
-            }}
-          >
-            Log In
-          </a>
-          <a
-            href="#login"
-            onClick={scrollToLogin}
-            className="h-8 px-4 flex items-center rounded text-xs font-bold uppercase tracking-wider transition-all"
-            style={{
-              background: "#c8f135",
-              color: "#0A0A0A",
-              fontFamily: "var(--font-display)",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-          >
-            Sign Up
-          </a>
-        </div>
-      </nav>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 1 — HERO + LOGIN
-          ═══════════════════════════════════════════════════════ */}
-      <section
-        className="relative min-h-[calc(100vh-64px)] flex items-center"
+      {/* Auth card */}
+      <div
+        className="w-full rounded-xl p-8 relative"
         style={{
-          backgroundImage:
-            "linear-gradient(#c8f13508 1px, transparent 1px), linear-gradient(90deg, #c8f13508 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
+          maxWidth: 400,
+          background: "#111111",
+          border: "0.5px solid rgba(255,255,255,0.08)",
         }}
       >
-        <div className="w-full max-w-7xl mx-auto px-6 py-16 lg:py-0">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
-
-            {/* Left — Headline */}
-            <div className="lg:col-span-3 space-y-8">
-              {/* Eyebrow */}
-              <p
-                className="landing-fade-in text-xs uppercase tracking-[0.3em] font-bold"
-                style={{ color: "#c8f135", fontFamily: "var(--font-mono)", animationDelay: "0ms" }}
-              >
-                THE SERVICE ECONOMICS PLATFORM FOR MSPS
-              </p>
-
-              <h1
-                className="text-[40px] md:text-[60px] lg:text-[72px] font-extrabold leading-[0.95] tracking-tight"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "0ms" }}>
-                  Your MSP deserves
-                </span>
-                <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "60ms" }}>
-                  better than
-                </span>
-                <span
-                  className="landing-word landing-glow-text block"
-                  style={{ color: "#c8f135", animationDelay: "120ms" }}
-                >
-                  a spreadsheet.
-                </span>
-              </h1>
-
-              <p
-                className="landing-fade-in max-w-xl text-[15px] leading-relaxed"
-                style={{
-                  color: "#999999",
-                  animationDelay: "300ms",
-                  fontFamily: "var(--font-mono)",
-                }}
-              >
-                Most MSPs price services on gut instinct and track margins in Excel.
-                Stackteryx replaces the guesswork with real unit economics — so every
-                service you sell is profitable by design.
-              </p>
-
-              {/* CTA buttons */}
-              <div
-                className="landing-fade-in flex flex-wrap items-center gap-4 pt-2"
-                style={{ animationDelay: "450ms" }}
-              >
-                <a
-                  href="#login"
-                  onClick={scrollToLogin}
-                  className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-                  style={{
-                    background: "#c8f135",
-                    color: "#0A0A0A",
-                    fontFamily: "var(--font-display)",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-                >
-                  Start Free
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-                <a
-                  href="#how-it-works"
-                  onClick={(e) => scrollToSection(e, "how-it-works")}
-                  className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-                  style={{
-                    color: "#FFFFFF",
-                    border: "1px solid #1E1E1E",
-                    fontFamily: "var(--font-display)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#c8f135";
-                    e.currentTarget.style.color = "#c8f135";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#1E1E1E";
-                    e.currentTarget.style.color = "#FFFFFF";
-                  }}
-                >
-                  See How It Works
-                </a>
-              </div>
-
-              {/* Credibility line */}
-              <p
-                className="landing-fade-in text-xs"
-                style={{
-                  color: "#444444",
-                  animationDelay: "550ms",
-                  fontFamily: "var(--font-mono)",
-                }}
-              >
-                Free forever for one service. No credit card required.
-              </p>
-            </div>
-
-            {/* Right — Login Card */}
-            <div className="lg:col-span-2" id="login">
-              <Suspense fallback={
-                <div
-                  className="landing-fade-in landing-glow rounded-lg p-6 relative"
-                  style={{
-                    animationDelay: "700ms",
-                    background: "#111111",
-                    border: "1px solid #1E1E1E",
-                    scrollMarginTop: "80px",
-                    minHeight: 400,
-                  }}
-                >
-                  <div
-                    className="absolute inset-x-0 top-0 h-px"
-                    style={{ background: "linear-gradient(90deg, transparent, #A8FF3E60, transparent)" }}
-                  />
-                </div>
-              }>
-                <AuthCard />
-              </Suspense>
-            </div>
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "#666666" }} />
           </div>
-        </div>
-      </section>
+        }>
+          <AuthCard />
+        </Suspense>
+      </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 2 — THE PAIN
-          ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-6 text-center space-y-12">
-          <div className="space-y-4">
-            <p
-              className="text-xs uppercase tracking-[0.3em] font-bold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-            >
-              THE PROBLEM
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-extrabold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Sound familiar?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 — Profitability */}
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
-              >
-                <TrendingDown className="h-5 w-5" style={{ color: "#c8f135" }} />
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;Are we actually making money on this client?&rdquo;
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                You won the deal, but vendor costs crept up and scope expanded.
-                Six months later you&apos;re not sure the service is still profitable.
-              </p>
-            </div>
-
-            {/* Card 2 — Spreadsheets */}
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
-              >
-                <Table className="h-5 w-5" style={{ color: "#c8f135" }} />
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;Let me find the right spreadsheet...&rdquo;
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Pricing lives in a spreadsheet. Proposals live in another.
-                Cost data lives in a third. None of them agree.
-              </p>
-            </div>
-
-            {/* Card 3 — Positioning */}
-            <div
-              className="rounded-lg p-6 text-left space-y-3"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div
-                className="h-10 w-10 rounded-md flex items-center justify-center"
-                style={{ background: "#c8f13510" }}
-              >
-                <Target className="h-5 w-5" style={{ color: "#c8f135" }} />
-              </div>
-              <h3
-                className="text-base font-bold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                &ldquo;How do we differentiate from the MSP down the road?&rdquo;
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Every competitor sells &ldquo;managed security.&rdquo; Without
-                outcome-based positioning, you&apos;re competing on price alone.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 3 — THE BIG IDEA (interstitial)
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-3xl mx-auto px-6 text-center space-y-6">
-          <p
-            className="text-xs uppercase tracking-[0.3em] font-bold"
-            style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-          >
-            A BETTER WAY
-          </p>
-          <h2
-            className="text-3xl md:text-5xl font-extrabold leading-tight"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            What if every service you sold was{" "}
-            <span style={{ color: "#c8f135" }}>profitable by design?</span>
-          </h2>
-          <p
-            className="text-base leading-relaxed max-w-2xl mx-auto"
-            style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
-          >
-            Stackteryx connects your service catalog, vendor costs, and pricing in one
-            place — then uses AI to help you build, price, and sell services that
-            actually make money.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — SPREADSHEET VS STACKTERYX
-          ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-20 md:py-28">
-        <div className="max-w-4xl mx-auto px-6 space-y-12">
-          <div className="text-center space-y-4">
-            <p
-              className="text-xs uppercase tracking-[0.3em] font-bold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-            >
-              THE COMPARISON
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-extrabold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Spreadsheet vs. Stackteryx
-            </h2>
-          </div>
-
-          <div
-            className="rounded-lg overflow-hidden"
-            style={{ border: "1px solid #1E1E1E" }}
-          >
-            <table className="w-full text-sm" style={{ fontFamily: "var(--font-mono)" }}>
-              <thead>
-                <tr style={{ background: "#0A0A0A" }}>
-                  <th
-                    className="text-left px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#666666" }}
-                  >
-                    Capability
-                  </th>
-                  <th
-                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#666666" }}
-                  >
-                    Spreadsheet
-                  </th>
-                  <th
-                    className="text-center px-5 py-3 text-xs uppercase tracking-wider font-bold"
-                    style={{ color: "#c8f135" }}
-                  >
-                    Stackteryx
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Live unit-cost margins", false, true],
-                  ["Outcome-based service design", false, true],
-                  ["One-click proposal generation", false, true],
-                  ["Multi-tier pricing engine", false, true],
-                  ["AI technology advisory", false, true],
-                  ["Portfolio-wide profitability view", false, true],
-                  ["Client compliance scoring", false, true],
-                ].map(([label, spreadsheet, stx], i) => (
-                  <tr
-                    key={i}
-                    style={{
-                      background: i % 2 === 0 ? "#111111" : "#0A0A0A",
-                      borderTop: "1px solid #1E1E1E",
-                    }}
-                  >
-                    <td className="px-5 py-3" style={{ color: "#CCCCCC" }}>
-                      {label as string}
-                    </td>
-                    <td className="text-center px-5 py-3" style={{ color: "#EF4444" }}>
-                      {spreadsheet ? "✓" : "✗"}
-                    </td>
-                    <td className="text-center px-5 py-3" style={{ color: "#c8f135" }}>
-                      {stx ? "✓" : "✗"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 5 — HOW IT WORKS
-          ═══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-5xl mx-auto px-6 space-y-12">
-          <div className="text-center space-y-4">
-            <p
-              className="text-xs uppercase tracking-[0.3em] font-bold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-            >
-              HOW IT WORKS
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-extrabold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Four steps to profitable services
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                step: "01",
-                title: "Define the Outcome",
-                desc: "Start with the business problem your service solves — not the tools in the stack.",
-                Icon: Target,
-              },
-              {
-                step: "02",
-                title: "Build the Stack",
-                desc: "Add vendor tools, set unit costs, and let the pricing engine calculate margins automatically.",
-                Icon: Wrench,
-              },
-              {
-                step: "03",
-                title: "Price with Confidence",
-                desc: "Multi-tier pricing (Good / Better / Best) with real-time margin visibility on every tier.",
-                Icon: DollarSign,
-              },
-              {
-                step: "04",
-                title: "Sell and Deliver",
-                desc: "Generate branded proposals, track contracts, and monitor profitability across your portfolio.",
-                Icon: FileText,
-              },
-            ].map(({ step, title, desc, Icon }) => (
-              <div
-                key={step}
-                className="rounded-lg p-6 space-y-3"
-                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-              >
-                <span
-                  className="text-xs font-bold uppercase tracking-wider"
-                  style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-                >
-                  STEP {step}
-                </span>
-                <div
-                  className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13510" }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: "#c8f135" }} />
-                </div>
-                <h3
-                  className="text-base font-bold"
-                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                >
-                  {desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 6 — FRACTIONAL CTO
-          ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <p
-                className="text-xs uppercase tracking-[0.3em] font-bold"
-                style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-              >
-                FRACTIONAL CTO
-              </p>
-              <h2
-                className="text-3xl md:text-4xl font-extrabold"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                Give every client a CTO —{" "}
-                <span style={{ color: "#c8f135" }}>without hiring one.</span>
-              </h2>
-              <p
-                className="text-base leading-relaxed"
-                style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
-              >
-                Generate executive-grade Technology Strategy Briefs that surface
-                risks, recommend actions, and position your MSP as a strategic
-                advisor — not just a vendor.
-              </p>
-
-              <div className="space-y-4 pt-2">
-                {[
-                  {
-                    title: "AI-Generated Briefs",
-                    desc: "Quarterly technology strategy reports tailored to each client's industry and stack.",
-                  },
-                  {
-                    title: "Risk Intelligence",
-                    desc: "Surface technology risks before they become incidents. Clients see you as proactive, not reactive.",
-                  },
-                  {
-                    title: "Revenue Expansion",
-                    desc: "Every brief is a conversation starter for new services. Advisory becomes a billable offering.",
-                  },
-                ].map(({ title, desc }) => (
-                  <div
-                    key={title}
-                    className="flex items-start gap-3"
-                  >
-                    <div
-                      className="flex-shrink-0 h-6 w-6 rounded flex items-center justify-center mt-0.5"
-                      style={{ background: "#c8f13515" }}
-                    >
-                      <Brain className="h-3.5 w-3.5" style={{ color: "#c8f135" }} />
-                    </div>
-                    <div>
-                      <p
-                        className="text-sm font-bold"
-                        style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                      >
-                        {title}
-                      </p>
-                      <p
-                        className="text-sm leading-relaxed"
-                        style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                      >
-                        {desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <a
-                href="/fractional-cto"
-                className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider transition-colors"
-                style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#d4f55c")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#c8f135")}
-              >
-                Try a Free CTO Brief
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-
-            {/* Right — visual */}
-            <div
-              className="rounded-lg p-8 space-y-4"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13515" }}
-                >
-                  <Brain className="h-5 w-5" style={{ color: "#c8f135" }} />
-                </div>
-                <div>
-                  <p
-                    className="text-sm font-bold"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                  >
-                    Technology Strategy Brief
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                  >
-                    Q1 2026 &middot; Healthcare
-                  </p>
-                </div>
-              </div>
-              <div
-                className="h-px w-full"
-                style={{ background: "#1E1E1E" }}
-              />
-              {[
-                { label: "Technology Risks", value: "3 identified", color: "#EF4444" },
-                { label: "Strategic Recommendations", value: "5 actions", color: "#c8f135" },
-                { label: "Budget Guidance", value: "$24k–$36k/yr", color: "#3B82F6" },
-                { label: "Compliance Gaps", value: "2 critical", color: "#F59E0B" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
-                    {label}
-                  </span>
-                  <span className="text-sm font-bold" style={{ color, fontFamily: "var(--font-mono)" }}>
-                    {value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 7 — WHAT'S INSIDE
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-6xl mx-auto px-6 space-y-12">
-          <div className="text-center space-y-4">
-            <p
-              className="text-xs uppercase tracking-[0.3em] font-bold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-            >
-              PLATFORM
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-extrabold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Everything you need to run profitable services
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                Icon: Package,
-                title: "Service Builder",
-                desc: "Define services around business outcomes, not tools. Structure what you sell and why it matters.",
-              },
-              {
-                Icon: Wrench,
-                title: "Bundle Configurator",
-                desc: "Assemble vendor tools into service bundles with per-unit cost tracking built in.",
-              },
-              {
-                Icon: DollarSign,
-                title: "Pricing Engine",
-                desc: "Good / Better / Best tiers with real-time margin calculations. No more guesswork.",
-              },
-              {
-                Icon: FileText,
-                title: "Sales Studio",
-                desc: "Generate branded, client-ready proposals in seconds — pre-filled with your pricing and positioning.",
-              },
-              {
-                Icon: Brain,
-                title: "Fractional CTO",
-                desc: "AI-generated Technology Strategy Briefs that position you as a strategic advisor.",
-              },
-              {
-                Icon: BarChart2,
-                title: "Portfolio Intelligence",
-                desc: "See profitability across every client and service. Spot margin erosion before it hurts.",
-              },
-              {
-                Icon: Sparkles,
-                title: "AI Service Architect",
-                desc: "Describe what you want to build — AI structures the service, suggests tools, and sets pricing.",
-              },
-            ].map(({ Icon, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-lg p-5 space-y-3 transition-colors"
-                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f13540")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1E1E1E")}
-              >
-                <div
-                  className="h-9 w-9 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13510" }}
-                >
-                  <Icon className="h-4.5 w-4.5" style={{ color: "#c8f135" }} />
-                </div>
-                <h3
-                  className="text-sm font-bold"
-                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                >
-                  {desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 8 — PRICING
-          ═══════════════════════════════════════════════════════ */}
-      <section id="pricing" style={{ background: "#111111" }} className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-6 space-y-12">
-          <div className="text-center space-y-4">
-            <p
-              className="text-xs uppercase tracking-[0.3em] font-bold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-            >
-              PRICING
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-extrabold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Start free. Scale when you&apos;re ready.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Free */}
-            <div
-              className="rounded-lg p-6 space-y-5"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div>
-                <p
-                  className="text-xs uppercase tracking-wider font-bold"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                >
-                  Free
-                </p>
-                <p className="mt-2">
-                  <span
-                    className="text-4xl font-extrabold"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                  >
-                    $0
-                  </span>
-                  <span
-                    className="text-sm ml-1"
-                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                  >
-                    /month
-                  </span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "1 service bundle",
-                  "2 proposals / month",
-                  "1 CTO brief / month",
-                  "Community support",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
-                    <span style={{ color: "#c8f135" }}>✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="#login"
-                onClick={scrollToLogin}
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{
-                  color: "#FFFFFF",
-                  border: "1px solid #1E1E1E",
-                  fontFamily: "var(--font-display)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#c8f135";
-                  e.currentTarget.style.color = "#c8f135";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#1E1E1E";
-                  e.currentTarget.style.color = "#FFFFFF";
-                }}
-              >
-                Get Started
-              </a>
-            </div>
-
-            {/* Pro — highlighted */}
-            <div
-              className="rounded-lg p-6 space-y-5 relative"
-              style={{ background: "#0A0A0A", border: "2px solid #c8f135" }}
-            >
-              <div
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
-                style={{
-                  background: "#c8f135",
-                  color: "#0A0A0A",
-                  fontFamily: "var(--font-display)",
-                }}
-              >
-                Most Popular
-              </div>
-              <div>
-                <p
-                  className="text-xs uppercase tracking-wider font-bold"
-                  style={{ color: "#c8f135", fontFamily: "var(--font-mono)" }}
-                >
-                  Pro
-                </p>
-                <p className="mt-2">
-                  <span
-                    className="text-4xl font-extrabold"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                  >
-                    $149
-                  </span>
-                  <span
-                    className="text-sm ml-1"
-                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                  >
-                    /month
-                  </span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "10 service bundles",
-                  "25 proposals / month",
-                  "10 CTO briefs / month",
-                  "Custom branding",
-                  "Priority support",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
-                    <span style={{ color: "#c8f135" }}>✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="#login"
-                onClick={scrollToLogin}
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{
-                  background: "#c8f135",
-                  color: "#0A0A0A",
-                  fontFamily: "var(--font-display)",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-              >
-                Start Free Trial
-              </a>
-            </div>
-
-            {/* Enterprise */}
-            <div
-              className="rounded-lg p-6 space-y-5"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div>
-                <p
-                  className="text-xs uppercase tracking-wider font-bold"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                >
-                  Enterprise
-                </p>
-                <p className="mt-2">
-                  <span
-                    className="text-4xl font-extrabold"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                  >
-                    $399
-                  </span>
-                  <span
-                    className="text-sm ml-1"
-                    style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-                  >
-                    /month
-                  </span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "Unlimited bundles",
-                  "Unlimited proposals",
-                  "Unlimited CTO briefs",
-                  "White-label exports",
-                  "Team seats",
-                  "Dedicated support",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono)" }}>
-                    <span style={{ color: "#c8f135" }}>✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="#login"
-                onClick={scrollToLogin}
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{
-                  color: "#FFFFFF",
-                  border: "1px solid #1E1E1E",
-                  fontFamily: "var(--font-display)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#c8f135";
-                  e.currentTarget.style.color = "#c8f135";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#1E1E1E";
-                  e.currentTarget.style.color = "#FFFFFF";
-                }}
-              >
-                Get Started
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 9 — FINAL CTA
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
-          <h2
-            className="text-3xl md:text-5xl font-extrabold leading-tight"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            Stop guessing. Start building{" "}
-            <span style={{ color: "#c8f135" }}>profitable services.</span>
-          </h2>
-          <p
-            className="text-base leading-relaxed max-w-xl mx-auto"
-            style={{ color: "#999999", fontFamily: "var(--font-mono)" }}
-          >
-            Join MSPs who use Stackteryx to design, price, and sell services
-            with confidence.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a
-              href="#login"
-              onClick={scrollToLogin}
-              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-              style={{
-                background: "#c8f135",
-                color: "#0A0A0A",
-                fontFamily: "var(--font-display)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-            >
-              Start Free
-              <ArrowRight className="h-4 w-4" />
-            </a>
-            <a
-              href="#pricing"
-              onClick={(e) => scrollToSection(e, "pricing")}
-              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-              style={{
-                color: "#FFFFFF",
-                border: "1px solid #1E1E1E",
-                fontFamily: "var(--font-display)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#c8f135";
-                e.currentTarget.style.color = "#c8f135";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#1E1E1E";
-                e.currentTarget.style.color = "#FFFFFF";
-              }}
-            >
-              View Pricing
-            </a>
-          </div>
-          <p
-            className="text-xs"
-            style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-          >
-            No credit card required. Free to start.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          FOOTER
-          ═══════════════════════════════════════════════════════ */}
-      <footer
-        className="py-12"
-        style={{ background: "#0A0A0A", borderTop: "1px solid #1E1E1E" }}
+      {/* Terms */}
+      <p
+        className="mt-6 text-center text-[11px] max-w-xs"
+        style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
       >
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {/* Column 1 — Brand */}
-            <div className="col-span-2 md:col-span-1 space-y-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
-              <p
-                className="text-xs leading-relaxed"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                The service economics platform for MSPs.
-              </p>
-            </div>
-
-            {/* Column 2 — Product */}
-            <div className="space-y-2">
-              <p
-                className="text-xs uppercase tracking-wider font-bold"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Product
-              </p>
-              {[
-                { label: "How It Works", href: "#how-it-works" },
-                { label: "Pricing", href: "#pricing" },
-                { label: "Free CTO Brief", href: "/fractional-cto" },
-              ].map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  onClick={href.startsWith("#") ? (e) => scrollToSection(e, href.slice(1)) : undefined}
-                  className="block text-xs transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-                >
-                  {label}
-                </a>
-              ))}
-            </div>
-
-            {/* Column 3 — Platform */}
-            <div className="space-y-2">
-              <p
-                className="text-xs uppercase tracking-wider font-bold"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Platform
-              </p>
-              {[
-                { label: "Service Builder", href: "#login" },
-                { label: "Sales Studio", href: "#login" },
-                { label: "Portfolio Intelligence", href: "#login" },
-              ].map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  onClick={scrollToLogin}
-                  className="block text-xs transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-                >
-                  {label}
-                </a>
-              ))}
-            </div>
-
-            {/* Column 4 — Legal */}
-            <div className="space-y-2">
-              <p
-                className="text-xs uppercase tracking-wider font-bold"
-                style={{ color: "#666666", fontFamily: "var(--font-mono)" }}
-              >
-                Legal
-              </p>
-              {["Terms", "Privacy", "Contact"].map((label) => (
-                <span
-                  key={label}
-                  className="block text-xs cursor-pointer transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="mt-8 pt-6 text-center"
-            style={{ borderTop: "1px solid #1E1E1E" }}
-          >
-            <span
-              className="text-xs"
-              style={{ color: "#333333", fontFamily: "var(--font-mono)" }}
-            >
-              &copy; 2025 Stackteryx. Built for MSPs.
-            </span>
-          </div>
-        </div>
-      </footer>
+        By continuing, you agree to our{" "}
+        <Link href="#" className="underline underline-offset-2 transition-colors hover:text-[#666666]">Terms of Service</Link>
+        {" "}and{" "}
+        <Link href="#" className="underline underline-offset-2 transition-colors hover:text-[#666666]">Privacy Policy</Link>
+      </p>
     </div>
   );
 }
-

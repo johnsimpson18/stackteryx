@@ -12,6 +12,7 @@ import { logAudit } from "@/lib/db/audit";
 import { hasOrgPermission } from "@/lib/constants";
 import { requireOrgMembership } from "@/lib/org-context";
 import type { ActionResult, OrgRole } from "@/lib/types";
+import { checkLimit } from "@/actions/billing";
 
 export async function changeRoleAction(
   userId: string,
@@ -97,6 +98,12 @@ export async function inviteMemberAction(
         success: false,
         error: "You do not have permission to invite members",
       };
+    }
+
+    // Plan limit check — team members
+    const memberLimit = await checkLimit("teamMembers");
+    if (!memberLimit.allowed) {
+      return { success: false, error: "LIMIT_REACHED" };
     }
 
     // TODO: In a future phase, send an actual invitation email.

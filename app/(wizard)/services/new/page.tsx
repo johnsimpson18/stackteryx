@@ -7,7 +7,7 @@ import { getTools } from "@/lib/db/tools";
 import { getOrgSettings } from "@/lib/db/org-settings";
 import { getActiveOrgId } from "@/lib/org-context";
 import { getAdditionalServicesByOrgId } from "@/lib/db/additional-services";
-import { getBundleById, getInProgressBundle } from "@/lib/db/bundles";
+import { getBundles, getBundleById, getInProgressBundle } from "@/lib/db/bundles";
 import { getServiceOutcome } from "@/lib/db/service-outcomes";
 import { getVersionsByBundleId, getVersionById } from "@/lib/db/bundle-versions";
 import { ServiceWizardShell } from "@/components/service-wizard/wizard-shell";
@@ -24,11 +24,14 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
   const orgId = await getActiveOrgId();
   if (!orgId) redirect("/dashboard");
 
-  const [tools, settings, additionalServices] = await Promise.all([
+  const [tools, settings, additionalServices, allBundles] = await Promise.all([
     getTools(orgId, { is_active: true }),
     getOrgSettings(orgId),
     getAdditionalServicesByOrgId(orgId, "active"),
+    getBundles(orgId),
   ]);
+
+  const activeServiceCount = allBundles.filter((b) => b.status === "active").length;
 
   const params = await searchParams;
 
@@ -54,11 +57,14 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
 
       initialData = {
         bundleId: bundle.id,
+        bundleName: bundle.name,
         step: Math.min(bundle.wizard_step_completed + 1, 6),
         outcome,
         version: latestVersion,
         versionToolIds,
         bundleType: bundle.bundle_type as BundleType,
+        subtitle: bundle.subtitle ?? null,
+        complianceFrameworks: bundle.compliance_frameworks ?? [],
       };
     }
   } else {
@@ -73,6 +79,7 @@ export default async function NewServiceWizardPage({ searchParams }: PageProps) 
     <ServiceWizardShell
       tools={tools}
       additionalServices={additionalServices}
+      activeServiceCount={activeServiceCount}
       defaults={{
         target_margin_pct: settings?.default_target_margin_pct ?? 0.35,
         overhead_pct: settings?.default_overhead_pct ?? 0.1,
