@@ -3,16 +3,55 @@ import { getStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import type Stripe from "stripe";
 
-// TODO: Register this webhook endpoint in Stripe Dashboard:
+// Register this webhook endpoint in Stripe Dashboard:
 //   URL: https://[your-domain]/api/webhooks/stripe
-//   Events: checkout.session.completed, customer.subscription.updated,
-//           customer.subscription.deleted, invoice.payment_failed
+//   Events: checkout.session.completed, customer.subscription.created,
+//           customer.subscription.updated, customer.subscription.deleted,
+//           invoice.payment_failed
 
 /** Resolve a Stripe price ID to a plan name. */
 function planFromPriceId(priceId: string | undefined): "free" | "pro" | "enterprise" {
   if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) return "enterprise";
   if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
   return "free";
+}
+
+/** Extract and upsert subscription details from a Stripe Subscription object. */
+async function syncSubscriptionFromStripe(
+  sub: Stripe.Subscription,
+  service: ReturnType<typeof createServiceClient>,
+) {
+  const firstItem = sub.items.data[0];
+  const currentPriceId = firstItem?.price?.id;
+  const plan = planFromPriceId(currentPriceId);
+
+  const periodStart = firstItem?.current_period_start;
+  const periodEnd = firstItem?.current_period_end;
+
+  const customerId =
+    typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+  await service
+    .from("subscriptions")
+    .update({
+      status:
+        sub.status === "active"
+          ? "active"
+          : sub.status === "past_due"
+            ? "past_due"
+            : sub.status,
+      plan,
+      stripe_customer_id: customerId ?? null,
+      current_period_start: periodStart
+        ? new Date(periodStart * 1000).toISOString()
+        : null,
+      current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
+        : null,
+      cancel_at_period_end: sub.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_subscription_id", sub.id);
 }
 
 export async function POST(request: NextRequest) {
@@ -55,14 +94,23 @@ export async function POST(request: NextRequest) {
           ? session.customer
           : session.customer?.id;
 
-      // Retrieve the subscription to determine the plan from the price ID
+      // Retrieve the full subscription to get plan + period dates
       let plan: "pro" | "enterprise" = "pro";
+      let periodStart: string | null = null;
+      let periodEnd: string | null = null;
       if (subscriptionId) {
         const sub = await getStripe().subscriptions.retrieve(subscriptionId);
-        const priceId = sub.items.data[0]?.price?.id;
+        const firstItem = sub.items.data[0];
+        const priceId = firstItem?.price?.id;
         const detected = planFromPriceId(priceId);
         if (detected === "pro" || detected === "enterprise") {
           plan = detected;
+        }
+        if (firstItem?.current_period_start) {
+          periodStart = new Date(firstItem.current_period_start * 1000).toISOString();
+        }
+        if (firstItem?.current_period_end) {
+          periodEnd = new Date(firstItem.current_period_end * 1000).toISOString();
         }
       }
 
@@ -75,6 +123,8 @@ export async function POST(request: NextRequest) {
             status: "active",
             stripe_subscription_id: subscriptionId ?? null,
             stripe_customer_id: customerId ?? null,
+            current_period_start: periodStart,
+            current_period_end: periodEnd,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "org_id" },
@@ -83,34 +133,10 @@ export async function POST(request: NextRequest) {
       break;
     }
 
+    case "customer.subscription.created":
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
-
-      // Determine plan from price
-      const firstItem = sub.items.data[0];
-      const currentPriceId = firstItem?.price?.id;
-      const plan = planFromPriceId(currentPriceId);
-
-      // Period fields are on the subscription item in newer Stripe API versions
-      const periodStart = firstItem?.current_period_start;
-      const periodEnd = firstItem?.current_period_end;
-
-      await service
-        .from("subscriptions")
-        .update({
-          status: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : sub.status,
-          plan,
-          current_period_start: periodStart
-            ? new Date(periodStart * 1000).toISOString()
-            : null,
-          current_period_end: periodEnd
-            ? new Date(periodEnd * 1000).toISOString()
-            : null,
-          cancel_at_period_end: sub.cancel_at_period_end,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("stripe_subscription_id", sub.id);
-
+      await syncSubscriptionFromStripe(sub, service);
       break;
     }
 

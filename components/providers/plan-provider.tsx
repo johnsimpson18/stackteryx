@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import {
-  getOrgSubscription,
+  syncSubscriptionWithStripe,
   getOrgUsage,
   type UsageRecord,
 } from "@/actions/billing";
@@ -54,7 +54,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     if (CLIENT_BYPASS) return;
     try {
       const [sub, u] = await Promise.all([
-        getOrgSubscription(),
+        syncSubscriptionWithStripe(),
         getOrgUsage(),
       ]);
       setPlan(sub.plan);

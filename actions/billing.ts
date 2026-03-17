@@ -129,6 +129,91 @@ export async function getOrgSubscription(): Promise<SubscriptionRecord> {
   };
 }
 
+// ── Stripe ↔ DB Reconciliation ───────────────────────────────────────────────
+
+/**
+ * Reconcile the local subscription record with the source of truth in Stripe.
+ * Call this when loading billing UI to self-heal missed webhooks.
+ */
+export async function syncSubscriptionWithStripe(): Promise<SubscriptionRecord> {
+  const orgId = await requireOrgId();
+  const service = createServiceClient();
+
+  const { data: sub } = await service
+    .from("subscriptions")
+    .select("*")
+    .eq("org_id", orgId)
+    .single();
+
+  // If comped, the subscription is managed outside Stripe — skip sync
+  if (sub?.comped) {
+    return buildSubscriptionRecord(orgId, sub);
+  }
+
+  const stripeSubId = sub?.stripe_subscription_id;
+  if (!stripeSubId) {
+    // No Stripe subscription linked — nothing to reconcile
+    return getOrgSubscription();
+  }
+
+  // Fetch the authoritative state from Stripe
+  const stripeSub = await getStripe().subscriptions.retrieve(stripeSubId);
+
+  const firstItem = stripeSub.items.data[0];
+  const priceId = firstItem?.price?.id;
+  const plan = planFromPriceId(priceId);
+  const periodStart = firstItem?.current_period_start;
+  const periodEnd = firstItem?.current_period_end;
+
+  const status =
+    stripeSub.status === "active"
+      ? "active"
+      : stripeSub.status === "past_due"
+        ? "past_due"
+        : stripeSub.status === "canceled"
+          ? "canceled"
+          : stripeSub.status;
+
+  const { data: updated } = await service
+    .from("subscriptions")
+    .update({
+      plan,
+      status,
+      current_period_start: periodStart
+        ? new Date(periodStart * 1000).toISOString()
+        : null,
+      current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
+        : null,
+      cancel_at_period_end: stripeSub.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("org_id", orgId)
+    .select()
+    .single();
+
+  return buildSubscriptionRecord(orgId, updated ?? sub);
+}
+
+function buildSubscriptionRecord(
+  orgId: string,
+  data: Record<string, unknown>,
+): SubscriptionRecord {
+  return {
+    orgId,
+    stripeCustomerId: (data.stripe_customer_id as string) ?? null,
+    stripeSubscriptionId: (data.stripe_subscription_id as string) ?? null,
+    plan: (data.plan as Plan) ?? "free",
+    status: (data.status as string) ?? "active",
+    currentPeriodEnd: (data.current_period_end as string) ?? null,
+    cancelAtPeriodEnd: (data.cancel_at_period_end as boolean) ?? false,
+    comped: (data.comped as boolean) ?? false,
+    compedBy: (data.comped_by as string) ?? null,
+    compedReason: (data.comped_reason as string) ?? null,
+    compedExpiresAt: (data.comped_expires_at as string) ?? null,
+  };
+}
+
 // ── Usage ───────────────────────────────────────────────────────────────────
 
 export async function getOrgUsage(): Promise<UsageRecord> {
