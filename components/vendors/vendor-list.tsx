@@ -118,7 +118,7 @@ export function VendorList({ vendors }: VendorListProps) {
                       <span className="text-sm">{vendor.cost_model_count}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-muted-foreground" suppressHydrationWarning>
                     {new Date(vendor.created_at).toLocaleDateString()}
                   </TableCell>
                 </TableRow>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,13 @@ export function AssignClientModal({
   const [clientId, setClientId] = useState("");
   const [versionId, setVersionId] = useState(versions[0]?.id ?? "");
   const [seatCount, setSeatCount] = useState(30);
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    setStartDate(new Date().toISOString().split("T")[0]);
+  }, []);
 
   const filteredClients = useMemo(() => {
     if (!search.trim()) return clients;

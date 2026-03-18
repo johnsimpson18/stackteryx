@@ -27,10 +27,17 @@ import { Search, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ClientWithContracts, ClientStatus } from "@/lib/types";
 
+interface HealthScoreSummary {
+  overallScore: number;
+  color: "green" | "amber" | "red";
+  scoreDelta: number | null;
+}
+
 interface ClientListProps {
   clients: ClientWithContracts[];
   userRole: string;
   complianceScores?: Record<string, number>;
+  healthScores?: Record<string, HealthScoreSummary>;
 }
 
 function daysUntil(dateStr: string): number {
@@ -49,7 +56,19 @@ function marginColor(margin: number): string {
 type SortField = "name" | "margin" | "mrr";
 type SortDir = "asc" | "desc";
 
-export function ClientList({ clients, userRole, complianceScores = {} }: ClientListProps) {
+function healthColor(color: "green" | "amber" | "red"): string {
+  if (color === "green") return "text-emerald-400";
+  if (color === "amber") return "text-amber-400";
+  return "text-red-400";
+}
+
+function healthDot(color: "green" | "amber" | "red"): string {
+  if (color === "green") return "bg-emerald-400";
+  if (color === "amber") return "bg-amber-400";
+  return "bg-red-400";
+}
+
+export function ClientList({ clients, userRole, complianceScores = {}, healthScores = {} }: ClientListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "all">("all");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -178,6 +197,7 @@ export function ClientList({ clients, userRole, complianceScores = {} }: ClientL
                   </Button>
                 </TableHead>
                 <TableHead>Renewal</TableHead>
+                <TableHead className="text-center">Health</TableHead>
                 <TableHead className="text-center">Compliance</TableHead>
               </TableRow>
             </TableHeader>
@@ -247,6 +267,7 @@ export function ClientList({ clients, userRole, complianceScores = {} }: ClientL
                             />
                           )}
                           <span
+                            suppressHydrationWarning
                             className={cn(
                               "text-xs",
                               expired
@@ -262,6 +283,23 @@ export function ClientList({ clients, userRole, complianceScores = {} }: ClientL
                                 ? "Expires today"
                                 : `${days}d`}
                           </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {healthScores[client.id] ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <span className={cn("h-1.5 w-1.5 rounded-full", healthDot(healthScores[client.id].color))} />
+                          <span className={cn("text-xs font-mono font-semibold", healthColor(healthScores[client.id].color))}>
+                            {healthScores[client.id].overallScore}
+                          </span>
+                          {healthScores[client.id].scoreDelta !== null && healthScores[client.id].scoreDelta !== 0 && (
+                            <span className={cn("text-[10px] font-mono", (healthScores[client.id].scoreDelta ?? 0) > 0 ? "text-emerald-500" : "text-red-500")}>
+                              {(healthScores[client.id].scoreDelta ?? 0) > 0 ? "+" : ""}{healthScores[client.id].scoreDelta}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>

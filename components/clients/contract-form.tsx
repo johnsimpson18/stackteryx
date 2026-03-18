@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -62,13 +62,16 @@ export function ContractForm({
   const [selectedBundleId, setSelectedBundleId] = useState("");
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [seatCount, setSeatCount] = useState(25);
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    setStartDate(new Date().toISOString().split("T")[0]);
+    setEndDate(
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    );
+  }, []);
 
   const availableVersions = selectedBundleId
     ? versionsByBundle[selectedBundleId] ?? []

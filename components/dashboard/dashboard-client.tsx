@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +34,13 @@ import { RenewalList } from "@/components/dashboard/renewal-list";
 import { AgentBadge } from "@/components/agents/agent-badge";
 import { AgentActivityFeed } from "@/components/agents/agent-activity-feed";
 import { AGENTS } from "@/lib/agents";
+import { NudgeFeed } from "@/components/scout/nudge-feed";
+import {
+  PracticeIntelligence,
+  PracticeIntelligencePlaceholder,
+} from "@/components/dashboard/practice-intelligence";
+import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
+import type { OrgSignals } from "@/lib/intelligence/signal-engine";
 import type { AgentActivityRecord } from "@/lib/agents/log-activity";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 import type { MRRServiceItem } from "@/components/dashboard/mrr-breakdown";
@@ -67,11 +74,14 @@ interface DashboardClientProps {
   orgCreatedAt: string | null;
   firstName: string | null;
   recentActivities: AgentActivityRecord[];
+  scoutNudges?: ScoutNudgeRecord[];
+  orgSignals?: OrgSignals | null;
+  serviceCount?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function getGreeting(): string {
+function computeGreeting(): string {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return "Good morning";
   if (h >= 12 && h < 17) return "Good afternoon";
@@ -97,14 +107,24 @@ export function DashboardClient({
   orgCreatedAt,
   firstName,
   recentActivities,
+  scoutNudges = [],
+  orgSignals = null,
+  serviceCount = 0,
 }: DashboardClientProps) {
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [greeting, setGreeting] = useState("Welcome back");
+  const [mounted, setMounted] = useState(false);
   const hasServices = bundles.length > 0;
+
+  useEffect(() => {
+    setGreeting(computeGreeting());
+    setMounted(true);
+  }, []);
 
   // Show welcome banner for 7 days after org creation
   const showWelcome = (() => {
-    if (welcomeDismissed || !orgCreatedAt) return false;
+    if (!mounted || welcomeDismissed || !orgCreatedAt) return false;
     const created = new Date(orgCreatedAt);
     const daysSinceCreation = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceCreation <= 7;
@@ -148,7 +168,7 @@ export function DashboardClient({
             className="text-2xl font-bold tracking-tight text-foreground"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            {getGreeting()}.
+            {greeting}.
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Your portfolio intelligence briefing
@@ -382,6 +402,13 @@ export function DashboardClient({
         </IntelligenceCard>
       </div>
 
+      {/* ── Practice Intelligence ───────────────────────────────────── */}
+      {serviceCount >= 3 && orgSignals ? (
+        <PracticeIntelligence signals={orgSignals} portfolioMrr={portfolioMrr} />
+      ) : serviceCount > 0 && serviceCount < 3 ? (
+        <PracticeIntelligencePlaceholder />
+      ) : null}
+
       {/* ── Agent Activity Feed ────────────────────────────────────── */}
       {recentActivities.length > 0 && (
         <div
@@ -440,7 +467,7 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* ── 5. Attention Feed — Scout · Portfolio Intelligence ────── */}
+      {/* ── 5. Scout Nudges — Portfolio Intelligence ────────────── */}
       <div
         style={{
           background: "#111111",
@@ -469,7 +496,7 @@ export function DashboardClient({
                 letterSpacing: "0.04em",
               }}
             >
-              Portfolio Intelligence
+              Scout · Portfolio Analyst
             </span>
             <span
               style={{
@@ -478,7 +505,11 @@ export function DashboardClient({
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              {attentionItems.length} signal{attentionItems.length !== 1 ? "s" : ""}
+              {scoutNudges.length > 0
+                ? `${scoutNudges.length} active signal${scoutNudges.length !== 1 ? "s" : ""}`
+                : attentionItems.length > 0
+                  ? `${attentionItems.length} signal${attentionItems.length !== 1 ? "s" : ""}`
+                  : ""}
             </span>
           </div>
           <Link
@@ -490,15 +521,17 @@ export function DashboardClient({
               textDecoration: "none",
             }}
           >
-            View full analysis &rarr;
+            View all &rarr;
           </Link>
         </div>
-        {attentionItems.length === 0 ? (
+        {scoutNudges.length > 0 ? (
+          <NudgeFeed nudges={scoutNudges} limit={3} />
+        ) : attentionItems.length > 0 ? (
+          <AttentionFeed items={attentionItems.slice(0, 3)} />
+        ) : (
           <p className="text-sm text-muted-foreground py-4 text-center">
             Scout sees no issues with your portfolio right now.
           </p>
-        ) : (
-          <AttentionFeed items={attentionItems.slice(0, 3)} />
         )}
       </div>
 

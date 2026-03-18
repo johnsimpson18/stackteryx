@@ -1714,7 +1714,7 @@ function PastProposals({
                       }
                     />
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-muted-foreground" suppressHydrationWarning>
                     {new Date(p.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">

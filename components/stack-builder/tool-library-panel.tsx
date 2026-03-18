@@ -31,11 +31,17 @@ const CATEGORY_DISPLAY_GROUPS: Record<ToolCategory, string> = {
   other: "Other",
 };
 
+interface ToolRecommendation {
+  toolId: string;
+  reason: string;
+}
+
 interface ToolLibraryPanelProps {
   tools: Tool[];
   stackToolIds: Set<string>;
   stackCategories: ToolCategory[];
   onAddTool: (tool: Tool) => void;
+  recommendations?: ToolRecommendation[];
 }
 
 export function ToolLibraryPanel({
@@ -43,6 +49,7 @@ export function ToolLibraryPanel({
   stackToolIds,
   stackCategories,
   onAddTool,
+  recommendations = [],
 }: ToolLibraryPanelProps) {
   const [search, setSearch] = useState("");
 
@@ -105,6 +112,63 @@ export function ToolLibraryPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
+        {/* Recommendations based on practice patterns */}
+        {recommendations.length > 0 && (() => {
+          const recTools = recommendations
+            .map((r) => {
+              const tool = tools.find((t) => t.id === r.toolId);
+              return tool ? { tool, reason: r.reason } : null;
+            })
+            .filter(Boolean) as { tool: Tool; reason: string }[];
+
+          if (recTools.length === 0) return null;
+
+          return (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-[11px] font-medium text-primary">
+                  Recommended for your practice
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 mb-1.5">
+                Based on how you&apos;ve built services before
+              </p>
+              <div className="space-y-1">
+                {recTools.slice(0, 3).map(({ tool, reason }) => {
+                  const inStack = stackToolIds.has(tool.id);
+                  const toolColors = CATEGORY_COLORS[tool.category];
+                  return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => !inStack && onAddTool(tool)}
+                      disabled={inStack}
+                      className={`w-full text-left rounded-lg border px-2.5 py-1.5 transition-colors text-xs ${
+                        inStack
+                          ? "opacity-40 cursor-default border-border bg-muted/30"
+                          : `cursor-pointer hover:border-primary/40 ${toolColors.border} ${toolColors.bg}`
+                      }`}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-foreground truncate flex-1">
+                          {tool.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          ${Number(tool.per_seat_cost).toFixed(0)}/seat
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-primary/60 truncate">
+                        {reason}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {grouped.size === 0 && (
           <p className="text-xs text-muted-foreground text-center py-6">
             {tools.length === 0

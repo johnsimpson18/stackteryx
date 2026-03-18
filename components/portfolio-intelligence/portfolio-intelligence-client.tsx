@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { AgentBadge } from "@/components/agents/agent-badge";
 import { AgentWorking } from "@/components/agents/agent-working";
 import { formatCurrency, formatPercent } from "@/lib/formatting";
+import { recalculateAllHealthScores } from "@/actions/client-health";
+import { NudgeFeed } from "@/components/scout/nudge-feed";
+import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
 import type { ToolCategory } from "@/lib/types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -54,6 +57,13 @@ interface CoverageRow {
   totalClients: number;
 }
 
+interface HealthScoreEntry {
+  overallScore: number;
+  grade: string;
+  color: string;
+  scoreDelta: number | null;
+}
+
 interface PortfolioIntelligenceClientProps {
   signals: Signal[];
   clientHealthRows: ClientHealthRow[];
@@ -62,6 +72,8 @@ interface PortfolioIntelligenceClientProps {
   opportunities: Opportunity[];
   coverageAnalysis: CoverageRow[];
   totalClientsWithContracts: number;
+  healthScores?: Record<string, HealthScoreEntry>;
+  scoutNudges?: ScoutNudgeRecord[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -103,15 +115,18 @@ export function PortfolioIntelligenceClient({
   opportunities,
   coverageAnalysis,
   totalClientsWithContracts,
+  healthScores = {},
+  scoutNudges = [],
 }: PortfolioIntelligenceClientProps) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [, startTransition] = useTransition();
 
   function handleRunAnalysis() {
     setAnalyzing(true);
-    // Simulate refresh by reloading the page data
-    setTimeout(() => {
+    startTransition(async () => {
+      await recalculateAllHealthScores();
       window.location.reload();
-    }, 2000);
+    });
   }
 
   // Group signals by type
@@ -168,6 +183,35 @@ export function PortfolioIntelligenceClient({
 
       {!analyzing && (
         <>
+          {/* ── Scout Nudges ────────────────────────────────────────────── */}
+          {scoutNudges.length > 0 && (
+            <div
+              className="rounded-xl"
+              style={{
+                background: "#111111",
+                border: "1px solid #1e1e1e",
+                padding: 20,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <AgentBadge agentId="scout" size="sm" showTitle={false} />
+                <span
+                  className="text-sm font-semibold text-foreground"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Scout Nudges
+                </span>
+                <span
+                  className="text-xs"
+                  style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {scoutNudges.length} active
+                </span>
+              </div>
+              <NudgeFeed nudges={scoutNudges} showFilter />
+            </div>
+          )}
+
           {/* ── Section 1: Signal Feed ──────────────────────────────────── */}
           <div
             className="rounded-xl"
@@ -300,8 +344,8 @@ export function PortfolioIntelligenceClient({
               </h2>
 
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_80px_80px_80px_80px_48px] gap-2 px-2 pb-2 border-b border-border">
-                {["Client", "Contract", "CTO Brief", "Margin", "Renewal", ""].map(
+              <div className="grid grid-cols-[1fr_64px_80px_80px_80px_80px_48px] gap-2 px-2 pb-2 border-b border-border">
+                {["Client", "Score", "Contract", "CTO Brief", "Margin", "Renewal", ""].map(
                   (label) => (
                     <span
                       key={label}
@@ -313,16 +357,27 @@ export function PortfolioIntelligenceClient({
                 )}
               </div>
 
-              {/* Rows */}
+              {/* Rows — sorted by health score ascending (worst first) */}
               <div className="divide-y divide-border/50">
-                {clientHealthRows.map((row) => (
+                {[...clientHealthRows]
+                  .sort((a, b) => {
+                    const aScore = healthScores[a.clientId]?.overallScore ?? 999;
+                    const bScore = healthScores[b.clientId]?.overallScore ?? 999;
+                    return aScore - bScore;
+                  })
+                  .map((row) => {
+                    const hs = healthScores[row.clientId];
+                    return (
                   <Link
                     key={row.clientId}
                     href={`/clients/${row.clientId}`}
-                    className="grid grid-cols-[1fr_80px_80px_80px_80px_48px] gap-2 items-center px-2 py-2.5 hover:bg-white/[0.02] transition-colors"
+                    className="grid grid-cols-[1fr_64px_80px_80px_80px_80px_48px] gap-2 items-center px-2 py-2.5 hover:bg-white/[0.02] transition-colors"
                   >
                     <span className="text-sm text-foreground truncate">
                       {row.clientName}
+                    </span>
+                    <span className="text-xs font-mono text-center font-semibold" style={{ color: hs ? HEALTH_COLORS[hs.color] ?? "#888888" : "#444444" }}>
+                      {hs ? hs.overallScore : "—"}
                     </span>
                     <span className="text-xs text-center">
                       {row.hasContract ? (
@@ -381,7 +436,8 @@ export function PortfolioIntelligenceClient({
                       />
                     </span>
                   </Link>
-                ))}
+                    );
+                  })}
               </div>
             </div>
           )}

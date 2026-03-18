@@ -16,6 +16,8 @@ import { getOrgById } from "@/lib/db/orgs";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { createClient } from "@/lib/supabase/server";
 import { getAgentActivities } from "@/lib/agents/log-activity";
+import { getActiveNudges, type ScoutNudgeRecord } from "@/actions/scout-nudges";
+import { getOrgSignals, type OrgSignals } from "@/lib/intelligence/signal-engine";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
@@ -248,6 +250,31 @@ export default async function DashboardPage() {
     checklistSteps.hasProposals &&
     checklistSteps.hasClients;
 
+  // Fetch Scout nudges (non-blocking — refresh in background)
+  let scoutNudges: ScoutNudgeRecord[] = [];
+  try {
+    scoutNudges = await getActiveNudges();
+  } catch {
+    // Nudges unavailable — degrade gracefully
+  }
+
+  // Fetch intelligence signals
+  let orgSignals: OrgSignals | null = null;
+  if (orgId) {
+    try {
+      orgSignals = await getOrgSignals(orgId);
+    } catch {
+      // Signals unavailable — degrade gracefully
+    }
+  }
+
+  // Refresh nudges in background for next load (fire-and-forget)
+  if (orgId) {
+    import("@/actions/scout-nudges").then(({ syncNudgesToDb }) => {
+      syncNudgesToDb(orgId).catch(() => {});
+    });
+  }
+
   return (
     <DashboardClient
       checklist={allChecklistComplete ? null : checklistSteps}
@@ -266,6 +293,9 @@ export default async function DashboardPage() {
       orgCreatedAt={org?.created_at ?? null}
       firstName={profile?.display_name?.split(" ")[0] ?? null}
       recentActivities={recentActivities}
+      scoutNudges={scoutNudges}
+      orgSignals={orgSignals}
+      serviceCount={bundles.filter((b) => b.status === "active").length}
     />
   );
 }

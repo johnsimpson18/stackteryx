@@ -78,6 +78,11 @@ export async function createClientAction(
       });
     } catch { /* never block main action */ }
 
+    // Calculate initial health score (fire-and-forget)
+    import("@/actions/client-health").then(({ calculateAndSaveHealthScore }) => {
+      calculateAndSaveHealthScore(client.id).catch(() => {});
+    });
+
     revalidatePath("/clients");
     revalidatePath("/dashboard");
     return { success: true, data: client };
@@ -168,6 +173,14 @@ export async function createContractAction(
       bundle_version_id: parsed.data.bundle_version_id,
       seat_count: parsed.data.seat_count,
     }, orgId);
+
+    // Recalculate health score + intelligence signals after contract change (fire-and-forget)
+    import("@/actions/client-health").then(({ calculateAndSaveHealthScore }) => {
+      calculateAndSaveHealthScore(clientId).catch(() => {});
+    });
+    import("@/lib/intelligence/signal-engine").then(({ computeOrgSignals }) => {
+      computeOrgSignals(orgId).catch(() => {});
+    });
 
     revalidatePath(`/clients/${clientId}`);
     revalidatePath("/clients");

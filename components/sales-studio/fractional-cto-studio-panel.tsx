@@ -253,7 +253,7 @@ export function FractionalCTOStudioPanel({
               </p>
               <div className="flex items-center gap-1 mt-0.5">
                 <Clock className="h-3 w-3 text-muted-foreground/50" />
-                <span className="text-[11px] text-muted-foreground/60">
+                <span className="text-[11px] text-muted-foreground/60" suppressHydrationWarning>
                   {relativeTime(brief.createdAt)}
                 </span>
               </div>

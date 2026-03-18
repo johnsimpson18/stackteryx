@@ -398,7 +398,7 @@ export function CompliancePortfolio({
                             >
                               {clientScore.score_pct}%
                             </span>
-                            <span className="text-xs text-muted-foreground ml-1">
+                            <span className="text-xs text-muted-foreground ml-1" suppressHydrationWarning>
                               {new Date(
                                 clientScore.computed_at
                               ).toLocaleDateString()}

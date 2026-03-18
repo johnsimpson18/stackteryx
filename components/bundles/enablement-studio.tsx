@@ -313,7 +313,7 @@ export function EnablementStudio({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground" suppressHydrationWarning>
           {generatedAt
             ? `Last generated: ${new Date(generatedAt).toLocaleDateString()} ${new Date(generatedAt).toLocaleTimeString()}`
             : "Not yet generated"}

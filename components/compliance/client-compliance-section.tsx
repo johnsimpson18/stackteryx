@@ -249,7 +249,7 @@ export function ClientComplianceSection({
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground" suppressHydrationWarning>
                   Assessed{" "}
                   {new Date(currentScore.computed_at).toLocaleDateString()}
                 </p>

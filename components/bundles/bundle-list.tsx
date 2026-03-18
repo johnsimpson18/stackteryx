@@ -209,7 +209,7 @@ export function BundleList({ bundles, userRole, enablementMap = {} }: BundleList
                   <TableCell className="text-right">
                     <MarginBar margin={bundle.latest_margin} />
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-muted-foreground" suppressHydrationWarning>
                     {formatRelativeDate(bundle.created_at)}
                   </TableCell>
                   <TableCell className="text-right">

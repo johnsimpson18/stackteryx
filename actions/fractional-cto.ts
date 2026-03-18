@@ -104,6 +104,23 @@ export async function generateCTOBrief(
     mspName: input.mspName.trim(),
   };
 
+  // Fetch org intelligence signals to personalize Sage's brief
+  let enrichedSystemPrompt = SYSTEM_PROMPT;
+  try {
+    const actOrgId = await getActiveOrgId();
+    if (actOrgId) {
+      const { getOrgSignals } = await import("@/lib/intelligence/signal-engine");
+      const signals = await getOrgSignals(actOrgId);
+      if (signals && signals.topToolCategories.length > 0) {
+        const topTools = signals.topToolCategories.slice(0, 3).map((t) => t.name).join(", ");
+        const topFw = signals.complianceDistribution.topFramework;
+        enrichedSystemPrompt += `\n\nContext about the MSP delivering this service:\n- They specialize in ${topTools} security services.\n${topFw !== "None" ? `- Their client base primarily requires ${topFw} compliance.\n` : ""}- Tailor the brief to reflect these specializations where relevant.`;
+      }
+    }
+  } catch {
+    // Non-critical — continue with base prompt
+  }
+
   const sections = await callAI<BriefSections>({
     userPrompt: buildUserPrompt(cleanInput),
     requiredFields: [
@@ -116,7 +133,7 @@ export async function generateCTOBrief(
     ],
     temperature: 0.6,
     maxTokens: 6144,
-    systemPrompt: SYSTEM_PROMPT,
+    systemPrompt: enrichedSystemPrompt,
   });
 
   // Increment usage after successful AI call
@@ -137,6 +154,16 @@ export async function generateCTOBrief(
       });
     }
   } catch { /* never block main action */ }
+
+  // Recompute intelligence signals (fire-and-forget)
+  try {
+    const signalOrgId = await getActiveOrgId();
+    if (signalOrgId) {
+      import("@/lib/intelligence/signal-engine").then(({ computeOrgSignals }) => {
+        computeOrgSignals(signalOrgId).catch(() => {});
+      });
+    }
+  } catch { /* never block */ }
 
   return {
     mspName: cleanInput.mspName,
@@ -263,6 +290,14 @@ export async function saveCTOBrief(
     .single();
 
   if (error) throw new Error(`Failed to save brief: ${error.message}`);
+
+  // Recalculate health score if brief is linked to a client (fire-and-forget)
+  if (input.clientId) {
+    import("@/actions/client-health").then(({ calculateAndSaveHealthScore }) => {
+      calculateAndSaveHealthScore(input.clientId!).catch(() => {});
+    });
+  }
+
   return { id: data.id };
 }
 

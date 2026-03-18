@@ -71,7 +71,7 @@ export function RenewalBanner({
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
               {contractName} renews on{" "}
-              {new Date(endDate).toLocaleDateString()} — {daysUntil} day
+              <span suppressHydrationWarning>{new Date(endDate).toLocaleDateString()}</span> — {daysUntil} day
               {daysUntil !== 1 ? "s" : ""} away. Consider generating a fresh
               proposal before renewal.
             </p>
@@ -285,6 +285,7 @@ function ProposalRow({
         <span
           className="text-sm text-foreground"
           title={new Date(proposal.created_at).toLocaleString()}
+          suppressHydrationWarning
         >
           {relativeDate(proposal.created_at)}
         </span>

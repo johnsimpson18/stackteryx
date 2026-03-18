@@ -146,6 +146,7 @@ export function AgentActivityFeed({
                     </span>
                     <span
                       className="text-[11px]"
+                      suppressHydrationWarning
                       style={{
                         color: "#444444",
                         fontFamily: "var(--font-mono-alt)",

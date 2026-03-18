@@ -54,26 +54,29 @@ export function OnboardingWizard({ defaultDisplayName }: { defaultDisplayName?: 
   const [step, setStep] = useState<Step>(1);
   // 3-step wizard
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [state, setState] = useState<WizardState>(() => {
-    // Restore persisted state from a previous session if available
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved) as Partial<WizardState>;
-          return {
-            ...DEFAULTS,
-            ...parsed,
-            // Always use the server-provided display name as authoritative
-            displayName: parsed.displayName || defaultDisplayName || "",
-          };
-        }
-      } catch {
-        // Corrupt storage — fall back to defaults
-      }
-    }
-    return { ...DEFAULTS, displayName: defaultDisplayName ?? "" };
+  const [state, setState] = useState<WizardState>({
+    ...DEFAULTS,
+    displayName: defaultDisplayName ?? "",
   });
+
+  // Restore persisted state from a previous session on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<WizardState>;
+        setState((prev) => ({
+          ...prev,
+          ...parsed,
+          // Always use the server-provided display name as authoritative
+          displayName: parsed.displayName || defaultDisplayName || "",
+        }));
+      }
+    } catch {
+      // Corrupt storage — ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist state to localStorage whenever it changes
   useEffect(() => {

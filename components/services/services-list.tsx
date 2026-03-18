@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -89,12 +89,11 @@ export function ServicesList({
 }: ServicesListProps) {
   const [filter, setFilter] = useState<FilterTab>(initialFilter ?? "all");
   const [isRecalculating, startRecalcTransition] = useTransition();
-  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("stackteryx-services-view") as "grid" | "list") ?? "grid";
-    }
-    return "grid";
-  });
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  useEffect(() => {
+    const saved = localStorage.getItem("stackteryx-services-view") as "grid" | "list" | null;
+    if (saved) setViewMode(saved);
+  }, []);
   const [sortBy, setSortBy] = useState<"name" | "margin" | "completeness" | "updated">("updated");
 
   function handleViewChange(mode: "grid" | "list") {
@@ -296,7 +295,7 @@ export function ServicesList({
                           label={BUNDLE_STATUS_LABELS[bundle.status as BundleStatus]}
                         />
                       </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
+                      <TableCell className="text-right text-xs text-muted-foreground" suppressHydrationWarning>
                         {formatRelativeDate(bundle.updated_at)}
                       </TableCell>
                       <TableCell>
@@ -423,7 +422,7 @@ export function ServicesList({
 
                   {/* Updated */}
                   <div className="w-20 text-right">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                       {formatRelativeDate(bundle.updated_at)}
                     </span>
                   </div>

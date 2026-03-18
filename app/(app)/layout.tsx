@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { getAgentActivities } from "@/lib/agents/log-activity";
+import { getActiveNudges } from "@/actions/scout-nudges";
 import { WorkflowBanner } from "@/components/layout/workflow-banner";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { PlanProvider } from "@/components/providers/plan-provider";
@@ -119,6 +120,9 @@ export default async function AppLayout({
           activeOrgId={orgId ?? undefined}
           userOrgs={userOrgs}
           recentActivities={topbarActivities}
+          highPriorityNudgeCount={await getActiveNudges().then(
+            (n) => n.filter((x) => x.priority <= 3).length,
+          ).catch(() => 0)}
         />
         <main className="flex-1 overflow-y-auto app-grid-bg p-6 pb-20 md:pb-6">
           {!allWorkflowComplete && <WorkflowBanner steps={workflowSteps} />}

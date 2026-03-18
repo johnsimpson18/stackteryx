@@ -867,7 +867,7 @@ export function SalesEnablementPanel({
           </div>
           <div className="flex items-center gap-3">
             {isCachedPlaybook && cachedGeneratedAt && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                 Generated {formatRelativeDate(cachedGeneratedAt)}
               </span>
             )}

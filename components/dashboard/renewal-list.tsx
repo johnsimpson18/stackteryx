@@ -78,6 +78,7 @@ export function RenewalList({ renewals }: RenewalListProps) {
 
             {/* Days until renewal */}
             <span
+              suppressHydrationWarning
               style={{
                 fontSize: 12,
                 fontWeight: 600,

@@ -480,6 +480,7 @@ export function FractionalCTOClient({
                   value={quarterLabel}
                   onChange={(e) => setQuarterLabel(e.target.value)}
                   disabled={isPending}
+                  suppressHydrationWarning
                 />
               </div>
 
@@ -725,7 +726,7 @@ export function FractionalCTOClient({
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Clock className="h-3 w-3 text-muted-foreground/50" />
-                        <span className="text-[11px] text-muted-foreground/60">
+                        <span className="text-[11px] text-muted-foreground/60" suppressHydrationWarning>
                           {brief.quarterLabel} &middot;{" "}
                           {formatDate(brief.createdAt)}
                         </span>

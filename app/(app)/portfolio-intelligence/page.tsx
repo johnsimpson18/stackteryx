@@ -15,6 +15,7 @@ import { getPricingHealthSummary } from "@/lib/db/dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { ToolCategory } from "@/lib/types";
+import { getAllHealthScores } from "@/actions/client-health";
 import { PortfolioIntelligenceClient } from "@/components/portfolio-intelligence/portfolio-intelligence-client";
 
 export default async function PortfolioIntelligencePage() {
@@ -399,6 +400,25 @@ export default async function PortfolioIntelligencePage() {
     .filter((c) => c.clientsMissing > 0)
     .sort((a, b) => b.clientsMissing - a.clientsMissing);
 
+  // ── Health scores ──────────────────────────────────────────────────────
+
+  let healthScoreMap: Record<string, { overallScore: number; grade: string; color: string; scoreDelta: number | null }> = {};
+  try {
+    healthScoreMap = await getAllHealthScores();
+  } catch {
+    // degrade gracefully
+  }
+
+  // ── Scout nudges ──────────────────────────────────────────────────────
+
+  let scoutNudges: { id: string; nudgeType: string; priority: number; title: string; body: string; entityType: string | null; entityId: string | null; entityName: string | null; ctaLabel: string | null; ctaHref: string | null; status: string; createdAt: string; orgId: string }[] = [];
+  try {
+    const { getActiveNudges } = await import("@/actions/scout-nudges");
+    scoutNudges = await getActiveNudges();
+  } catch {
+    // degrade gracefully
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
@@ -410,6 +430,8 @@ export default async function PortfolioIntelligencePage() {
       opportunities={opportunities}
       coverageAnalysis={coverageAnalysis}
       totalClientsWithContracts={totalClientsWithContracts}
+      healthScores={healthScoreMap}
+      scoutNudges={scoutNudges}
     />
   );
 }

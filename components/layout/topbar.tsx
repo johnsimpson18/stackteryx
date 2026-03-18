@@ -22,15 +22,18 @@ interface TopbarProps {
   activeOrgId?: string;
   userOrgs?: { org_id: string; org_name: string }[];
   recentActivities?: AgentActivityRecord[];
+  highPriorityNudgeCount?: number;
 }
 
 const AGENT_DOTS = Object.values(AGENTS);
+const AGENT_PULSE_DELAYS = ["0s", "0.6s", "1.2s", "1.8s", "2.4s"];
 
 export function Topbar({
   workspaceName,
   activeOrgId,
   userOrgs = [],
   recentActivities = [],
+  highPriorityNudgeCount = 0,
 }: TopbarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -59,14 +62,14 @@ export function Topbar({
             className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors hover:bg-white/[0.04]"
           >
             <span className="flex items-center gap-0.5">
-              {AGENT_DOTS.map((agent) => (
+              {AGENT_DOTS.map((agent, i) => (
                 <span
                   key={agent.id}
                   className="h-1.5 w-1.5 rounded-full animate-pulse"
                   style={{
                     backgroundColor: agent.color,
                     animationDuration: "3s",
-                    animationDelay: `${Math.random() * 2}s`,
+                    animationDelay: AGENT_PULSE_DELAYS[i % AGENT_PULSE_DELAYS.length],
                   }}
                 />
               ))}
@@ -80,6 +83,14 @@ export function Topbar({
             >
               5 agents active
             </span>
+            {highPriorityNudgeCount > 0 && (
+              <span
+                className="flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-[9px] font-bold text-white"
+                style={{ backgroundColor: "#e24b4a" }}
+              >
+                {highPriorityNudgeCount}
+              </span>
+            )}
           </button>
 
           {/* Dropdown */}

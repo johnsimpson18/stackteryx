@@ -11,6 +11,7 @@ import {
   getOrgComplianceTargets,
   getAllComplianceScores,
 } from "@/lib/db/compliance";
+import { getAllHealthScores } from "@/actions/client-health";
 import { PageHeader } from "@/components/shared/page-header";
 import { ClientList } from "@/components/clients/client-list";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,16 @@ export default async function ClientsPage() {
       }
     } catch {
       // Compliance data unavailable — degrade gracefully
+    }
+  }
+
+  // Fetch health scores
+  let healthScores: Record<string, { overallScore: number; color: "green" | "amber" | "red"; scoreDelta: number | null }> = {};
+  if (orgId) {
+    try {
+      healthScores = await getAllHealthScores();
+    } catch {
+      // Health scores unavailable — degrade gracefully
     }
   }
 
@@ -139,7 +150,7 @@ export default async function ClientsPage() {
         </Card>
       </div>
 
-      <ClientList clients={clients} userRole={profile.role} complianceScores={complianceScores} />
+      <ClientList clients={clients} userRole={profile.role} complianceScores={complianceScores} healthScores={healthScores} />
     </div>
   );
 }

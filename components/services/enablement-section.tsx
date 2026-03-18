@@ -239,7 +239,7 @@ export function EnablementSection({
           </div>
         ))}
         {enablement?.generated_at && !editing && (
-          <p className="text-xs text-muted-foreground pt-2">
+          <p className="text-xs text-muted-foreground pt-2" suppressHydrationWarning>
             Last generated{" "}
             {new Date(enablement.generated_at).toLocaleDateString()}
           </p>

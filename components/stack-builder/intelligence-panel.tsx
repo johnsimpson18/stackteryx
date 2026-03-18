@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
 import {
   calculateComplianceScores,
@@ -183,6 +184,13 @@ export function IntelligencePanel({
             <ComplianceBar label="HIPAA" value={compliance.hipaa} />
             <ComplianceBar label="PCI DSS" value={compliance.pci} />
             <ComplianceBar label="CMMC" value={compliance.cmmc} />
+            <Link
+              href="/compliance"
+              className="block text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors pt-1 border-t border-border/30 mt-1"
+            >
+              These scores update your org&apos;s Compliance Intelligence.{" "}
+              <span className="underline">View dashboard &rarr;</span>
+            </Link>
           </div>
         )}
 

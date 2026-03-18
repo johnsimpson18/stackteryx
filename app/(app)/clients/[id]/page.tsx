@@ -39,6 +39,10 @@ import { findSoonestRenewal, calculateServiceFit } from "@/lib/client-utils";
 import { ClientComplianceSection } from "@/components/compliance/client-compliance-section";
 import { ClientProfitabilityCard } from "@/components/clients/client-profitability-card";
 import { ClientRiskSummary } from "@/components/clients/client-risk-summary";
+import { HealthScoreFull } from "@/components/clients/client-health-score";
+import { getClientHealthScore } from "@/actions/client-health";
+import { getActiveNudges } from "@/actions/scout-nudges";
+import { ScoutInsights } from "@/components/scout/scout-insights";
 import { createClient } from "@/lib/supabase/server";
 
 interface ClientDetailPageProps {
@@ -76,7 +80,7 @@ export default async function ClientDetailPage({
   if (!profile) redirect("/login");
   if (!hasPermission(profile.role, "view_clients")) redirect("/dashboard");
 
-  const [client, contracts, proposals, complianceTargets, complianceScores] =
+  const [client, contracts, proposals, complianceTargets, complianceScores, healthScore] =
     await Promise.all([
       getClientById(id),
       getContractsByClientId(id),
@@ -85,6 +89,7 @@ export default async function ClientDetailPage({
       orgId
         ? getClientComplianceScores(orgId, id)
         : Promise.resolve([]),
+      getClientHealthScore(id).catch(() => null),
     ]);
 
   if (!client) notFound();
@@ -233,6 +238,12 @@ export default async function ClientDetailPage({
       {/* Client Profitability */}
       <ClientProfitabilityCard contracts={contracts} />
 
+      {/* Health Score */}
+      <HealthScoreFull clientId={id} initialScore={healthScore} />
+
+      {/* Scout Insights */}
+      <ScoutInsightsSection clientId={id} />
+
       {/* Contracts */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -373,8 +384,30 @@ export default async function ClientDetailPage({
           .map((t) => t.framework_id)}
       />
 
+      {/* Compliance Intelligence Link */}
+      <div className="flex justify-end">
+        <Link
+          href="/compliance"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View full compliance analysis &rarr;
+        </Link>
+      </div>
+
       {/* Proposal History */}
       <ProposalHistory proposals={proposals} clientId={id} />
     </div>
   );
+}
+
+async function ScoutInsightsSection({ clientId }: { clientId: string }) {
+  let nudges: Awaited<ReturnType<typeof getActiveNudges>> = [];
+  try {
+    const all = await getActiveNudges();
+    nudges = all.filter((n) => n.entityId === clientId);
+  } catch {
+    return null;
+  }
+  if (nudges.length === 0) return null;
+  return <ScoutInsights nudges={nudges} />;
 }

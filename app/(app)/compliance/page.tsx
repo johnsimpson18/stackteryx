@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Compliance" };
+export const metadata: Metadata = { title: "Compliance Intelligence" };
+
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { getClients } from "@/lib/db/clients";
 import { hasPermission } from "@/lib/constants";
 import { getActiveOrgId } from "@/lib/org-context";
-import {
-  getOrgComplianceTargets,
-  getAllComplianceScores,
-} from "@/lib/db/compliance";
-import {
-  getAllFrameworks,
-  getControlCount,
-} from "@/lib/data/compliance-frameworks";
-import { PageHeader } from "@/components/shared/page-header";
-import { CompliancePortfolio } from "@/components/compliance/compliance-portfolio";
+import { getAllComplianceScores } from "@/lib/db/compliance";
+import { getOrgComplianceCoverage } from "@/actions/compliance-coverage";
+import { ComplianceIntelligenceClient } from "@/components/compliance/compliance-intelligence-client";
 
 export default async function CompliancePage() {
   const profile = await getCurrentProfile();
@@ -25,70 +19,60 @@ export default async function CompliancePage() {
   const orgId = await getActiveOrgId();
   if (!orgId) redirect("/dashboard");
 
-  const [clients, targets] = await Promise.all([
+  const [clients, coverage] = await Promise.all([
     getClients(orgId),
-    getOrgComplianceTargets(orgId),
+    getOrgComplianceCoverage().catch(() => null),
   ]);
 
-  // Get all available frameworks with metadata
-  const allFrameworks = getAllFrameworks().map((fw) => {
-    const counts = getControlCount(fw);
-    const enabled = targets.some((t) => t.framework_id === fw.id && t.enabled);
+  // Build client compliance rows
+  // For each client with an active contract, show their per-framework scores
+  const activeClients = clients.filter((c) => c.status === "active");
+
+  // Fetch per-client compliance scores for each framework
+  const frameworks = ["hipaa", "pci-dss", "cmmc-l2"] as const;
+  const clientScoreMap = new Map<
+    string,
+    { hipaa: number | null; pci: number | null; cmmc: number | null; frameworks: string[] }
+  >();
+
+  for (const client of activeClients) {
+    clientScoreMap.set(client.id, { hipaa: null, pci: null, cmmc: null, frameworks: [] });
+  }
+
+  for (const fwId of frameworks) {
+    try {
+      const scores = await getAllComplianceScores(orgId, fwId);
+      for (const s of scores) {
+        const entry = clientScoreMap.get(s.client_id);
+        if (!entry) continue;
+        const pct = Number(s.score_pct);
+        const label = fwId === "hipaa" ? "HIPAA" : fwId === "pci-dss" ? "PCI DSS" : "CMMC";
+        if (!entry.frameworks.includes(label)) entry.frameworks.push(label);
+        if (fwId === "hipaa") entry.hipaa = pct;
+        else if (fwId === "pci-dss") entry.pci = pct;
+        else entry.cmmc = pct;
+      }
+    } catch {
+      // Framework data unavailable
+    }
+  }
+
+  const clientRows = activeClients.map((c) => {
+    const scores = clientScoreMap.get(c.id);
     return {
-      id: fw.id,
-      name: fw.name,
-      shortName: fw.shortName,
-      version: fw.version,
-      description: fw.description,
-      targetAudience: fw.targetAudience,
-      controlsTotal: counts.total,
-      controlsScorable: counts.scorable,
-      controlsManual: counts.manual,
-      enabled,
+      clientId: c.id,
+      clientName: c.name,
+      frameworks: scores?.frameworks ?? [],
+      hipaaScore: scores?.hipaa ?? null,
+      pciScore: scores?.pci ?? null,
+      cmmcScore: scores?.cmmc ?? null,
     };
   });
 
-  // Fetch scores for each enabled framework
-  const enabledIds = allFrameworks
-    .filter((fw) => fw.enabled)
-    .map((fw) => fw.id);
-
-  const scoresByFramework: Record<
-    string,
-    { client_id: string; score_pct: number; computed_at: string }[]
-  > = {};
-
-  for (const fwId of enabledIds) {
-    const scores = await getAllComplianceScores(orgId, fwId);
-    scoresByFramework[fwId] = scores.map((s) => ({
-      client_id: s.client_id,
-      score_pct: Number(s.score_pct),
-      computed_at: s.computed_at,
-    }));
-  }
-
-  // Build client list for the grid
-  const clientList = clients
-    .filter((c) => c.status === "active")
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      status: c.status,
-    }));
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Compliance Portfolio"
-        description="Assess client security posture against industry frameworks"
-      />
-
-      <CompliancePortfolio
-        frameworks={allFrameworks}
-        clients={clientList}
-        scoresByFramework={scoresByFramework}
-        userRole={profile.role}
-      />
-    </div>
+    <ComplianceIntelligenceClient
+      coverage={coverage}
+      clientRows={clientRows}
+    />
   );
 }

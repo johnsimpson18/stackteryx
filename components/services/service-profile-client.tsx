@@ -769,7 +769,7 @@ export function ServiceProfileClient({
                             </Link>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-sm text-muted-foreground" suppressHydrationWarning>
                           {new Date(v.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
@@ -1043,7 +1043,7 @@ function LayerCard({
           {complete ? "Complete" : summary.startsWith("No") || summary === "Not defined" ? "Missing" : "Incomplete"}
         </Badge>
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2" suppressHydrationWarning>
         {summary}
       </p>
     </button>

@@ -399,9 +399,18 @@ export async function launchServiceAction(
       });
     } catch { /* never block main action */ }
 
+    // Recalculate org compliance coverage + intelligence signals (fire-and-forget)
+    import("@/actions/compliance-coverage").then(({ recalculateOrgCompliance }) => {
+      recalculateOrgCompliance().catch(() => {});
+    });
+    import("@/lib/intelligence/signal-engine").then(({ computeOrgSignals }) => {
+      computeOrgSignals(orgId).catch(() => {});
+    });
+
     revalidatePath("/bundles");
     revalidatePath("/dashboard");
     revalidatePath("/services");
+    revalidatePath("/compliance");
 
     return { success: true, data: undefined };
   } catch (err) {

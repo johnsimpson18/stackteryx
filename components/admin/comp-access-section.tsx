@@ -194,7 +194,7 @@ export function CompAccessSection() {
                       </td>
                       <td className="py-2 pr-4 text-muted-foreground">{c.compedBy ?? "—"}</td>
                       <td className="py-2 pr-4 text-muted-foreground">{c.compedReason ?? "—"}</td>
-                      <td className="py-2 pr-4 text-muted-foreground">
+                      <td className="py-2 pr-4 text-muted-foreground" suppressHydrationWarning>
                         {c.compedExpiresAt
                           ? new Date(c.compedExpiresAt).toLocaleDateString()
                           : "Never"}
