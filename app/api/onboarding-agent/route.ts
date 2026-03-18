@@ -1,6 +1,8 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { streamText } from "ai";
 import { createClient } from "@/lib/supabase/server";
+import { incrementUsage } from "@/actions/billing";
+import { logAgentActivity } from "@/lib/agents/log-activity";
 
 export const maxDuration = 30;
 
@@ -68,6 +70,19 @@ Respond with brief, specific commentary about their current selection.`
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: context }],
   });
+
+  // Track usage + agent activity (fire-and-forget)
+  incrementUsage("ai_generation").catch(() => {});
+  try {
+    logAgentActivity({
+      orgId: profile.active_org_id,
+      agentId: "aria",
+      activityType: "generation",
+      title: "Aria guided onboarding setup",
+    });
+  } catch {
+    /* never block */
+  }
 
   return result.toTextStreamResponse();
 }

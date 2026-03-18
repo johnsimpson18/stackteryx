@@ -163,6 +163,16 @@ export async function POST(request: Request) {
     });
 
     await incrementUsage("ai_generation");
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      logAgentActivity({
+        orgId,
+        agentId: "pitch",
+        activityType: "generation",
+        title: `Pitch generated enablement content for ${context.service_context?.bundle_name ?? "a service"}`,
+        entityType: "service",
+      });
+    } catch { /* never block */ }
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

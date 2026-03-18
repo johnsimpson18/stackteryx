@@ -17,6 +17,7 @@ import {
   isComplianceFocused,
 } from "@/lib/ai/language-rules";
 import { checkLimit, incrementUsage } from "@/actions/billing";
+import { logAgentActivity } from "@/lib/agents/log-activity";
 
 export const maxDuration = 60;
 
@@ -204,6 +205,26 @@ export async function POST(request: Request) {
       : String(aiResult.risk_snapshot);
 
     await incrementUsage("ai_generation");
+
+    // Log Pitch activity (fire-and-forget)
+    try {
+      const targetName =
+        body.mode === "client"
+          ? studioCtx.client?.name || "a client"
+          : body.prospect_name || "a prospect";
+      logAgentActivity({
+        orgId,
+        agentId: "pitch",
+        activityType: "generation",
+        title: `Pitch wrote a ${body.mode} proposal for ${targetName}`,
+        entityType: "proposal",
+        entityId: body.client_id,
+        entityName: targetName,
+        metadata: { mode: body.mode, serviceCount: body.services.length },
+      });
+    } catch {
+      /* never block */
+    }
 
     return Response.json({
       executive_summary: aiResult.executive_summary,

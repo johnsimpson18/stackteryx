@@ -105,6 +105,19 @@ Select 2-4 services that form a natural progression from basic to comprehensive.
 
     const parsed = JSON.parse(cleaned);
     await incrementUsage("ai_generation");
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      const actOrgId = await (await import("@/lib/org-context")).getActiveOrgId();
+      if (actOrgId) {
+        logAgentActivity({
+          orgId: actOrgId,
+          agentId: "margin",
+          activityType: "analysis",
+          title: "Margin analyzed tier composition",
+          entityType: "service",
+        });
+      }
+    } catch { /* never block */ }
     return Response.json(parsed);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

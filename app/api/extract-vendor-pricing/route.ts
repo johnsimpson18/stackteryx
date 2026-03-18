@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { incrementUsage } from "@/actions/billing";
 
 export const maxDuration = 60;
 
@@ -213,6 +214,9 @@ export async function POST(req: Request) {
     if (!Array.isArray(extracted.tier_rules)) {
       extracted.tier_rules = [];
     }
+
+    // Track usage (fire-and-forget)
+    incrementUsage("ai_generation").catch(() => {});
 
     return Response.json({ extracted });
   } catch (err) {

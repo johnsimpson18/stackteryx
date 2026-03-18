@@ -3,6 +3,8 @@ import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { STACK_TOOLS, STACK_CATEGORIES } from "@/lib/stack-builder/seed";
+import { incrementUsage } from "@/actions/billing";
+import { logAgentActivity } from "@/lib/agents/log-activity";
 
 export const maxDuration = 60;
 
@@ -140,6 +142,19 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  // Track usage + agent activity (fire-and-forget)
+  incrementUsage("ai_generation").catch(() => {});
+  try {
+    logAgentActivity({
+      orgId: profile.active_org_id,
+      agentId: "aria",
+      activityType: "generation",
+      title: "Aria assisted with stack building",
+    });
+  } catch {
+    /* never block */
+  }
 
   return result.toUIMessageStreamResponse();
 }

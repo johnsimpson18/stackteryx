@@ -160,6 +160,16 @@ export async function POST(request: Request) {
     });
 
     await incrementUsage("ai_generation");
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      logAgentActivity({
+        orgId,
+        agentId: "pitch",
+        activityType: "generation",
+        title: `Pitch built a sales playbook for ${studioCtx.serviceName}`,
+        entityType: "service",
+      });
+    } catch { /* never block */ }
     return new Response(readableStream, {
       headers: {
         "Content-Type": "text/event-stream",

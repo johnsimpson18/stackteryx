@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/server";
+import { incrementUsage } from "@/actions/billing";
 import type { ExtractedVendor } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -224,6 +225,9 @@ export async function POST(req: Request) {
         raw_extraction: extracted,
       })
       .eq("id", importRecord.id);
+
+    // Track usage (fire-and-forget)
+    incrementUsage("ai_generation").catch(() => {});
 
     return Response.json({
       importId: importRecord.id,

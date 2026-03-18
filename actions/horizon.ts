@@ -195,8 +195,16 @@ Return a JSON object with this exact shape:
       orgId,
       agentId: "horizon",
       activityType: "generation",
-      title: `Horizon published market intelligence digest for ${weekLabel}`,
+      title: `Horizon delivered the weekly market intelligence digest`,
+      description: `${weekLabel} — ${digest.technologyShifts.length + digest.mspBusinessTrends.length + digest.competitiveIntelligence.length} insights generated`,
+      entityType: "digest",
+      entityName: weekLabel,
     });
+  });
+
+  // Increment AI usage (fire-and-forget)
+  import("@/actions/billing").then(({ incrementUsage }) => {
+    incrementUsage("ai_generation").catch(() => {});
   });
 
   return digest;

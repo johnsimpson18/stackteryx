@@ -9,6 +9,8 @@ import { createTool, getTools } from "@/lib/db/tools";
 import { upsertEnablement } from "@/lib/db/enablement";
 import { createOrgVendor, createCostModel } from "@/lib/db/vendors";
 import { getOrgById } from "@/lib/db/orgs";
+import { incrementUsage } from "@/actions/billing";
+import { logAgentActivity } from "@/lib/agents/log-activity";
 import type {
   OnboardingProfile,
   OnboardingToolSelection,
@@ -470,6 +472,20 @@ export async function GET(request: Request) {
         await saveGeneratedBundlesJson(orgId, generatedBundlesData);
 
         await markOnboardingComplete(orgId, true);
+
+        // Track usage + agent activity (fire-and-forget)
+        incrementUsage("ai_generation").catch(() => {});
+        try {
+          logAgentActivity({
+            orgId,
+            agentId: "aria",
+            activityType: "generation",
+            title: "Aria assisted with onboarding",
+            metadata: { bundleCount: parsed.bundles.length },
+          });
+        } catch {
+          /* never block */
+        }
 
         emit({ step: 8, status: "complete", done: true });
       } catch (err) {

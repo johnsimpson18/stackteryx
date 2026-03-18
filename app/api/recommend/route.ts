@@ -5,6 +5,7 @@ import { getOrgSettings } from "@/lib/db/org-settings";
 import { getActiveOrgId, getOrgMembership } from "@/lib/org-context";
 import { recommendRequestSchema } from "@/lib/schemas/recommend";
 import { checkLimit, incrementUsage } from "@/actions/billing";
+import { logAgentActivity } from "@/lib/agents/log-activity";
 
 export const maxDuration = 60;
 
@@ -270,6 +271,25 @@ ${JSON.stringify(toolCatalog, null, 2)}`;
   });
 
   await incrementUsage("ai_generation");
+
+  // Log Aria activity (fire-and-forget)
+  try {
+    logAgentActivity({
+      orgId,
+      agentId: "aria",
+      activityType: "generation",
+      title: "Aria generated service recommendations",
+      entityType: "recommendation",
+      metadata: {
+        client_name: clientProfile.clientName,
+        industry: clientProfile.industry,
+        seat_count: clientProfile.seatCount,
+      },
+    });
+  } catch {
+    /* never block */
+  }
+
   return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",

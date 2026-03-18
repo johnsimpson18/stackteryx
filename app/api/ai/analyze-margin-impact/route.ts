@@ -61,6 +61,19 @@ export async function POST(request: Request) {
     });
 
     await incrementUsage("ai_generation");
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      const actOrgId = await (await import("@/lib/org-context")).getActiveOrgId();
+      if (actOrgId) {
+        logAgentActivity({
+          orgId: actOrgId,
+          agentId: "margin",
+          activityType: "analysis",
+          title: "Margin analyzed margin impact",
+          entityType: "service",
+        });
+      }
+    } catch { /* never block */ }
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";

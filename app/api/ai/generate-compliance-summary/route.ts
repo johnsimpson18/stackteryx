@@ -96,6 +96,19 @@ The summary should:
       response.content[0].type === "text" ? response.content[0].text : "";
 
     await incrementUsage("ai_generation");
+    try {
+      const { logAgentActivity } = await import("@/lib/agents/log-activity");
+      const actOrgId = await (await import("@/lib/org-context")).getActiveOrgId();
+      if (actOrgId) {
+        logAgentActivity({
+          orgId: actOrgId,
+          agentId: "aria",
+          activityType: "analysis",
+          title: "Aria generated a compliance summary",
+          entityType: "service",
+        });
+      }
+    } catch { /* never block */ }
     return Response.json({ summary: text });
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI call failed";
