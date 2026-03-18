@@ -283,11 +283,11 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Five agents. Every role in your service business covered.
+              Six agents. Every role in your service business covered.
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {AGENTS.map((agent) => (
               <div
                 key={agent.name}
