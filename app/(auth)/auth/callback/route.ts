@@ -11,9 +11,12 @@ function getSafeRedirectPath(next: string | null): string {
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = getSafeRedirectPath(searchParams.get("next"));
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const next = getSafeRedirectPath(requestUrl.searchParams.get("next"));
+
+  // Use NEXT_PUBLIC_SITE_URL in production — origin can resolve incorrectly behind Vercel's proxy
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
 
   if (code) {
     const supabase = await createClient();
@@ -33,17 +36,14 @@ export async function GET(request: Request) {
           .maybeSingle();
 
         if (!membership) {
-          return NextResponse.redirect(`${origin}/setup`);
+          return NextResponse.redirect(`${baseUrl}/setup`);
         }
-
-        // Onboarding is handled by the modal gate in the app layout.
-        // No redirect needed — the gate shows automatically on /dashboard.
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${baseUrl}${next}`);
     }
   }
 
   // Auth code exchange failed — redirect to login with error
-  return NextResponse.redirect(`${origin}/login`);
+  return NextResponse.redirect(`${baseUrl}/login?error=auth_callback_failed`);
 }
