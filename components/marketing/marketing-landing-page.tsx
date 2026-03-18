@@ -131,7 +131,7 @@ export function MarketingLandingPage() {
               className="landing-fade-in text-[11px] uppercase tracking-[0.3em] font-semibold mb-6"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              THE SYSTEM OF RECORD FOR MSP SERVICE ECONOMICS
+              BUILT FOR MSP AND MSSP SERVICE BUSINESSES
             </p>
             <h1
               className="landing-fade-in text-4xl md:text-6xl font-extrabold leading-[1.08] tracking-tight"
@@ -151,9 +151,10 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Stackteryx is the first platform built specifically for MSP service
-              economics &mdash; connecting your vendor tools to delivery costs, service
-              margins, client outcomes, and proposals in one structured system.
+              Finally know what your services actually cost to deliver.
+              Price them profitably. Walk into every client meeting with
+              materials that make you look like the most strategic MSP
+              in the room.
             </p>
 
             {/* CTA buttons */}
@@ -209,8 +210,8 @@ export function MarketingLandingPage() {
             className="text-center text-sm leading-relaxed"
             style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
           >
-            The only system where MSPs design, price, and sell profitable
-            services &mdash; without a spreadsheet in sight.
+            Used by MSPs who are done guessing at margins and ready
+            to build a practice that actually scales.
           </p>
         </div>
       </section>
@@ -225,22 +226,23 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              THE MISSING SYSTEM
+              SOUND FAMILIAR?
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Every business system exists. Except this one.
+              Your PSA tracks tickets. Your RMM tracks devices.
+              Neither one tells you if you&apos;re making money.
             </h2>
           </div>
 
           {/* Three systems */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: "CRMs track customers.", tools: "Salesforce, HubSpot", what: "Who you sold to." },
-              { title: "PSAs track tickets.", tools: "ConnectWise, Autotask", what: "What broke and when." },
-              { title: "RMMs track devices.", tools: "NinjaOne, Automate", what: "What\u2019s running." },
+              { title: "Your PSA", tools: "ConnectWise, Autotask", what: "Tells you what broke and when it was fixed. Doesn\u2019t tell you what that service costs to deliver or whether the contract is profitable." },
+              { title: "Your RMM", tools: "NinjaOne, Automate", what: "Tells you what\u2019s running across your client base. Doesn\u2019t tell you whether your stack is covering your compliance obligations or leaving gaps." },
+              { title: "Your spreadsheet", tools: "Excel, Google Sheets", what: "Tells you what you think you\u2019re charging. Doesn\u2019t account for vendor price changes, seat overages, or what you actually spend on labor." },
             ].map(({ title, tools, what }) => (
               <div
                 key={title}
@@ -278,20 +280,20 @@ export function MarketingLandingPage() {
               className="text-sm font-semibold uppercase tracking-wider"
               style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
             >
-              Nothing tracks:
+              What&apos;s missing:
             </p>
             <p
               className="text-[15px] md:text-base leading-[1.75] max-w-2xl mx-auto"
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              How services are designed. What they cost to deliver.
-              Whether they&apos;re profitable. How to sell them.
+              A single place where your services are designed,
+              your costs are modeled, and your margins are real.
             </p>
             <p
               className="text-xl md:text-2xl font-extrabold"
               style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
             >
-              That&apos;s the gap Stackteryx fills.
+              That&apos;s what Stackteryx is.
             </p>
           </div>
         </div>
@@ -307,13 +309,14 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              THE SYSTEM
+              HOW IT WORKS
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              One structured workflow. From outcome to invoice.
+              Design a service in minutes.
+              Know your margin before you quote.
             </h2>
           </div>
 
@@ -333,27 +336,27 @@ export function MarketingLandingPage() {
               {
                 step: "01",
                 label: "Outcome",
-                desc: "Define the business result your client is paying for \u2014 not the tools. Reduced ransomware risk. Regulatory compliance. Operational resilience.",
+                desc: "Start with the business result your client is actually buying \u2014 reduced risk, regulatory compliance, operational resilience. Not the tools. The outcome.",
               },
               {
                 step: "02",
                 label: "Service",
-                desc: "Design the service around that outcome. Select capabilities, set deliverables, establish what you actually provide.",
+                desc: "Define what you deliver. What\u2019s included. What the client gets. Build it once, deploy it to every client who fits the profile.",
               },
               {
                 step: "03",
                 label: "Stack",
-                desc: "Map the vendor tools that power the service. Stackteryx calculates real delivery cost from your actual vendor contracts.",
+                desc: "Add the vendor tools that power the service. Stackteryx pulls in your real costs \u2014 no estimates, no guesses.",
               },
               {
                 step: "04",
                 label: "Cost",
-                desc: "Model labor, overhead, and vendor costs together \u2014 for the first time. See what this service actually costs to deliver.",
+                desc: "See exactly what this service costs to deliver \u2014 tools, labor, overhead, all together for the first time. This is the number most MSPs have never seen.",
               },
               {
                 step: "05",
                 label: "Price",
-                desc: "Set a price with full margin visibility. Know what you make before you quote. Every time.",
+                desc: "Set a price that hits your target margin. Know what you make before the proposal goes out. Every time, on every deal.",
               },
             ].map(({ step, label, desc }) => (
               <div
@@ -387,8 +390,9 @@ export function MarketingLandingPage() {
             className="text-center text-sm"
             style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
           >
-            The system runs continuously &mdash; monitoring, alerting, and generating
-            insights without you needing to initiate it.
+            Once your services are built, the platform keeps working &mdash;
+            monitoring your clients, flagging risks, and surfacing
+            opportunities you&apos;d otherwise miss.
           </p>
         </div>
       </section>
@@ -403,22 +407,23 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              INSIDE THE SYSTEM
+              YOUR AI TEAM
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Six agents run the work you&apos;ve always done manually.
+              Six agents handling the work that used to eat your week.
             </h2>
             <p
               className="text-[15px] leading-[1.75] max-w-2xl mx-auto"
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              Built into Stackteryx is a team of six AI workers &mdash; each with a
-              specific job inside the system. They don&apos;t require prompting.
-              They run continuously, acting on your data, so the system is
-              always working even when you&apos;re not.
+              Every part of Stackteryx is powered by a named AI agent
+              with a specific job. They don&apos;t need to be asked. They run
+              in the background &mdash; designing, pricing, writing, monitoring,
+              and advising &mdash; so you can spend your time on clients,
+              not admin.
             </p>
           </div>
 
@@ -451,20 +456,12 @@ export function MarketingLandingPage() {
             ))}
           </div>
 
-          <div className="text-center space-y-1">
-            <p
-              className="text-sm font-semibold"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}
-            >
-              This is what separates a system from a tool.
-            </p>
-            <p
-              className="text-sm"
-              style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
-            >
-              Tools wait to be used. Systems run continuously.
-            </p>
-          </div>
+          <p
+            className="text-center text-sm font-semibold"
+            style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}
+          >
+            Your competitors are still doing this manually.
+          </p>
         </div>
       </section>
 
@@ -478,13 +475,13 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              THE ECONOMICS
+              THE MATH
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              One use case. The math speaks for itself.
+              One new service line. Real numbers.
             </h2>
           </div>
 
@@ -503,32 +500,34 @@ export function MarketingLandingPage() {
                 className="text-[15px] leading-[1.75]"
                 style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
               >
-                An MSP charges $1,000/month per client for strategic technology
-                advisory. Ten clients. $120,000 in new annual recurring revenue.
+                MSPs using Stackteryx charge $500&ndash;$1,000 per month per
+                client for quarterly technology strategy briefings &mdash;
+                executive-ready reports covering industry risk, technology
+                radar, and a 12-month planning outlook.
               </p>
               <p
                 className="text-[15px] leading-[1.75]"
                 style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
               >
-                Sage &mdash; Stackteryx&apos;s advisory agent &mdash; generates the quarterly
-                Technology Strategy Brief in under 60 seconds. Branded.
-                Exportable. Client-ready.
+                Sage generates each brief automatically. Enter the client&apos;s
+                domain. Hit generate. Branded PDF ready in under 60 seconds.
               </p>
               <p
                 className="text-[15px] leading-[1.75]"
                 style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
               >
-                The service that used to require a $200,000/year vCIO hire is
-                now delivered by a $399/month platform.
+                Ten clients. $120,000 in new annual recurring revenue.
+                No new hires. No new tools. Just a service you were
+                never set up to deliver before.
               </p>
             </div>
 
             {/* Value stats */}
             <div className="grid grid-cols-3 gap-6 pt-6" style={{ borderTop: "1px solid #1E1E1E" }}>
               {[
-                { value: "< 60 seconds", label: "Brief generation" },
-                { value: "$120K/year", label: "10-client ARR" },
-                { value: "$0", label: "Additional headcount" },
+                { value: "< 60 seconds", label: "Per brief" },
+                { value: "$500\u2013$1,000/mo", label: "Per client" },
+                { value: "$0", label: "Extra headcount" },
               ].map(({ value, label }) => (
                 <div key={label} className="text-center">
                   <p
@@ -560,7 +559,7 @@ export function MarketingLandingPage() {
               onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
             >
-              Generate a free brief &mdash; no account required
+              Generate a free brief for one of your clients
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -577,29 +576,29 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              WHY THIS BECOMES INFRASTRUCTURE
+              WHY MSPS DON&apos;T LEAVE
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              The Bloomberg Terminal for managed services.
+              After 90 days, this becomes how you run your practice.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                title: "System of Record",
-                body: "Stackteryx stores how every service is designed, costed, and priced. Over time, this becomes the institutional memory of your practice \u2014 the one place where your service economics live.",
+                title: "Your services live here",
+                body: "Every service you\u2019ve designed, every margin you\u2019ve modeled, every proposal you\u2019ve generated \u2014 it\u2019s all here. Your institutional knowledge, structured and searchable. Not in someone\u2019s head or a shared drive no one updates.",
               },
               {
-                title: "Data Network",
-                body: "Every service configuration, vendor cost, and margin calculation builds a dataset. As the platform scales, individual MSP data aggregates into industry benchmarks \u2014 cost benchmarks, margin benchmarks, compliance coverage by vertical. The system gets smarter with every user.",
+                title: "Your clients are monitored",
+                body: "Scout watches every client in your portfolio. Renewal coming up? Scout flags it. Client missing a compliance framework? Scout flags it. Upsell opportunity sitting in plain sight? Scout surfaces it. You stop reacting and start anticipating.",
               },
               {
-                title: "Intelligence Layer",
-                body: "Scout monitors your entire client portfolio. Horizon watches the market. Aria updates compliance scores when your stack changes. The system surfaces insights you didn\u2019t know to look for \u2014 before they become problems.",
+                title: "Your practice keeps learning",
+                body: "The more you use Stackteryx, the smarter it gets about your practice. Which tool combinations you build most. Which margins perform best. Which client profiles match your highest-value services. The system builds on itself.",
               },
             ].map(({ title, body }) => (
               <div
@@ -635,20 +634,19 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              SIMPLE PRICING
+              PRICING
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Start free. The system pays for itself.
+              Start free. Grow when you&apos;re ready.
             </h2>
             <p
               className="text-sm max-w-xl mx-auto"
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              One advisory client covers years of Stackteryx cost.
-              Built for MSPs scaling from $1M to $20M ARR.
+              Most MSPs recover the cost of Pro in their first advisory engagement.
             </p>
           </div>
 
@@ -757,8 +755,8 @@ export function MarketingLandingPage() {
             className="text-center text-xs"
             style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
           >
-            No contracts. Cancel anytime. The free CTO brief generator
-            is available to every MSP &mdash; no account required.
+            No contracts. Cancel anytime. The free CTO brief
+            tool works for any MSP &mdash; no account needed.
           </p>
         </div>
       </section>
@@ -779,23 +777,23 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Three forces are making this the only move.
+              The MSPs growing right now are making this shift.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                title: "MSPs are getting squeezed",
-                body: "Clients expect strategic guidance. Margins are compressed by vendor pricing complexity. The providers who survive will deliver advisory at scale \u2014 not just reactive support.",
+                title: "AI is changing what clients expect",
+                body: "Your clients are reading about AI every week. They\u2019re going to ask their MSP what it means for their business. The MSPs who can answer that question \u2014 with a strategy brief, a roadmap, a quarterly review \u2014 are the ones who retain those clients.",
               },
               {
-                title: "The tools exist. The infrastructure doesn\u2019t.",
-                body: "AI can write a technology strategy brief. AI can model service margins. But no platform has assembled these capabilities into an operating system for MSP service delivery. Until now. And now, for the first time, an MSP platform watches the market for you \u2014 so you\u2019re never caught off guard by an industry shift your clients are already asking about.",
+                title: "Tool-based selling is a race to the bottom",
+                body: "When your proposal leads with CrowdStrike and Datto, you\u2019re selling tools. Your competitor sells the same tools. The MSPs winning are the ones who sell outcomes \u2014 risk reduction, compliance, resilience \u2014 and use tools to deliver them.",
               },
               {
-                title: "The window is open",
-                body: "MSPs that build an AI-powered advisory layer in the next 24 months will own the high-margin segment of their market. Those that don\u2019t will compete on price against offshore providers and automation.",
+                title: "Compliance is creating new revenue",
+                body: "CMMC, HIPAA updates, PCI DSS v4.0 \u2014 every new compliance requirement is a service opportunity for MSPs who can credibly deliver against it. Stackteryx maps your stack to these frameworks automatically so you always know where you stand and what to sell.",
               },
             ].map(({ title, body }) => (
               <div
@@ -830,14 +828,16 @@ export function MarketingLandingPage() {
             className="text-3xl md:text-[42px] font-extrabold leading-tight"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            The system MSPs should have had all along.
+            Stop guessing. Start building services that actually pay.
           </h2>
           <p
             className="text-base leading-[1.75] max-w-xl mx-auto"
             style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
           >
-            Design a service. Model the margin. Generate the proposal.
-            Deliver the advisory. All in one place. All connected.
+            Design your first service with real cost modeling.
+            Generate a proposal your client will actually read.
+            Deliver advisory that makes you look like a strategic partner,
+            not a support desk.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -871,14 +871,15 @@ export function MarketingLandingPage() {
                 e.currentTarget.style.background = "transparent";
               }}
             >
-              Generate a free CTO brief
+              Try the free CTO brief
             </Link>
           </div>
           <p
             className="text-xs"
             style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
           >
-            No credit card required to start. No account required for the CTO brief.
+            Free to start. No credit card. The CTO brief works
+            with no account at all &mdash; just your client&apos;s domain.
           </p>
         </div>
       </section>
