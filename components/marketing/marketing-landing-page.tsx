@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   ArrowRight, Brain, Layers2, TrendingUp, BarChart2, FileText,
-  Package, DollarSign, Sparkles,
+  Package, DollarSign, Sparkles, Telescope,
 } from "lucide-react";
 import { HeroGraphic } from "./hero-graphic";
 
@@ -46,6 +46,13 @@ const AGENTS = [
     color: "#F0997B",
     Icon: FileText,
     desc: "Writes proposals, playbooks, and talk tracks from your service stack.",
+  },
+  {
+    name: "Horizon",
+    title: "Market Intelligence",
+    color: "#EF9F27",
+    Icon: Telescope,
+    desc: "Watches MSP industry trends, technology shifts, and competitive movements \u2014 delivers a weekly briefing every Monday morning.",
   },
 ];
 
@@ -186,10 +193,10 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Stackteryx gives MSPs a team of AI agents that design profitable
-              services, model real delivery costs, generate client proposals,
-              and deliver executive advisory &mdash; so every engagement is strategic,
-              not reactive.
+              Stackteryx gives MSPs a team of six AI agents that design profitable
+              services, model real delivery costs, generate client proposals, deliver
+              executive advisory, and brief you every Monday on where the MSP market
+              is heading &mdash; so every engagement is strategic, not reactive.
             </p>
 
             {/* CTA buttons */}
@@ -244,7 +251,7 @@ export function MarketingLandingPage() {
             >
               Trusted by MSPs delivering managed security services across North America.
               <br />
-              Five AI agents. One intelligence platform.
+              Six AI agents. One intelligence platform.
             </p>
           </div>
 
@@ -325,7 +332,7 @@ export function MarketingLandingPage() {
             className="text-center text-[14px]"
             style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
           >
-            All five work continuously &mdash; no prompting required.
+            All six work continuously &mdash; no prompting required.
           </p>
         </div>
       </section>
@@ -446,7 +453,7 @@ export function MarketingLandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 step: "01",
@@ -479,6 +486,14 @@ export function MarketingLandingPage() {
                 title: "Sage and Scout run the advisory layer",
                 desc: "Sage generates quarterly technology strategy briefs for every client. Scout monitors your portfolio and flags opportunities, risks, and renewals before they surface on their own.",
                 Icon: Brain,
+              },
+              {
+                step: "05",
+                agent: "Horizon",
+                agentColor: "#EF9F27",
+                title: "Horizon keeps you ahead of the market",
+                desc: "Every Monday morning, Horizon delivers a market intelligence digest \u2014 technology shifts, MSP business trends, and competitive movements \u2014 so you walk into every client conversation knowing where the industry is heading.",
+                Icon: Telescope,
               },
             ].map(({ step, agent, agentColor, title, desc, Icon }) => (
               <div
@@ -643,7 +658,7 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              One platform. Five agents. The full service intelligence stack.
+              One platform. Six agents. The full service intelligence stack.
             </h2>
           </div>
 
@@ -683,6 +698,13 @@ export function MarketingLandingPage() {
                 Icon: Brain,
                 title: "Fractional CTO",
                 desc: "Executive technology advisory briefs and client strategy reports, on demand.",
+              },
+              {
+                agent: "Horizon",
+                agentColor: "#EF9F27",
+                Icon: Telescope,
+                title: "Market Intelligence",
+                desc: "Horizon monitors MSP industry trends, technology shifts, and competitive movements \u2014 delivering a weekly briefing so you always know where the market is heading.",
               },
               {
                 agent: "All Agents",
@@ -753,7 +775,7 @@ export function MarketingLandingPage() {
               },
               {
                 title: "The tools exist. The infrastructure doesn\u2019t.",
-                body: "AI can write a technology strategy brief. AI can model service margins. But no platform has assembled these capabilities into an operating system for MSP service delivery. Until now.",
+                body: "AI can write a technology strategy brief. AI can model service margins. But no platform has assembled these capabilities into an operating system for MSP service delivery. Until now. And now, for the first time, an MSP platform watches the market for you \u2014 so you\u2019re never caught off guard by an industry shift your clients are already asking about.",
               },
               {
                 title: "The window is open",
