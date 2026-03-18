@@ -225,6 +225,9 @@ export function DashboardClient({
         </span>
       </div>
 
+      {/* ── Horizon Market Intelligence ────────────────────────────── */}
+      <HorizonDigestCard digest={horizonDigest} digestId={horizonDigestId} />
+
       {/* ── Welcome Banner (post-onboarding, first 7 days) ────────────── */}
       {showWelcome && (
         <div
@@ -407,9 +410,6 @@ export function DashboardClient({
           ) : null}
         </IntelligenceCard>
       </div>
-
-      {/* ── Horizon Market Intelligence ────────────────────────────── */}
-      <HorizonDigestCard digest={horizonDigest} digestId={horizonDigestId} />
 
       {/* ── Practice Intelligence ───────────────────────────────────── */}
       {serviceCount >= 3 && orgSignals ? (
