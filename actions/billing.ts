@@ -35,6 +35,9 @@ export interface SubscriptionRecord {
   compedBy: string | null;
   compedReason: string | null;
   compedExpiresAt: string | null;
+  trialEndsAt: string | null;
+  trialStartedAt: string | null;
+  trialConverted: boolean;
 }
 
 export interface UsageRecord {
@@ -88,10 +91,19 @@ export async function getOrgSubscription(): Promise<SubscriptionRecord> {
     .single();
 
   if (error || !data) {
-    // Legacy org without a subscription row — create one
+    // New org — start on 7-day trial with full Pro access
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     const { data: created, error: insertErr } = await service
       .from("subscriptions")
-      .insert({ org_id: orgId, plan: "free", status: "active" })
+      .insert({
+        org_id: orgId,
+        plan: "trial",
+        status: "active",
+        trial_started_at: now.toISOString(),
+        trial_ends_at: trialEnd.toISOString(),
+      })
       .select()
       .single();
 
@@ -103,7 +115,7 @@ export async function getOrgSubscription(): Promise<SubscriptionRecord> {
       orgId,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
-      plan: "free",
+      plan: "trial" as Plan,
       status: "active",
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
@@ -111,6 +123,9 @@ export async function getOrgSubscription(): Promise<SubscriptionRecord> {
       compedBy: null,
       compedReason: null,
       compedExpiresAt: null,
+      trialEndsAt: trialEnd.toISOString(),
+      trialStartedAt: now.toISOString(),
+      trialConverted: false,
     };
   }
 
@@ -126,6 +141,9 @@ export async function getOrgSubscription(): Promise<SubscriptionRecord> {
     compedBy: data.comped_by ?? null,
     compedReason: data.comped_reason ?? null,
     compedExpiresAt: data.comped_expires_at ?? null,
+    trialEndsAt: data.trial_ends_at ?? null,
+    trialStartedAt: data.trial_started_at ?? null,
+    trialConverted: data.trial_converted ?? false,
   };
 }
 
@@ -208,6 +226,9 @@ function buildSubscriptionRecord(
     currentPeriodEnd: (data.current_period_end as string) ?? null,
     cancelAtPeriodEnd: (data.cancel_at_period_end as boolean) ?? false,
     comped: (data.comped as boolean) ?? false,
+    trialEndsAt: (data.trial_ends_at as string) ?? null,
+    trialStartedAt: (data.trial_started_at as string) ?? null,
+    trialConverted: (data.trial_converted as boolean) ?? false,
     compedBy: (data.comped_by as string) ?? null,
     compedReason: (data.comped_reason as string) ?? null,
     compedExpiresAt: (data.comped_expires_at as string) ?? null,
@@ -284,14 +305,26 @@ export async function checkLimit(limitKey: LimitKey): Promise<LimitCheck> {
   const orgId = await requireOrgId();
   const service = createServiceClient();
 
-  // Get subscription (including comp fields)
+  // Get subscription (including comp + trial fields)
   const { data: sub } = await service
     .from("subscriptions")
-    .select("plan, comped, comped_expires_at")
+    .select("plan, comped, comped_expires_at, trial_ends_at")
     .eq("org_id", orgId)
     .single();
 
   let plan: Plan = (sub?.plan as Plan) ?? "free";
+
+  // Trial check — active trial gets full Pro access
+  if (plan === "trial") {
+    const trialEndsAt = sub?.trial_ends_at;
+    if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
+      // Active trial — unlimited access
+      return { allowed: true, current: 0, limit: Infinity, plan: "trial" };
+    }
+    // Trial expired — fallback downgrade to free (cron is primary mechanism)
+    await downgradeToFree(orgId);
+    plan = "free";
+  }
 
   // Comp check — if comped and expired, downgrade to free
   if (sub?.comped) {
@@ -413,7 +446,7 @@ export async function createCheckoutSession(
 
   const { data: sub } = await service
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, plan, trial_ends_at")
     .eq("org_id", orgId)
     .single();
 
@@ -422,6 +455,14 @@ export async function createCheckoutSession(
       ? process.env.STRIPE_ENTERPRISE_PRICE_ID!
       : process.env.STRIPE_PRO_PRICE_ID!;
 
+  // If user is in an active trial, set Stripe trial_end to match
+  // so they aren't charged until the trial period ends
+  const trialEndsAt = sub?.trial_ends_at;
+  const isInTrial =
+    sub?.plan === "trial" &&
+    trialEndsAt &&
+    new Date(trialEndsAt) > new Date();
+
   const sessionParams: Record<string, unknown> = {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
@@ -429,6 +470,15 @@ export async function createCheckoutSession(
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings`,
     metadata: { org_id: orgId },
     allow_promotion_codes: true,
+    ...(isInTrial
+      ? {
+          subscription_data: {
+            trial_end: Math.floor(
+              new Date(trialEndsAt).getTime() / 1000,
+            ),
+          },
+        }
+      : {}),
   };
 
   if (sub?.stripe_customer_id) {
@@ -443,6 +493,18 @@ export async function createCheckoutSession(
 
   if (!session.url) throw new Error("Failed to create checkout session");
   return { url: session.url };
+}
+
+export async function downgradeToFree(orgId: string): Promise<void> {
+  const service = createServiceClient();
+  await service
+    .from("subscriptions")
+    .update({
+      plan: "free",
+      status: "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("org_id", orgId);
 }
 
 export async function createBillingPortalSession(): Promise<

@@ -15,6 +15,7 @@ import { WorkflowBanner } from "@/components/layout/workflow-banner";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { PlanProvider } from "@/components/providers/plan-provider";
 import { UpgradeModalProvider } from "@/components/billing/upgrade-modal";
+import { TrialBannerWrapper } from "@/components/trial/trial-banner-wrapper";
 
 export default async function AppLayout({
   children,
@@ -125,6 +126,7 @@ export default async function AppLayout({
           ).catch(() => 0)}
         />
         <main className="flex-1 overflow-y-auto app-grid-bg p-6 pb-20 md:pb-6">
+          <TrialBannerWrapper />
           {!allWorkflowComplete && <WorkflowBanner steps={workflowSteps} />}
           {children}
         </main>

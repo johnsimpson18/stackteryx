@@ -34,7 +34,7 @@ const GROUP_ORDER: NavGroup[] = ["primary", "secondary"];
 export function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { plan, loading, comped } = usePlanContext();
+  const { plan, loading, comped, isTrial, trialDaysRemaining, trialUrgency } = usePlanContext();
   const { openUpgradeModal } = useUpgradeModal();
   const [billingPending, startBillingTransition] = useTransition();
 
@@ -200,7 +200,67 @@ export function Sidebar({ profile }: SidebarProps) {
       {!collapsed && !loading && (
         <div className="px-3 pb-2 flex-shrink-0">
           <div className="rounded-lg border border-sidebar-border p-2.5 space-y-2">
-            {plan === "enterprise" ? (
+            {isTrial ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded border"
+                    style={{
+                      backgroundColor: trialUrgency === "high" ? "rgba(226,75,74,0.1)" : trialUrgency === "medium" ? "rgba(239,159,39,0.1)" : "rgba(200,241,53,0.1)",
+                      color: trialUrgency === "high" ? "#e24b4a" : trialUrgency === "medium" ? "#EF9F27" : "#c8f135",
+                      borderColor: trialUrgency === "high" ? "rgba(226,75,74,0.2)" : trialUrgency === "medium" ? "rgba(239,159,39,0.2)" : "rgba(200,241,53,0.2)",
+                    }}
+                  >
+                    {trialUrgency === "none" || trialUrgency === "low"
+                      ? `Free Trial \u00B7 ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? "s" : ""} left`
+                      : `\u26A1 Trial ending soon \u00B7 ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, ((7 - trialDaysRemaining) / 7) * 100)}%`,
+                      backgroundColor: trialDaysRemaining <= 1 ? "#e24b4a" : trialDaysRemaining <= 2 ? "#EF9F27" : "#c8f135",
+                    }}
+                  />
+                </div>
+                <p className="text-[9px] text-muted-foreground/60" style={{ fontFamily: "var(--font-mono-alt)" }}>
+                  Day {7 - trialDaysRemaining + 1} of 7
+                </p>
+                {trialUrgency === "none" || trialUrgency === "low" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-7 text-[10px] text-primary hover:text-primary"
+                    onClick={() => openUpgradeModal()}
+                  >
+                    Upgrade when ready
+                  </Button>
+                ) : (
+                  <div className="space-y-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-7 text-[10px] text-primary hover:text-primary"
+                      onClick={() => openUpgradeModal()}
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Upgrade to Pro &mdash; $149/mo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-6 text-[9px] text-muted-foreground hover:text-foreground"
+                      onClick={() => openUpgradeModal()}
+                    >
+                      Upgrade to Enterprise &rarr;
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : plan === "enterprise" ? (
               <>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border" style={{ backgroundColor: "rgba(90,158,0,0.1)", color: "#5a9e00", borderColor: "rgba(90,158,0,0.2)" }}>

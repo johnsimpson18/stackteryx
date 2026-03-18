@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -15,10 +16,13 @@ import {
 } from "@/actions/billing";
 import {
   PLAN_LIMITS,
+  trialDaysRemaining as computeTrialDays,
   type LimitKey,
   type Plan,
   type PlanLimitValues,
 } from "@/lib/plans";
+
+type TrialUrgency = "none" | "low" | "medium" | "high" | "expired";
 
 interface PlanContextValue {
   plan: Plan;
@@ -29,6 +33,11 @@ interface PlanContextValue {
   refresh: () => void;
   loading: boolean;
   comped: boolean;
+  trialEndsAt: string | null;
+  trialConverted: boolean;
+  isTrial: boolean;
+  trialDaysRemaining: number;
+  trialUrgency: TrialUrgency;
 }
 
 const PlanContext = createContext<PlanContextValue | null>(null);
@@ -43,12 +52,23 @@ const CLIENT_BYPASS =
   process.env.NEXT_PUBLIC_BYPASS_PLAN_LIMITS === "true" &&
   process.env.NODE_ENV !== "production";
 
+function computeUrgency(days: number, isTrial: boolean): TrialUrgency {
+  if (!isTrial) return "none";
+  if (days <= 0) return "expired";
+  if (days <= 1) return "high";
+  if (days <= 2) return "medium";
+  if (days <= 4) return "low";
+  return "none";
+}
+
 export function PlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<Plan>(CLIENT_BYPASS ? "pro" : "free");
   const [status, setStatus] = useState("active");
   const [usage, setUsage] = useState<UsageRecord>(DEFAULT_USAGE);
   const [loading, setLoading] = useState(!CLIENT_BYPASS);
   const [comped, setComped] = useState(false);
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const [trialConverted, setTrialConverted] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (CLIENT_BYPASS) return;
@@ -61,6 +81,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       setStatus(sub.status);
       setUsage(u);
       setComped(sub.comped);
+      setTrialEndsAt(sub.trialEndsAt);
+      setTrialConverted(sub.trialConverted);
     } catch {
       // Degrade gracefully — assume free
     } finally {
@@ -74,29 +96,34 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   const limits = PLAN_LIMITS[plan] as PlanLimitValues;
 
+  const isTrial = plan === "trial";
+  const trialDaysRemaining = useMemo(
+    () => computeTrialDays(trialEndsAt),
+    [trialEndsAt],
+  );
+  const trialUrgency = useMemo(
+    () => computeUrgency(trialDaysRemaining, isTrial),
+    [trialDaysRemaining, isTrial],
+  );
+
   const isAtLimit = useCallback(
     (key: LimitKey): boolean => {
       if (CLIENT_BYPASS) return false;
+      if (isTrial && trialDaysRemaining > 0) return false; // Active trial — no limits
       const planLimits = PLAN_LIMITS[plan] as PlanLimitValues;
       const val = planLimits[key];
-      // Boolean feature flags
       if (typeof val === "boolean") return !val;
-      // Infinite limits
       if (val === Infinity) return false;
-      // Usage-based limits tracked client-side
       switch (key) {
         case "aiGenerationsPerMonth":
           return usage.aiGenerationsCount >= val;
         case "exportsPerMonth":
           return usage.exportsCount >= val;
         default:
-          // Count-based limits (services, clients, teamMembers, ctoBriefsTotalEver)
-          // are checked server-side via checkLimit() — UI can't know the real count
-          // without an extra fetch, so we optimistically allow.
           return false;
       }
     },
-    [plan, usage],
+    [plan, usage, isTrial, trialDaysRemaining],
   );
 
   return (
@@ -110,6 +137,11 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         refresh: fetchData,
         loading,
         comped,
+        trialEndsAt,
+        trialConverted,
+        isTrial,
+        trialDaysRemaining,
+        trialUrgency,
       }}
     >
       {children}

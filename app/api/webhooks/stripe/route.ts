@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
             stripe_customer_id: customerId ?? null,
             current_period_start: periodStart,
             current_period_end: periodEnd,
+            trial_converted: true,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "org_id" },

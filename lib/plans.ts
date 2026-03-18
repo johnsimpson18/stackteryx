@@ -1,12 +1,27 @@
 export const PLAN_LIMITS = {
   free: {
-    services: 2,
-    clients: 3,
-    aiGenerationsPerMonth: 5,
-    exportsPerMonth: 3,
+    services: 1,
+    clients: 2,
+    aiGenerationsPerMonth: 2,
+    exportsPerMonth: 2,
     ctoBriefsTotalEver: 1,
     teamMembers: 1,
     // Premium feature flags
+    qbrGenerator: false,
+    clientScorecards: false,
+    bulkClientAnalysis: false,
+    portfolioIntelligence: false,
+    whiteLabel: false,
+    teamWorkflows: false,
+  },
+  trial: {
+    // Full Pro access during trial
+    services: Infinity,
+    clients: Infinity,
+    aiGenerationsPerMonth: Infinity,
+    exportsPerMonth: Infinity,
+    ctoBriefsTotalEver: Infinity,
+    teamMembers: Infinity,
     qbrGenerator: false,
     clientScorecards: false,
     bulkClientAnalysis: false,
@@ -56,6 +71,7 @@ export type PlanLimitValues = {
 
 export const PLAN_DISPLAY = {
   free: { label: "Free", price: "$0", period: "forever" },
+  trial: { label: "Free Trial", price: "$0", period: "7 days" },
   pro: { label: "Pro", price: "$149", period: "per month" },
   enterprise: { label: "Enterprise", price: "$399", period: "per month" },
 } as const;
@@ -65,4 +81,21 @@ export function isBypassMode(): boolean {
     process.env.BYPASS_PLAN_LIMITS === "true" &&
     process.env.NODE_ENV !== "production"
   );
+}
+
+/** Is this org in an active trial? */
+export function isActiveTrial(
+  plan: string,
+  trialEndsAt: string | null,
+): boolean {
+  if (plan !== "trial") return false;
+  if (!trialEndsAt) return false;
+  return new Date(trialEndsAt) > new Date();
+}
+
+/** Days remaining in trial (0 if expired or not a trial). */
+export function trialDaysRemaining(trialEndsAt: string | null): number {
+  if (!trialEndsAt) return 0;
+  const ms = new Date(trialEndsAt).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
 }

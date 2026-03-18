@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { IntelligenceCard } from "@/components/dashboard/intelligence-card";
@@ -40,6 +41,8 @@ import {
   PracticeIntelligencePlaceholder,
 } from "@/components/dashboard/practice-intelligence";
 import { HorizonDigestCard } from "@/components/horizon/horizon-digest-card";
+import { usePlanContext } from "@/components/providers/plan-provider";
+import { useUpgradeModal } from "@/components/billing/upgrade-modal";
 import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
 import type { OrgSignals } from "@/lib/intelligence/signal-engine";
 import type { HorizonDigest } from "@/types/horizon";
@@ -121,12 +124,27 @@ export function DashboardClient({
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [greeting, setGreeting] = useState("Welcome back");
   const [mounted, setMounted] = useState(false);
+  const [trialWelcomeDismissed, setTrialWelcomeDismissed] = useState(true);
+  const [postTrialAlertDismissed, setPostTrialAlertDismissed] = useState(true);
+  const { isTrial, trialDaysRemaining, trialEndsAt, plan: currentPlan } = usePlanContext();
+  const { openUpgradeModal } = useUpgradeModal();
+  const isPostTrial = currentPlan === "free" && trialEndsAt !== null && !isTrial;
   const hasServices = bundles.length > 0;
 
   useEffect(() => {
     setGreeting(computeGreeting());
     setMounted(true);
-  }, []);
+    // Show trial welcome only if not previously dismissed and trial is new (7 days remaining)
+    if (isTrial && trialDaysRemaining >= 6) {
+      const dismissed = localStorage.getItem("stackteryx-trial-welcome-dismissed");
+      if (!dismissed) setTrialWelcomeDismissed(false);
+    }
+    // Show post-trial alert once per session
+    if (isPostTrial) {
+      const dismissed = sessionStorage.getItem("stackteryx-post-trial-dismissed");
+      if (!dismissed) setPostTrialAlertDismissed(false);
+    }
+  }, [isTrial, trialDaysRemaining, isPostTrial]);
 
   // Show welcome banner for 7 days after org creation
   const showWelcome = (() => {
@@ -189,6 +207,85 @@ export function DashboardClient({
           </Button>
         )}
       </div>
+
+      {/* ── Trial Welcome ────────────────────────────────────────── */}
+      {isTrial && !trialWelcomeDismissed && (
+        <div
+          className="rounded-lg p-5 relative"
+          style={{ background: "#111111", border: "1px solid #1e1e1e", borderLeft: "3px solid #c8f135" }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setTrialWelcomeDismissed(true);
+              localStorage.setItem("stackteryx-trial-welcome-dismissed", "true");
+            }}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <p className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+            Welcome to Stackteryx. Your 7-day trial has started.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1" style={{ fontFamily: "var(--font-mono-alt)" }}>
+            You have full access to all Pro features. Here&apos;s what to do first:
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            <Link href="/stack-catalog" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
+              1. Add your tools &rarr;
+            </Link>
+            <Link href="/stack-builder" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
+              2. Build a service &rarr;
+            </Link>
+            <Link href="/fractional-cto" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
+              3. Try the Free CTO Brief &rarr;
+            </Link>
+          </div>
+          {trialEndsAt && (
+            <p suppressHydrationWarning className="text-[10px] text-muted-foreground/50 mt-3" style={{ fontFamily: "var(--font-mono-alt)" }}>
+              Your trial ends on {new Date(trialEndsAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}. No card needed until then.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Post-Trial Downgrade Alert ────────────────────────────── */}
+      {isPostTrial && !postTrialAlertDismissed && (
+        <div
+          className="rounded-lg p-5 relative"
+          style={{ background: "#111111", border: "1px solid #e24b4a40", borderLeft: "3px solid #e24b4a" }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setPostTrialAlertDismissed(true);
+              sessionStorage.setItem("stackteryx-post-trial-dismissed", "true");
+            }}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <p className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+            Your free trial has ended.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl" style={{ fontFamily: "var(--font-mono-alt)" }}>
+            Your data is safe &mdash; all your services, clients, and proposals are preserved.
+            You&apos;re now on the Free plan with limited access.
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            <Button size="sm" onClick={() => openUpgradeModal()}>
+              <Zap className="h-3 w-3 mr-1" />
+              Upgrade to Pro &mdash; $149/month
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => openUpgradeModal()}>
+              Upgrade to Enterprise &mdash; $399/month
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground/50 mt-2" style={{ fontFamily: "var(--font-mono-alt)" }}>
+            Free plan limits: 1 service &middot; 2 clients &middot; 2 AI/month
+          </p>
+        </div>
+      )}
 
       {/* ── Agent Status Strip ──────────────────────────────────────── */}
       <div
