@@ -18,6 +18,16 @@ export async function GET(request: Request) {
   // Use NEXT_PUBLIC_SITE_URL in production — origin can resolve incorrectly behind Vercel's proxy
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
 
+  // Temporary debug log — remove after diagnosing OAuth redirect issue
+  console.log("CALLBACK HIT", {
+    url: request.url,
+    code: code ? `${code.slice(0, 8)}...` : null,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    baseUrl,
+    origin: requestUrl.origin,
+    next,
+  });
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
