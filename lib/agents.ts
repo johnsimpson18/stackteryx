@@ -53,6 +53,15 @@ export const AGENTS: Record<string, Agent> = {
     color: "#F0997B",
     icon: "FileText",
   },
+  horizon: {
+    id: "horizon",
+    name: "Horizon",
+    title: "Market Intelligence",
+    description:
+      "Monitors MSP industry trends, technology shifts, and market movements to keep your practice ahead of the curve.",
+    color: "#EF9F27",
+    icon: "Telescope",
+  },
 };
 
 export type AgentId = keyof typeof AGENTS;

@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 export interface AgentActivityInput {
   orgId: string;
-  agentId: "aria" | "margin" | "scout" | "sage" | "pitch";
+  agentId: "aria" | "margin" | "scout" | "sage" | "pitch" | "horizon";
   activityType: "analysis" | "generation" | "detection" | "alert";
   title: string;
   description?: string;

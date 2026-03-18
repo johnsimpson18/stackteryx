@@ -26,7 +26,7 @@ interface TopbarProps {
 }
 
 const AGENT_DOTS = Object.values(AGENTS);
-const AGENT_PULSE_DELAYS = ["0s", "0.6s", "1.2s", "1.8s", "2.4s"];
+const AGENT_PULSE_DELAYS = ["0s", "0.6s", "1.2s", "1.8s", "2.4s", "3.0s"];
 
 export function Topbar({
   workspaceName,
@@ -81,7 +81,7 @@ export function Topbar({
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              5 agents active
+              6 agents active
             </span>
             {highPriorityNudgeCount > 0 && (
               <span

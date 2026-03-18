@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAgentActivities } from "@/lib/agents/log-activity";
 import { getActiveNudges, type ScoutNudgeRecord } from "@/actions/scout-nudges";
 import { getOrgSignals, type OrgSignals } from "@/lib/intelligence/signal-engine";
+import { getLatestHorizonDigest } from "@/actions/horizon";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
@@ -268,6 +269,14 @@ export default async function DashboardPage() {
     }
   }
 
+  // Fetch latest Horizon digest
+  let horizonDigest: { id: string; digest: import("@/types/horizon").HorizonDigest } | null = null;
+  try {
+    horizonDigest = await getLatestHorizonDigest();
+  } catch {
+    // Digest unavailable — degrade gracefully
+  }
+
   // Refresh nudges in background for next load (fire-and-forget)
   if (orgId) {
     import("@/actions/scout-nudges").then(({ syncNudgesToDb }) => {
@@ -296,6 +305,8 @@ export default async function DashboardPage() {
       scoutNudges={scoutNudges}
       orgSignals={orgSignals}
       serviceCount={bundles.filter((b) => b.status === "active").length}
+      horizonDigest={horizonDigest?.digest ?? null}
+      horizonDigestId={horizonDigest?.id ?? null}
     />
   );
 }

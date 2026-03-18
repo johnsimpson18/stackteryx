@@ -8,6 +8,7 @@ import {
   BarChart2,
   Brain,
   FileText,
+  Telescope,
 } from "lucide-react";
 import { AgentActivityFeed } from "@/components/agents/agent-activity-feed";
 
@@ -17,6 +18,7 @@ const ICON_MAP: Record<string, typeof Layers2> = {
   BarChart2,
   Brain,
   FileText,
+  Telescope,
 };
 
 const AGENT_LINKS: Record<string, { label: string; href: string }> = {
@@ -25,6 +27,7 @@ const AGENT_LINKS: Record<string, { label: string; href: string }> = {
   scout: { label: "Go to Dashboard", href: "/dashboard" },
   sage: { label: "Open Fractional CTO", href: "/cto-briefs" },
   pitch: { label: "Open Sales Studio", href: "/sales-studio" },
+  horizon: { label: "View Dashboard", href: "/dashboard" },
 };
 
 export default async function AgentsPage() {

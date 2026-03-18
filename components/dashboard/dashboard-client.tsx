@@ -39,8 +39,10 @@ import {
   PracticeIntelligence,
   PracticeIntelligencePlaceholder,
 } from "@/components/dashboard/practice-intelligence";
+import { HorizonDigestCard } from "@/components/horizon/horizon-digest-card";
 import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
 import type { OrgSignals } from "@/lib/intelligence/signal-engine";
+import type { HorizonDigest } from "@/types/horizon";
 import type { AgentActivityRecord } from "@/lib/agents/log-activity";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 import type { MRRServiceItem } from "@/components/dashboard/mrr-breakdown";
@@ -77,6 +79,8 @@ interface DashboardClientProps {
   scoutNudges?: ScoutNudgeRecord[];
   orgSignals?: OrgSignals | null;
   serviceCount?: number;
+  horizonDigest?: HorizonDigest | null;
+  horizonDigestId?: string | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -110,6 +114,8 @@ export function DashboardClient({
   scoutNudges = [],
   orgSignals = null,
   serviceCount = 0,
+  horizonDigest = null,
+  horizonDigestId = null,
 }: DashboardClientProps) {
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -401,6 +407,9 @@ export function DashboardClient({
           ) : null}
         </IntelligenceCard>
       </div>
+
+      {/* ── Horizon Market Intelligence ────────────────────────────── */}
+      <HorizonDigestCard digest={horizonDigest} digestId={horizonDigestId} />
 
       {/* ── Practice Intelligence ───────────────────────────────────── */}
       {serviceCount >= 3 && orgSignals ? (
