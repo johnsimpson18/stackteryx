@@ -134,17 +134,17 @@ export function StackCatalogClient({
   return (
     <div className="space-y-6">
       {/* ── Actions ── */}
-      <RoleGate role={userRole} permission="create_tools">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => setGlobalLibraryOpen(true)}>
+          <Globe className="h-4 w-4 mr-2" />
+          Browse Global Library
+        </Button>
+        <RoleGate role={userRole} permission="create_tools">
           <Button variant="outline" asChild>
             <Link href="/tools/upload">
               <Upload className="h-4 w-4 mr-2" />
               Import from Spreadsheet
             </Link>
-          </Button>
-          <Button variant="outline" onClick={() => setGlobalLibraryOpen(true)}>
-            <Globe className="h-4 w-4 mr-2" />
-            Browse Global Library
           </Button>
           <Button variant="outline" onClick={() => setLibraryOpen(true)}>
             <Library className="h-4 w-4 mr-2" />
@@ -156,8 +156,8 @@ export function StackCatalogClient({
               Add Tool Manually
             </Link>
           </Button>
-        </div>
-      </RoleGate>
+        </RoleGate>
+      </div>
 
       {/* ── Coverage Score ── */}
       <CoverageScoreCard
