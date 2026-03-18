@@ -31,25 +31,30 @@ async function runWebSearch(query: string): Promise<string> {
   const client = getAnthropicClient();
 
   try {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      tools: [
-        {
-          type: "web_search_20250305" as "web_search_20250305",
-          name: "web_search",
-        },
-      ],
-      messages: [
-        {
-          role: "user",
-          content: `Search for current MSP industry trends.\nSearch query: "${query}"\nExtract the 3 most relevant findings for a managed service provider.\nFocus on: technology shifts, business model changes, competitive dynamics.\nBe specific and cite what you find.`,
-        },
-      ],
-    });
+    // Race against a 30s timeout per search
+    const result = await Promise.race([
+      client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        tools: [
+          {
+            type: "web_search_20250305" as "web_search_20250305",
+            name: "web_search",
+          },
+        ],
+        messages: [
+          {
+            role: "user",
+            content: `Search for current MSP industry trends.\nSearch query: "${query}"\nExtract the 3 most relevant findings for a managed service provider.\nFocus on: technology shifts, business model changes, competitive dynamics.\nBe specific and cite what you find.`,
+          },
+        ],
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Search timeout")), 30000),
+      ),
+    ]);
 
-    // Extract text content from response
-    return response.content
+    return result.content
       .filter((block) => block.type === "text")
       .map((block) => (block as { type: "text"; text: string }).text)
       .join("\n\n");
@@ -95,13 +100,12 @@ export async function generateHorizonDigest(
     "managed service provider pricing packaging competitive landscape",
   ];
 
-  const searchResults: string[] = [];
   let usedQueries = [...searchQueries];
 
-  for (const query of searchQueries) {
-    const result = await runWebSearch(query);
-    searchResults.push(result);
-  }
+  // Run all searches in parallel for speed
+  const searchResults = await Promise.all(
+    searchQueries.map((query) => runWebSearch(query)),
+  );
 
   const allSearchesFailed = searchResults.every((r) =>
     r.startsWith("[Search failed"),

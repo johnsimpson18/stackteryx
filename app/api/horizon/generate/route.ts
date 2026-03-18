@@ -4,7 +4,7 @@ import { getActiveOrgId } from "@/lib/org-context";
 import { generateHorizonDigest } from "@/actions/horizon";
 import { createServiceClient } from "@/lib/supabase/service";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST() {
   // Auth check
