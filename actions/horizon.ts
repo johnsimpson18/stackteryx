@@ -31,26 +31,21 @@ async function runWebSearch(query: string): Promise<string> {
   const client = getAnthropicClient();
 
   try {
-    // Race against a 30s timeout per search
+    // Use Claude's knowledge base with the search query as context
     const result = await Promise.race([
       client.messages.create({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        tools: [
-          {
-            type: "web_search_20250305" as "web_search_20250305",
-            name: "web_search",
-          },
-        ],
+        max_tokens: 1500,
+        temperature: 0.4,
         messages: [
           {
             role: "user",
-            content: `Search for current MSP industry trends.\nSearch query: "${query}"\nExtract the 3 most relevant findings for a managed service provider.\nFocus on: technology shifts, business model changes, competitive dynamics.\nBe specific and cite what you find.`,
+            content: `You are a market research analyst focused on the MSP (Managed Service Provider) industry. Based on your knowledge, provide the 3 most relevant current findings for this topic:\n\n"${query}"\n\nFocus on: technology shifts, business model changes, competitive dynamics.\nBe specific, cite trends you know about, and explain why each matters to an MSP owner.`,
           },
         ],
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Search timeout")), 30000),
+        setTimeout(() => reject(new Error("Search timeout")), 20000),
       ),
     ]);
 
