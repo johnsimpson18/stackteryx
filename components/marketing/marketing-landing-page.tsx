@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   ArrowRight, Brain, Layers2, TrendingUp, BarChart2, FileText,
-  Package, DollarSign, Sparkles, Telescope,
+  Telescope,
 } from "lucide-react";
 import { HeroGraphic } from "./hero-graphic";
 
@@ -97,7 +97,7 @@ export function MarketingLandingPage() {
               e.currentTarget.style.background = "transparent";
             }}
           >
-            Free CTO Brief
+            Free CTO Brief &#10022;
           </a>
           <Link
             href="/login"
@@ -109,27 +109,14 @@ export function MarketingLandingPage() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "#c8f135";
-              e.currentTarget.style.color = "#c8f135";
+              e.currentTarget.style.background = "#c8f13510";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "#1E1E1E";
-              e.currentTarget.style.color = "#FFFFFF";
+              e.currentTarget.style.background = "transparent";
             }}
           >
-            Log In
-          </Link>
-          <Link
-            href="/login?tab=signup"
-            className="h-8 px-4 flex items-center rounded text-xs font-bold uppercase tracking-wider transition-all"
-            style={{
-              background: "#c8f135",
-              color: "#0A0A0A",
-              fontFamily: "var(--font-display)",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-          >
-            Sign Up
+            Log in
           </Link>
         </div>
       </nav>
@@ -137,66 +124,36 @@ export function MarketingLandingPage() {
       {/* ═══════════════════════════════════════════════════════
           SECTION 1 — HERO
           ═══════════════════════════════════════════════════════ */}
-      <section
-        className="relative"
-        style={{
-          paddingTop: 80,
-          paddingBottom: 100,
-          backgroundImage:
-            "linear-gradient(#c8f13508 1px, transparent 1px), linear-gradient(90deg, #c8f13508 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      >
-        <div
-          className="mx-auto px-6"
-          style={{
-            maxWidth: 1200,
-            display: "grid",
-            gridTemplateColumns: "55fr 45fr",
-            gap: 64,
-            alignItems: "center",
-          }}
-        >
-          {/* ── Left column — Copy ──────────────────────────────── */}
-          <div>
-            {/* Eyebrow */}
+      <section className="relative overflow-hidden py-24 md:py-36">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-16">
+          <div className="flex-1 space-y-0">
             <p
-              className="landing-fade-in text-[11px] uppercase tracking-[0.3em] font-semibold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)", animationDelay: "0ms" }}
+              className="landing-fade-in text-[11px] uppercase tracking-[0.3em] font-semibold mb-6"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              MSP SERVICE INTELLIGENCE PLATFORM
+              THE SYSTEM OF RECORD FOR MSP SERVICE ECONOMICS
             </p>
-
             <h1
-              className="mt-6 text-[44px] md:text-[clamp(56px,7vw,88px)] font-extrabold leading-[1.0] tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="landing-fade-in text-4xl md:text-6xl font-extrabold leading-[1.08] tracking-tight"
+              style={{
+                color: "#FFFFFF",
+                animationDelay: "150ms",
+                fontFamily: "var(--font-display)",
+              }}
             >
-              <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "0ms" }}>
-                Your MSP deserves
-              </span>
-              <span className="landing-word block" style={{ color: "#FFFFFF", animationDelay: "60ms" }}>
-                better than
-              </span>
-              <span
-                className="landing-word landing-glow-text block"
-                style={{ color: "#c8f135", animationDelay: "120ms" }}
-              >
-                a spreadsheet.
-              </span>
+              Your MSP deserves better than a spreadsheet.
             </h1>
-
             <p
-              className="landing-fade-in mt-6 max-w-[620px] text-[16px] leading-[1.75]"
+              className="landing-fade-in text-base md:text-lg mt-6 max-w-xl leading-[1.75]"
               style={{
                 color: "#999999",
                 animationDelay: "300ms",
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Stackteryx gives MSPs a team of six AI agents that design profitable
-              services, model real delivery costs, generate client proposals, deliver
-              executive advisory, and brief you every Monday on where the MSP market
-              is heading &mdash; so every engagement is strategic, not reactive.
+              Stackteryx is the first platform built specifically for MSP service
+              economics &mdash; connecting your vendor tools to delivery costs, service
+              margins, client outcomes, and proposals in one structured system.
             </p>
 
             {/* CTA buttons */}
@@ -204,87 +161,265 @@ export function MarketingLandingPage() {
               className="landing-fade-in mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4"
               style={{ animationDelay: "450ms" }}
             >
-              <Link
-                href="/login?tab=signup"
-                className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
+              <a
+                href="#how-it-works"
+                onClick={(e) => scrollToSection(e, "how-it-works")}
+                className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
                 style={{
                   background: "#c8f135",
                   color: "#0A0A0A",
                   fontFamily: "var(--font-display)",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
               >
-                Start Free
+                See how it works
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#how-it-works"
-                onClick={(e) => scrollToSection(e, "how-it-works")}
-                className="h-11 px-6 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
+              </a>
+              <Link
+                href="/fractional-cto"
+                className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
                 style={{
-                  color: "#FFFFFF",
-                  border: "1px solid #1E1E1E",
+                  color: "#c8f135",
+                  border: "1px solid #c8f13540",
                   fontFamily: "var(--font-display)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "#c8f135";
-                  e.currentTarget.style.color = "#c8f135";
+                  e.currentTarget.style.background = "#c8f13510";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "#1E1E1E";
-                  e.currentTarget.style.color = "#FFFFFF";
+                  e.currentTarget.style.borderColor = "#c8f13540";
+                  e.currentTarget.style.background = "transparent";
                 }}
               >
-                See How It Works
-              </a>
+                Generate a Free CTO Brief
+              </Link>
             </div>
-
-            {/* Social proof */}
-            <p
-              className="landing-fade-in mt-12 text-[13px]"
-              style={{
-                color: "#444444",
-                animationDelay: "550ms",
-                fontFamily: "var(--font-mono-alt)",
-              }}
-            >
-              Trusted by MSPs delivering managed security services across North America.
-              <br />
-              Six AI agents. One intelligence platform.
-            </p>
           </div>
 
-          {/* ── Right column — Graphic ──────────────────────────── */}
-          <div className="hidden md:block">
+          <div className="landing-fade-in flex-1 w-full max-w-lg lg:max-w-none" style={{ animationDelay: "600ms" }}>
             <HeroGraphic />
           </div>
         </div>
 
-        {/* Mobile graphic — below copy, left panel only */}
-        <div className="md:hidden mt-10 px-6" style={{ maxHeight: 320, overflow: "hidden" }}>
-          <HeroGraphic />
+        {/* Credibility line */}
+        <div className="max-w-4xl mx-auto px-6 mt-20">
+          <p
+            className="text-center text-sm leading-relaxed"
+            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+          >
+            The only system where MSPs design, price, and sell profitable
+            services &mdash; without a spreadsheet in sight.
+          </p>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 2 — AGENT SHOWCASE
+          SECTION 2 — THE GAP
           ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-24 md:py-32">
+      <section className="py-24 md:py-32" style={{ background: "#111111" }}>
+        <div className="max-w-5xl mx-auto px-6 space-y-14">
+          <div className="text-center space-y-5">
+            <p
+              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              THE MISSING SYSTEM
+            </p>
+            <h2
+              className="text-3xl md:text-[42px] font-extrabold leading-tight"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Every business system exists. Except this one.
+            </h2>
+          </div>
+
+          {/* Three systems */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { title: "CRMs track customers.", tools: "Salesforce, HubSpot", what: "Who you sold to." },
+              { title: "PSAs track tickets.", tools: "ConnectWise, Autotask", what: "What broke and when." },
+              { title: "RMMs track devices.", tools: "NinjaOne, Automate", what: "What\u2019s running." },
+            ].map(({ title, tools, what }) => (
+              <div
+                key={title}
+                className="rounded-lg p-6 space-y-3"
+                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
+              >
+                <h3
+                  className="text-base font-bold"
+                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                >
+                  {title}
+                </h3>
+                <p
+                  className="text-xs"
+                  style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {tools}
+                </p>
+                <div style={{ height: 1, background: "#1E1E1E" }} />
+                <p
+                  className="text-sm"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {what}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* The gap */}
+          <div style={{ height: 1, background: "#1E1E1E" }} />
+
+          <div className="text-center space-y-6">
+            <p
+              className="text-sm font-semibold uppercase tracking-wider"
+              style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
+            >
+              Nothing tracks:
+            </p>
+            <p
+              className="text-[15px] md:text-base leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+            >
+              How services are designed. What they cost to deliver.
+              Whether they&apos;re profitable. How to sell them.
+            </p>
+            <p
+              className="text-xl md:text-2xl font-extrabold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
+            >
+              That&apos;s the gap Stackteryx fills.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 3 — THE SYSTEM (How It Works)
+          ═══════════════════════════════════════════════════════ */}
+      <section id="how-it-works" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-6xl mx-auto px-6 space-y-14">
           <div className="text-center space-y-5">
             <p
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              YOUR AI TEAM
+              THE SYSTEM
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Six agents. Every role in your service business covered.
+              One structured workflow. From outcome to invoice.
             </h2>
+          </div>
+
+          {/* Flow labels */}
+          <div className="hidden md:flex items-center justify-center gap-2 text-sm font-bold" style={{ fontFamily: "var(--font-mono-alt)" }}>
+            {["OUTCOME", "SERVICE", "STACK", "COST", "PRICE"].map((label, i) => (
+              <span key={label} className="flex items-center gap-2">
+                <span style={{ color: "#c8f135" }}>{label}</span>
+                {i < 4 && <ArrowRight className="h-3.5 w-3.5" style={{ color: "#333333" }} />}
+              </span>
+            ))}
+          </div>
+
+          {/* Five step cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              {
+                step: "01",
+                label: "Outcome",
+                desc: "Define the business result your client is paying for \u2014 not the tools. Reduced ransomware risk. Regulatory compliance. Operational resilience.",
+              },
+              {
+                step: "02",
+                label: "Service",
+                desc: "Design the service around that outcome. Select capabilities, set deliverables, establish what you actually provide.",
+              },
+              {
+                step: "03",
+                label: "Stack",
+                desc: "Map the vendor tools that power the service. Stackteryx calculates real delivery cost from your actual vendor contracts.",
+              },
+              {
+                step: "04",
+                label: "Cost",
+                desc: "Model labor, overhead, and vendor costs together \u2014 for the first time. See what this service actually costs to deliver.",
+              },
+              {
+                step: "05",
+                label: "Price",
+                desc: "Set a price with full margin visibility. Know what you make before you quote. Every time.",
+              },
+            ].map(({ step, label, desc }) => (
+              <div
+                key={step}
+                className="rounded-lg p-5 space-y-3"
+                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+              >
+                <span
+                  className="text-[10px] font-semibold uppercase tracking-wider"
+                  style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  STEP {step}
+                </span>
+                <h3
+                  className="text-base font-bold"
+                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                >
+                  {label}
+                </h3>
+                <p
+                  className="text-[14px] leading-[1.7]"
+                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+                >
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p
+            className="text-center text-sm"
+            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+          >
+            The system runs continuously &mdash; monitoring, alerting, and generating
+            insights without you needing to initiate it.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 4 — THE INTELLIGENCE LAYER (Agents)
+          ═══════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32" style={{ background: "#111111" }}>
+        <div className="max-w-5xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-5">
+            <p
+              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              INSIDE THE SYSTEM
+            </p>
+            <h2
+              className="text-3xl md:text-[42px] font-extrabold leading-tight"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              Six agents run the work you&apos;ve always done manually.
+            </h2>
+            <p
+              className="text-[15px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+            >
+              Built into Stackteryx is a team of six AI workers &mdash; each with a
+              specific job inside the system. They don&apos;t require prompting.
+              They run continuously, acting on your data, so the system is
+              always working even when you&apos;re not.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -292,32 +427,20 @@ export function MarketingLandingPage() {
               <div
                 key={agent.name}
                 className="rounded-lg p-5 space-y-3"
-                style={{
-                  background: "#0A0A0A",
-                  borderLeft: `3px solid ${agent.color}`,
-                  border: `1px solid #1E1E1E`,
-                  borderLeftColor: agent.color,
-                  borderLeftWidth: 3,
-                }}
+                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
               >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: agent.color }}
-                  />
-                  <span
-                    className="text-lg font-bold"
-                    style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-9 w-9 rounded-md flex items-center justify-center"
+                    style={{ background: `${agent.color}15` }}
                   >
-                    {agent.name}
-                  </span>
+                    <agent.Icon className="h-4.5 w-4.5" style={{ color: agent.color }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: "#FFFFFF" }}>{agent.name}</p>
+                    <p className="text-xs" style={{ color: agent.color, fontFamily: "var(--font-mono-alt)" }}>{agent.title}</p>
+                  </div>
                 </div>
-                <p
-                  className="text-xs uppercase tracking-wider font-semibold"
-                  style={{ color: agent.color, fontFamily: "var(--font-mono-alt)" }}
-                >
-                  {agent.title}
-                </p>
                 <p
                   className="text-[14px] leading-[1.65]"
                   style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
@@ -328,69 +451,167 @@ export function MarketingLandingPage() {
             ))}
           </div>
 
-          <p
-            className="text-center text-[14px]"
-            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
-          >
-            All six work continuously &mdash; no prompting required.
-          </p>
+          <div className="text-center space-y-1">
+            <p
+              className="text-sm font-semibold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}
+            >
+              This is what separates a system from a tool.
+            </p>
+            <p
+              className="text-sm"
+              style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+            >
+              Tools wait to be used. Systems run continuously.
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 3 — THE PAIN
+          SECTION 5 — ECONOMIC PROOF
           ═══════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-5xl mx-auto px-6 text-center space-y-14">
-          <div className="space-y-5">
+        <div className="max-w-4xl mx-auto px-6 space-y-14">
+          <div className="text-center space-y-5">
             <p
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              THE PROBLEM
+              THE ECONOMICS
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Sound familiar?
+              One use case. The math speaks for itself.
+            </h2>
+          </div>
+
+          <div
+            className="rounded-xl p-8 md:p-10 space-y-6"
+            style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+          >
+            <h3
+              className="text-lg font-bold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
+            >
+              Fractional CTO Advisory
+            </h3>
+            <div className="space-y-4">
+              <p
+                className="text-[15px] leading-[1.75]"
+                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+              >
+                An MSP charges $1,000/month per client for strategic technology
+                advisory. Ten clients. $120,000 in new annual recurring revenue.
+              </p>
+              <p
+                className="text-[15px] leading-[1.75]"
+                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+              >
+                Sage &mdash; Stackteryx&apos;s advisory agent &mdash; generates the quarterly
+                Technology Strategy Brief in under 60 seconds. Branded.
+                Exportable. Client-ready.
+              </p>
+              <p
+                className="text-[15px] leading-[1.75]"
+                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+              >
+                The service that used to require a $200,000/year vCIO hire is
+                now delivered by a $399/month platform.
+              </p>
+            </div>
+
+            {/* Value stats */}
+            <div className="grid grid-cols-3 gap-6 pt-6" style={{ borderTop: "1px solid #1E1E1E" }}>
+              {[
+                { value: "< 60 seconds", label: "Brief generation" },
+                { value: "$120K/year", label: "10-client ARR" },
+                { value: "$0", label: "Additional headcount" },
+              ].map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <p
+                    className="text-xl md:text-2xl font-extrabold"
+                    style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+                  >
+                    {value}
+                  </p>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+                  >
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/fractional-cto"
+              className="inline-flex items-center gap-2 h-11 px-7 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+              style={{
+                background: "#c8f135",
+                color: "#0A0A0A",
+                fontFamily: "var(--font-display)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
+            >
+              Generate a free brief &mdash; no account required
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 6 — THE MOAT
+          ═══════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32" style={{ background: "#111111" }}>
+        <div className="max-w-5xl mx-auto px-6 space-y-14">
+          <div className="text-center space-y-5">
+            <p
+              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              WHY THIS BECOMES INFRASTRUCTURE
+            </p>
+            <h2
+              className="text-3xl md:text-[42px] font-extrabold leading-tight"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+            >
+              The Bloomberg Terminal for managed services.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                heading: "MSPs are flying blind on service economics.",
-                body: "Most providers can\u2019t tell you their real margin on a service. Tool costs, labor, and overhead aren\u2019t modeled together \u2014 so every quote is a guess.",
-                Icon: DollarSign,
+                title: "System of Record",
+                body: "Stackteryx stores how every service is designed, costed, and priced. Over time, this becomes the institutional memory of your practice \u2014 the one place where your service economics live.",
               },
               {
-                heading: "Advisory services don\u2019t scale without infrastructure.",
-                body: "Every new client needs a strategy brief, a QBR, a technology roadmap. Done manually, this work doesn\u2019t scale. Done with AI, it becomes a recurring revenue line.",
-                Icon: Brain,
+                title: "Data Network",
+                body: "Every service configuration, vendor cost, and margin calculation builds a dataset. As the platform scales, individual MSP data aggregates into industry benchmarks \u2014 cost benchmarks, margin benchmarks, compliance coverage by vertical. The system gets smarter with every user.",
               },
               {
-                heading: "Clients don\u2019t pay for tools. They pay for outcomes.",
-                body: "When services are defined by vendor tools instead of business results, MSPs compete on price. When they\u2019re defined by outcomes, MSPs compete on value.",
-                Icon: Package,
+                title: "Intelligence Layer",
+                body: "Scout monitors your entire client portfolio. Horizon watches the market. Aria updates compliance scores when your stack changes. The system surfaces insights you didn\u2019t know to look for \u2014 before they become problems.",
               },
-            ].map(({ heading, body, Icon }) => (
+            ].map(({ title, body }) => (
               <div
-                key={heading}
-                className="rounded-lg p-6 text-left space-y-3"
-                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+                key={title}
+                className="rounded-lg p-6 space-y-3"
+                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
               >
-                <div
-                  className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13510" }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: "#c8f135" }} />
-                </div>
                 <h3
                   className="text-base font-bold"
                   style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
                 >
-                  {heading}
+                  {title}
                 </h3>
                 <p
                   className="text-[15px] leading-[1.7]"
@@ -405,345 +626,140 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — THE BIG IDEA (interstitial)
+          SECTION 7 — PRICING
           ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-20 md:py-24">
-        <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
-          <p
-            className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-            style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-          >
-            A BETTER WAY
-          </p>
-          <h2
-            className="text-3xl md:text-5xl font-extrabold leading-tight"
-            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-          >
-            What if every service you sold was{" "}
-            <span style={{ color: "#c8f135" }}>profitable by design?</span>
-          </h2>
-          <p
-            className="text-[16px] leading-[1.75] max-w-2xl mx-auto"
-            style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
-          >
-            Stackteryx connects your service catalog, vendor costs, and pricing in one
-            place &mdash; then deploys five AI agents to help you build, price, and sell services that
-            actually make money.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 5 — HOW IT WORKS
-          ═══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
+      <section id="pricing" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-5xl mx-auto px-6 space-y-14">
           <div className="text-center space-y-5">
             <p
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              HOW IT WORKS
+              SIMPLE PRICING
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Your agents run the workflow. You run the business.
+              Start free. The system pays for itself.
             </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                step: "01",
-                agent: "Aria",
-                agentColor: "#c8f135",
-                title: "Aria designs your services",
-                desc: "Add your vendor tools and Aria maps them to client outcomes, scores compliance coverage, detects stack gaps, and suggests service configurations in real time.",
-                Icon: Layers2,
-              },
-              {
-                step: "02",
-                agent: "Margin",
-                agentColor: "#378ADD",
-                title: "Margin prices them profitably",
-                desc: "Margin models your real delivery cost \u2014 tools, labor, overhead \u2014 and calculates the price point that hits your target margin before you ever send a quote.",
-                Icon: TrendingUp,
-              },
-              {
-                step: "03",
-                agent: "Pitch",
-                agentColor: "#F0997B",
-                title: "Pitch writes your sales materials",
-                desc: "Pitch transforms your service stack into client-ready proposals, talk tracks, and objection handlers \u2014 written in outcome language your clients understand.",
-                Icon: FileText,
-              },
-              {
-                step: "04",
-                agent: "Sage & Scout",
-                agentColor: "#AFA9EC",
-                title: "Sage and Scout run the advisory layer",
-                desc: "Sage generates quarterly technology strategy briefs for every client. Scout monitors your portfolio and flags opportunities, risks, and renewals before they surface on their own.",
-                Icon: Brain,
-              },
-              {
-                step: "05",
-                agent: "Horizon",
-                agentColor: "#EF9F27",
-                title: "Horizon keeps you ahead of the market",
-                desc: "Every Monday morning, Horizon delivers a market intelligence digest \u2014 technology shifts, MSP business trends, and competitive movements \u2014 so you walk into every client conversation knowing where the industry is heading.",
-                Icon: Telescope,
-              },
-            ].map(({ step, agent, agentColor, title, desc, Icon }) => (
-              <div
-                key={step}
-                className="rounded-lg p-6 space-y-3"
-                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-[11px] font-semibold uppercase tracking-wider"
-                    style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-                  >
-                    STEP {step}
-                  </span>
-                  <span
-                    className="text-[11px] font-semibold"
-                    style={{ color: agentColor, fontFamily: "var(--font-mono-alt)" }}
-                  >
-                    &middot; {agent}
-                  </span>
-                </div>
-                <div
-                  className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: `${agentColor}15` }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: agentColor }} />
-                </div>
-                <h3
-                  className="text-base font-bold"
-                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-[15px] leading-[1.75]"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-                >
-                  {desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 6 — FRACTIONAL CTO
-          ═══════════════════════════════════════════════════════ */}
-      <section style={{ background: "#111111" }} className="py-24 md:py-32">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
-              <p
-                className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-                style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-              >
-                FRACTIONAL CTO
-              </p>
-              <h2
-                className="text-3xl md:text-[42px] font-extrabold leading-tight"
-                style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-              >
-                Give every client a CTO &mdash;{" "}
-                <span style={{ color: "#c8f135" }}>without hiring one.</span>
-              </h2>
-              <p
-                className="text-[16px] leading-[1.75]"
-                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
-              >
-                Generate executive-grade Technology Strategy Briefs that surface
-                risks, recommend actions, and position your MSP as a strategic
-                advisor &mdash; not just a vendor.
-              </p>
-
-              <div className="space-y-4 pt-2">
-                {[
-                  { title: "AI-Generated Briefs", desc: "Quarterly technology strategy reports tailored to each client\u2019s industry and stack." },
-                  { title: "Risk Intelligence", desc: "Surface technology risks before they become incidents. Clients see you as proactive, not reactive." },
-                  { title: "Revenue Expansion", desc: "Every brief is a conversation starter for new services. Advisory becomes a billable offering." },
-                ].map(({ title, desc }) => (
-                  <div key={title} className="flex items-start gap-3">
-                    <div
-                      className="flex-shrink-0 h-6 w-6 rounded flex items-center justify-center mt-0.5"
-                      style={{ background: "#c8f13515" }}
-                    >
-                      <Brain className="h-3.5 w-3.5" style={{ color: "#c8f135" }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>
-                        {title}
-                      </p>
-                      <p className="text-[15px] leading-[1.7]" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
-                        {desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <a
-                href="/fractional-cto"
-                className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider transition-colors"
-                style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#d4f55c")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#c8f135")}
-              >
-                Try a Free CTO Brief
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-
-            <div
-              className="rounded-lg p-8 space-y-4"
-              style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-10 w-10 rounded-md flex items-center justify-center"
-                  style={{ background: "#c8f13515" }}
-                >
-                  <Brain className="h-5 w-5" style={{ color: "#c8f135" }} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>
-                    Technology Strategy Brief
-                  </p>
-                  <p className="text-[13px]" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
-                    Q1 2026 &middot; Healthcare
-                  </p>
-                </div>
-              </div>
-              <div className="h-px w-full" style={{ background: "#1E1E1E" }} />
-              {[
-                { label: "Technology Risks", value: "3 identified", color: "#EF4444" },
-                { label: "Strategic Recommendations", value: "5 actions", color: "#c8f135" },
-                { label: "Budget Guidance", value: "$24k\u2013$36k/yr", color: "#3B82F6" },
-                { label: "Compliance Gaps", value: "2 critical", color: "#F59E0B" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-[15px]" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>{label}</span>
-                  <span className="text-[15px] font-bold" style={{ color, fontFamily: "var(--font-mono-alt)" }}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 7 — FEATURE GRID (agent-organized)
-          ═══════════════════════════════════════════════════════ */}
-      <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-6xl mx-auto px-6 space-y-14">
-          <div className="text-center space-y-5">
             <p
-              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+              className="text-sm max-w-xl mx-auto"
+              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              PLATFORM
+              One advisory client covers years of Stackteryx cost.
+              Built for MSPs scaling from $1M to $20M ARR.
             </p>
-            <h2
-              className="text-3xl md:text-[42px] font-extrabold leading-tight"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              One platform. Six agents. The full service intelligence stack.
-            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                agent: "Aria",
-                agentColor: "#c8f135",
-                Icon: Layers2,
-                title: "Stack Builder",
-                desc: "Design service stacks visually with live compliance scoring and outcome mapping.",
-              },
-              {
-                agent: "Margin",
-                agentColor: "#378ADD",
-                Icon: DollarSign,
-                title: "Pricing Engine",
-                desc: "Know your exact margin before you quote \u2014 every time.",
-              },
-              {
-                agent: "Scout",
-                agentColor: "#5DCAA5",
-                Icon: BarChart2,
-                title: "Portfolio Intelligence",
-                desc: "24/7 monitoring across every client for risks, renewals, and revenue signals.",
-              },
-              {
-                agent: "Pitch",
-                agentColor: "#F0997B",
-                Icon: FileText,
-                title: "Sales Studio",
-                desc: "Proposals, playbooks, and talk tracks written from your service stack in minutes.",
-              },
-              {
-                agent: "Sage",
-                agentColor: "#AFA9EC",
-                Icon: Brain,
-                title: "Fractional CTO",
-                desc: "Executive technology advisory briefs and client strategy reports, on demand.",
-              },
-              {
-                agent: "Horizon",
-                agentColor: "#EF9F27",
-                Icon: Telescope,
-                title: "Market Intelligence",
-                desc: "Horizon monitors MSP industry trends, technology shifts, and competitive movements \u2014 delivering a weekly briefing so you always know where the market is heading.",
-              },
-              {
-                agent: "All Agents",
-                agentColor: "#c8f135",
-                Icon: Sparkles,
-                title: "Service Intelligence",
-                desc: "The unified operating layer that connects your tools, clients, margins, and advisory.",
-              },
-            ].map(({ agent, agentColor, Icon, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-lg p-5 space-y-3 transition-colors"
-                style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f13540")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1E1E1E")}
-              >
-                <div className="flex items-center justify-between">
-                  <div
-                    className="h-9 w-9 rounded-md flex items-center justify-center"
-                    style={{ background: `${agentColor}15` }}
-                  >
-                    <Icon className="h-4.5 w-4.5" style={{ color: agentColor }} />
-                  </div>
-                  <span
-                    className="text-[10px] font-semibold uppercase tracking-wider"
-                    style={{ color: agentColor, fontFamily: "var(--font-mono-alt)" }}
-                  >
-                    {agent}
-                  </span>
-                </div>
-                <h3 className="text-sm font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>
-                  {title}
-                </h3>
-                <p className="text-[15px] leading-[1.65]" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
-                  {desc}
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Free */}
+            <div
+              className="rounded-lg p-6 space-y-5 flex flex-col"
+              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+            >
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Free</h3>
+                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Get started with the basics</p>
               </div>
-            ))}
+              <div>
+                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$0</span>
+                <span className="text-sm ml-1" style={{ color: "#666666" }}>/forever</span>
+              </div>
+              <ul className="space-y-2 flex-1">
+                {["2 services", "3 clients", "5 AI generations/month", "CTO brief generator", "Compliance scoring"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
+                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/login?tab=signup"
+                className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+                style={{ color: "#FFFFFF", border: "1px solid #333333", fontFamily: "var(--font-display)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f135")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333333")}
+              >
+                Get started free
+              </Link>
+            </div>
+
+            {/* Pro */}
+            <div
+              className="rounded-lg p-6 space-y-5 flex flex-col relative"
+              style={{ background: "#111111", border: "2px solid #c8f135" }}
+            >
+              <span
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
+              >
+                Most Popular
+              </span>
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Pro</h3>
+                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>For growing MSP practices</p>
+              </div>
+              <div>
+                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$149</span>
+                <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
+              </div>
+              <ul className="space-y-2 flex-1">
+                {["10 services", "15 clients", "40 AI generations/month", "Full proposal engine", "3 team members", "Everything in Free"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
+                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/login?tab=signup"
+                className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+                style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
+              >
+                Start with Pro
+              </Link>
+            </div>
+
+            {/* Enterprise */}
+            <div
+              className="rounded-lg p-6 space-y-5 flex flex-col"
+              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
+            >
+              <div>
+                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Enterprise</h3>
+                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Full platform, unlimited scale</p>
+              </div>
+              <div>
+                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$399</span>
+                <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
+              </div>
+              <ul className="space-y-2 flex-1">
+                {["Unlimited services", "Unlimited clients", "150 AI generations/month", "QBR generator", "White-label exports", "Unlimited team members", "Everything in Pro"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
+                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/login?tab=signup"
+                className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+                style={{ color: "#FFFFFF", border: "1px solid #333333", fontFamily: "var(--font-display)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f135")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333333")}
+              >
+                Start with Enterprise
+              </Link>
+            </div>
           </div>
+
+          <p
+            className="text-center text-xs"
+            style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+          >
+            No contracts. Cancel anytime. The free CTO brief generator
+            is available to every MSP &mdash; no account required.
+          </p>
         </div>
       </section>
 
@@ -763,7 +779,7 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              AI is reshaping how managed services get bought and sold.
+              Three forces are making this the only move.
             </h2>
           </div>
 
@@ -806,168 +822,63 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 9 — PRICING
-          ═══════════════════════════════════════════════════════ */}
-      <section id="pricing" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-5xl mx-auto px-6 space-y-14">
-          <div className="text-center space-y-5">
-            <p
-              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-            >
-              PRICING
-            </p>
-            <h2
-              className="text-3xl md:text-[42px] font-extrabold leading-tight"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              Start free. Scale when you&apos;re ready.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Free */}
-            <div
-              className="rounded-lg p-6 space-y-5"
-              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-            >
-              <div>
-                <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Free</p>
-                <p className="mt-2">
-                  <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>$0</span>
-                  <span className="text-sm ml-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>/month</span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {["1 service bundle", "2 proposals / month", "1 CTO brief / month", "Community support"].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-[15px]" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>{"\u2713"}</span>{item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?tab=signup"
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{ color: "#FFFFFF", border: "1px solid #1E1E1E", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#c8f135"; e.currentTarget.style.color = "#c8f135"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; e.currentTarget.style.color = "#FFFFFF"; }}
-              >
-                Get Started
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div
-              className="rounded-lg p-6 space-y-5 relative"
-              style={{ background: "#111111", border: "2px solid #c8f135" }}
-            >
-              <div
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
-                style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
-              >
-                Most Popular
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>Pro</p>
-                <p className="mt-2">
-                  <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>$149</span>
-                  <span className="text-sm ml-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>/month</span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {["10 service bundles", "25 proposals / month", "10 CTO briefs / month", "Custom branding", "Priority support"].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-[15px]" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>{"\u2713"}</span>{item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?tab=signup"
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
-              >
-                Start Free Trial
-              </Link>
-            </div>
-
-            {/* Enterprise */}
-            <div
-              className="rounded-lg p-6 space-y-5"
-              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-            >
-              <div>
-                <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Enterprise</p>
-                <p className="mt-2">
-                  <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>$399</span>
-                  <span className="text-sm ml-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>/month</span>
-                </p>
-              </div>
-              <ul className="space-y-2">
-                {["Unlimited bundles", "Unlimited proposals", "Unlimited CTO briefs", "White-label exports", "Team seats", "Dedicated support"].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-[15px]" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>{"\u2713"}</span>{item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?tab=signup"
-                className="block w-full h-10 flex items-center justify-center rounded text-sm font-bold uppercase tracking-wider transition-all"
-                style={{ color: "#FFFFFF", border: "1px solid #1E1E1E", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#c8f135"; e.currentTarget.style.color = "#c8f135"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; e.currentTarget.style.color = "#FFFFFF"; }}
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════
-          SECTION 10 — FINAL CTA
+          SECTION 9 — FINAL CTA
           ═══════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
         <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
           <h2
-            className="text-3xl md:text-5xl font-extrabold leading-tight"
+            className="text-3xl md:text-[42px] font-extrabold leading-tight"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            Stop guessing. Start building{" "}
-            <span style={{ color: "#c8f135" }}>profitable services.</span>
+            The system MSPs should have had all along.
           </h2>
           <p
-            className="text-[16px] leading-[1.75] max-w-xl mx-auto"
+            className="text-base leading-[1.75] max-w-xl mx-auto"
             style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
           >
-            Join MSPs who use Stackteryx to design, price, and sell services
-            with confidence.
+            Design a service. Model the margin. Generate the proposal.
+            Deliver the advisory. All in one place. All connected.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/login?tab=signup"
-              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-              style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f55c")}
+              className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+              style={{
+                background: "#c8f135",
+                color: "#0A0A0A",
+                fontFamily: "var(--font-display)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
             >
-              Start Free
+              Get started free
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <a
-              href="#pricing"
-              onClick={(e) => scrollToSection(e, "pricing")}
-              className="h-12 px-8 flex items-center gap-2 rounded text-sm font-bold uppercase tracking-wider transition-all"
-              style={{ color: "#FFFFFF", border: "1px solid #1E1E1E", fontFamily: "var(--font-display)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#c8f135"; e.currentTarget.style.color = "#c8f135"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1E1E1E"; e.currentTarget.style.color = "#FFFFFF"; }}
+            <Link
+              href="/fractional-cto"
+              className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+              style={{
+                color: "#c8f135",
+                border: "1px solid #c8f13540",
+                fontFamily: "var(--font-display)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#c8f135";
+                e.currentTarget.style.background = "#c8f13510";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#c8f13540";
+                e.currentTarget.style.background = "transparent";
+              }}
             >
-              View Pricing
-            </a>
+              Generate a free CTO brief
+            </Link>
           </div>
-          <p className="text-[13px]" style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}>
-            No credit card required. Free to start.
+          <p
+            className="text-xs"
+            style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+          >
+            No credit card required to start. No account required for the CTO brief.
           </p>
         </div>
       </section>
@@ -975,77 +886,33 @@ export function MarketingLandingPage() {
       {/* ═══════════════════════════════════════════════════════
           FOOTER
           ═══════════════════════════════════════════════════════ */}
-      <footer
-        className="py-16"
-        style={{ background: "#0A0A0A", borderTop: "1px solid #1E1E1E" }}
-      >
+      <footer style={{ borderTop: "1px solid #1E1E1E", background: "#0A0A0A" }} className="py-10">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="col-span-2 md:col-span-1 space-y-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/stackteryx-logo.svg" alt="Stackteryx" height={24} style={{ height: 24, width: "auto" }} />
-              <p className="text-[13px] leading-relaxed" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
-                The MSP Service Intelligence Platform &mdash; five AI agents that design, price, and sell managed services.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Product</p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/stackteryx-logo.svg" alt="Stackteryx" height={20} style={{ height: 20, width: "auto", opacity: 0.6 }} />
+            <div className="flex items-center gap-6">
               {[
                 { label: "How It Works", href: "#how-it-works" },
                 { label: "Pricing", href: "#pricing" },
                 { label: "Free CTO Brief", href: "/fractional-cto" },
+                { label: "Log In", href: "/login" },
               ].map(({ label, href }) => (
                 <a
                   key={label}
                   href={href}
-                  onClick={href.startsWith("#") ? (e) => scrollToSection(e, href.slice(1)) : undefined}
-                  className="block text-[14px] transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+                  className="text-xs transition-colors"
+                  style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#555555")}
                 >
                   {label}
                 </a>
               ))}
             </div>
-
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Platform</p>
-              {["Service Builder", "Sales Studio", "Portfolio Intelligence"].map((label) => (
-                <Link
-                  key={label}
-                  href="/login"
-                  className="block text-[14px] transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider font-bold" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Legal</p>
-              {["Terms", "Privacy", "Contact"].map((label) => (
-                <span
-                  key={label}
-                  className="block text-[14px] cursor-pointer transition-colors"
-                  style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#c8f135")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid #1E1E1E" }}>
-            <span className="text-[13px]" style={{ color: "#333333", fontFamily: "var(--font-mono-alt)" }}>
-              &copy; 2026 Stackteryx. Built for MSPs.
-            </span>
+            <p className="text-xs" style={{ color: "#333333", fontFamily: "var(--font-mono-alt)" }}>
+              &copy; {new Date().getFullYear()} Stackteryx
+            </p>
           </div>
         </div>
       </footer>
