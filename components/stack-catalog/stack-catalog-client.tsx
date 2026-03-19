@@ -653,15 +653,18 @@ function ToolCard({
   const canEdit = hasPermission(userRole, "edit_tools");
   const canDeactivate = hasPermission(userRole, "deactivate_tools");
 
+  const hasPricing = tool.per_seat_cost > 0 || tool.flat_monthly_cost > 0 || tool.per_user_cost > 0 || tool.per_org_cost > 0;
+
   return (
     <div
       className={cn(
-        "rounded-lg border p-3 transition-colors",
+        "rounded-lg border p-3 transition-colors group cursor-pointer",
         isRedundant
-          ? "border-amber-500/20 bg-amber-500/[0.03]"
-          : "border-border/60 bg-white/[0.01]",
+          ? "border-amber-500/20 bg-amber-500/[0.03] hover:border-amber-500/40"
+          : "border-border/60 bg-white/[0.01] hover:border-primary/30",
         !tool.is_active && "opacity-50"
       )}
+      onClick={() => onEdit(tool)}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -674,22 +677,13 @@ function ToolCard({
           </p>
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          {canEdit && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={() => onEdit(tool)}
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
-          )}
+          <Pencil className="h-3 w-3 text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-colors" />
           {canDeactivate && tool.is_active && (
             <Button
               variant="ghost"
               size="icon"
               className="h-6 w-6 text-muted-foreground hover:text-destructive"
-              onClick={() => onDeactivate(tool.id, tool.name)}
+              onClick={(e) => { e.stopPropagation(); onDeactivate(tool.id, tool.name); }}
             >
               <Ban className="h-3 w-3" />
             </Button>
@@ -709,10 +703,15 @@ function ToolCard({
         )}
       </div>
 
-      {/* Cost */}
+      {/* Cost + pricing status */}
       <div className="text-xs text-muted-foreground mb-2">
         <ToolCostDisplay tool={tool} canEdit={canEdit} />
       </div>
+      {!hasPricing && (
+        <p className="text-[10px] text-amber-400/70 mb-2" style={{ fontFamily: "var(--font-mono-alt)" }}>
+          Set pricing &rarr;
+        </p>
+      )}
 
       {/* Service assignments */}
       {tool.services.length > 0 && (
