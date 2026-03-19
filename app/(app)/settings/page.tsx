@@ -13,6 +13,7 @@ import { Suspense } from "react";
 import { UpgradeSuccessHandler } from "@/components/billing/upgrade-success-handler";
 import { BillingSection } from "@/components/settings/billing-section";
 import { MFASection } from "@/components/settings/mfa-section";
+import { TourSection } from "@/components/settings/tour-section";
 
 export default async function SettingsPage() {
   const [profile, orgId] = await Promise.all([
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
       <BillingSection />
       <MFASection />
       <SettingsForm settings={settings} userRole={profile.role} />
+      <TourSection />
       <VendorDiscountsSection
         vendors={vendorDiscountData.map((v) => ({
           id: v.org_vendor_id,

@@ -209,3 +209,27 @@ function scenarioName(range: string): string {
       return "Default Client";
   }
 }
+
+// ── Tour completion ──────────────────────────────────────────────────────────
+
+export async function markTourCompleted(): Promise<void> {
+  const profile = await getCurrentProfile();
+  if (!profile) return;
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  await supabase
+    .from("profiles")
+    .update({ tour_completed: true, tour_completed_at: new Date().toISOString() })
+    .eq("id", profile.id);
+}
+
+export async function resetTourCompleted(): Promise<void> {
+  const profile = await getCurrentProfile();
+  if (!profile) return;
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  await supabase
+    .from("profiles")
+    .update({ tour_completed: false, tour_completed_at: null })
+    .eq("id", profile.id);
+}

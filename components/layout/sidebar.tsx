@@ -148,10 +148,21 @@ export function Sidebar({ profile }: SidebarProps) {
 
                   const hasAccent = "accent" in item && item.accent;
 
+                  // Map href to tour step ID
+                  const tourId: Record<string, string> = {
+                    "/dashboard": "dashboard",
+                    "/stack-catalog": "tools-costs",
+                    "/stack-builder": "stack-builder",
+                    "/services": "services",
+                    "/sales-studio": "sales-studio",
+                    "/cto-briefs": "fractional-cto",
+                  };
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      data-tour={tourId[item.href]}
                       className={cn(
                         "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-150",
                         isActive

@@ -11,7 +11,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { getAgentActivities } from "@/lib/agents/log-activity";
 import { getActiveNudges } from "@/actions/scout-nudges";
-// WorkflowBanner removed — trial welcome + getting started checklist are sufficient
+import { TourProvider } from "@/components/onboarding/tour-provider";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { PlanProvider } from "@/components/providers/plan-provider";
 import { UpgradeModalProvider } from "@/components/billing/upgrade-modal";
@@ -110,20 +110,36 @@ export default async function AppLayout({
     </div>
   );
 
+  // Check tour completion from DB
+  let tourCompletedInDb = false;
+  try {
+    const supabase = await createClient();
+    const { data: tourData } = await supabase
+      .from("profiles")
+      .select("tour_completed")
+      .eq("id", profile.id)
+      .single();
+    tourCompletedInDb = tourData?.tour_completed ?? false;
+  } catch {
+    // Assume not completed
+  }
+
   return (
     <PlanProvider>
       <UpgradeModalProvider>
-        <OnboardingGate
-          onboardingComplete={onboardingComplete}
-          orgId={orgId ?? ""}
-          defaultOrgName={orgName}
-          defaultDisplayName={profile.display_name ?? ""}
-          savedProfile={onboardingProfile}
-          savedStep={savedStep}
-          savedTools={savedTools}
-        >
-          {appContent}
-        </OnboardingGate>
+        <TourProvider tourCompletedInDb={tourCompletedInDb}>
+          <OnboardingGate
+            onboardingComplete={onboardingComplete}
+            orgId={orgId ?? ""}
+            defaultOrgName={orgName}
+            defaultDisplayName={profile.display_name ?? ""}
+            savedProfile={onboardingProfile}
+            savedStep={savedStep}
+            savedTools={savedTools}
+          >
+            {appContent}
+          </OnboardingGate>
+        </TourProvider>
       </UpgradeModalProvider>
     </PlanProvider>
   );

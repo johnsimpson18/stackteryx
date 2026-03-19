@@ -396,8 +396,7 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* ── 2. Getting Started Checklist ────────────────────────────────── */}
-      {checklist && <GettingStartedChecklist steps={checklist} />}
+      {/* Getting started checklist removed — guided tour replaces it */}
 
       {/* ── 3. Metric Cards ────────────────────────────────────────────── */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
