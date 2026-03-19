@@ -628,49 +628,63 @@ export function MarketingLandingPage() {
           SECTION 7 — PRICING
           ═══════════════════════════════════════════════════════ */}
       <section id="pricing" className="py-24 md:py-32" style={{ background: "#0A0A0A" }}>
-        <div className="max-w-5xl mx-auto px-6 space-y-14">
+        <div className="max-w-4xl mx-auto px-6 space-y-14">
           <div className="text-center space-y-5">
             <p
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              PRICING
+              7-DAY FREE TRIAL
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Start free. Grow when you&apos;re ready.
+              Start free. Scale when you&apos;re ready.
             </h2>
             <p
               className="text-sm max-w-xl mx-auto"
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              Most MSPs recover the cost of Pro in their first advisory engagement.
+              Every plan starts with a 7-day free trial &mdash; full Pro access, no card required.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Free */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pro */}
             <div
               className="rounded-lg p-6 space-y-5 flex flex-col"
               style={{ background: "#111111", border: "1px solid #1E1E1E" }}
             >
               <div>
-                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Free</h3>
-                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Get started with the basics</p>
+                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Pro</h3>
+                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
+                  For solo MSPs running a real services practice.
+                </p>
               </div>
               <div>
-                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$0</span>
-                <span className="text-sm ml-1" style={{ color: "#666666" }}>/forever</span>
+                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$149</span>
+                <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
+                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>after your free trial</p>
               </div>
-              <ul className="space-y-2 flex-1">
-                {["2 services", "3 clients", "5 AI generations/month", "CTO brief generator", "Compliance scoring"].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
-                  </li>
+              <div className="space-y-2 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}>
+                  Usage limits
+                </p>
+                {[
+                  ["Services", "10"],
+                  ["Clients", "15"],
+                  ["AI / month", "40"],
+                  ["Exports / month", "20"],
+                  ["CTO briefs", "10 / month"],
+                  ["Team members", "3"],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
+                    <span>{label}</span>
+                    <span className="font-medium text-foreground">{value}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
               <Link
                 href="/login?tab=signup"
                 className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
@@ -678,36 +692,60 @@ export function MarketingLandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f135")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333333")}
               >
-                Get started free
+                Start free trial
               </Link>
             </div>
 
-            {/* Pro */}
+            {/* Enterprise */}
             <div
               className="rounded-lg p-6 space-y-5 flex flex-col relative"
               style={{ background: "#111111", border: "2px solid #c8f135" }}
             >
               <span
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
                 style={{ background: "#c8f135", color: "#0A0A0A", fontFamily: "var(--font-display)" }}
               >
-                Most Popular
+                Best Value
               </span>
               <div>
-                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Pro</h3>
-                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>For growing MSP practices</p>
+                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Enterprise</h3>
+                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>
+                  For growing teams delivering advisory at scale.
+                </p>
               </div>
               <div>
-                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$149</span>
+                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$399</span>
                 <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
+                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>after your free trial</p>
               </div>
-              <ul className="space-y-2 flex-1">
-                {["10 services", "15 clients", "40 AI generations/month", "Full proposal engine", "3 team members", "Everything in Free"].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
-                  </li>
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}>
+                  Usage limits
+                </p>
+                {[
+                  ["Services", "Unlimited"],
+                  ["Clients", "Unlimited"],
+                  ["AI / month", "150"],
+                  ["Exports / month", "75"],
+                  ["CTO briefs", "Unlimited"],
+                  ["Team members", "Unlimited"],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
+                    <span>{label}</span>
+                    <span className="font-medium" style={{ color: value === "Unlimited" ? "#c8f135" : "#FFFFFF" }}>{value}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
+              <div className="pt-3 space-y-2 flex-1" style={{ borderTop: "1px solid #1e1e1e" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>
+                  Premium features
+                </p>
+                {["QBR Generator", "Client Scorecards", "Portfolio Intelligence", "White-label exports", "Team workflows"].map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-sm" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>
+                    <span>&#10003;</span> {f}
+                  </div>
+                ))}
+              </div>
               <Link
                 href="/login?tab=signup"
                 className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
@@ -715,38 +753,7 @@ export function MarketingLandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
               >
-                Start with Pro
-              </Link>
-            </div>
-
-            {/* Enterprise */}
-            <div
-              className="rounded-lg p-6 space-y-5 flex flex-col"
-              style={{ background: "#111111", border: "1px solid #1E1E1E" }}
-            >
-              <div>
-                <h3 className="text-lg font-bold" style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}>Enterprise</h3>
-                <p className="text-sm mt-1" style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}>Full platform, unlimited scale</p>
-              </div>
-              <div>
-                <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$399</span>
-                <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
-              </div>
-              <ul className="space-y-2 flex-1">
-                {["Unlimited services", "Unlimited clients", "150 AI generations/month", "QBR generator", "White-label exports", "Unlimited team members", "Everything in Pro"].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm" style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}>
-                    <span style={{ color: "#c8f135" }}>&#10003;</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?tab=signup"
-                className="h-10 flex items-center justify-center rounded-md text-sm font-bold uppercase tracking-wider transition-all"
-                style={{ color: "#FFFFFF", border: "1px solid #333333", fontFamily: "var(--font-display)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#c8f135")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333333")}
-              >
-                Start with Enterprise
+                Start free trial
               </Link>
             </div>
           </div>
@@ -755,8 +762,7 @@ export function MarketingLandingPage() {
             className="text-center text-xs"
             style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
           >
-            No contracts. Cancel anytime. The free CTO brief
-            tool works for any MSP &mdash; no account needed.
+            Both plans start with a 7-day free trial. No card required. Cancel anytime.
           </p>
         </div>
       </section>

@@ -15,6 +15,7 @@ import { TourProvider } from "@/components/onboarding/tour-provider";
 import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { PlanProvider } from "@/components/providers/plan-provider";
 import { UpgradeModalProvider } from "@/components/billing/upgrade-modal";
+import { LimitProvider } from "@/components/billing/limit-context";
 import { TrialBannerWrapper } from "@/components/trial/trial-banner-wrapper";
 
 export default async function AppLayout({
@@ -127,8 +128,9 @@ export default async function AppLayout({
   return (
     <PlanProvider>
       <UpgradeModalProvider>
-        <TourProvider tourCompletedInDb={tourCompletedInDb}>
-          <OnboardingGate
+        <LimitProvider>
+          <TourProvider tourCompletedInDb={tourCompletedInDb}>
+            <OnboardingGate
             onboardingComplete={onboardingComplete}
             orgId={orgId ?? ""}
             defaultOrgName={orgName}
@@ -138,8 +140,9 @@ export default async function AppLayout({
             savedTools={savedTools}
           >
             {appContent}
-          </OnboardingGate>
-        </TourProvider>
+            </OnboardingGate>
+          </TourProvider>
+        </LimitProvider>
       </UpgradeModalProvider>
     </PlanProvider>
   );
