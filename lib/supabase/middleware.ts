@@ -45,23 +45,9 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Protected routes: redirect unauthenticated users to /login
-  const isAppRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/tools") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/bundles") ||
-    pathname.startsWith("/scenarios") ||
-    pathname.startsWith("/clients") ||
-    pathname.startsWith("/vendors") ||
-    pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/recommend") ||
-    pathname.startsWith("/services") ||
-    pathname.startsWith("/additional-services") ||
-    pathname.startsWith("/cto-briefs") ||
-    pathname.startsWith("/sales-studio") ||
-    pathname.startsWith("/stack-catalog") ||
-    pathname.startsWith("/packages");
+  const publicRoutes = ["/login", "/setup", "/reset-password", "/terms", "/privacy", "/fractional-cto", "/auth"];
+  const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r)) || pathname === "/";
+  const isAppRoute = !isPublicRoute && !pathname.startsWith("/_next") && !pathname.startsWith("/api");
 
   if (!user && isAppRoute) {
     const url = request.nextUrl.clone();
