@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Barlow_Condensed, JetBrains_Mono, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const barlowCondensed = Barlow_Condensed({
@@ -42,6 +43,7 @@ export default function RootLayout({
         className={`${inter.variable} ${barlowCondensed.variable} ${jetbrainsMono.variable} ${ibmPlexMono.variable} ${inter.className}`}
       >
         {children}
+        <Analytics />
         <Toaster richColors position="top-right" />
       </body>
     </html>
