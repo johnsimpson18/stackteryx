@@ -47,7 +47,8 @@ export async function updateSession(request: NextRequest) {
   // Protected routes: redirect unauthenticated users to /login
   const publicRoutes = ["/login", "/setup", "/reset-password", "/terms", "/privacy", "/fractional-cto", "/auth"];
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r)) || pathname === "/";
-  const isAppRoute = !isPublicRoute && !pathname.startsWith("/_next") && !pathname.startsWith("/api");
+  const hasFileExtension = /\.\w+$/.test(pathname);
+  const isAppRoute = !isPublicRoute && !hasFileExtension && !pathname.startsWith("/_next") && !pathname.startsWith("/api");
 
   if (!user && isAppRoute) {
     const url = request.nextUrl.clone();
