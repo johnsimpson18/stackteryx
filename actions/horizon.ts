@@ -227,7 +227,7 @@ export async function getLatestHorizonDigest(): Promise<{
     .eq("status", "published")
     .order("week_start", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!data) return null;
   return { id: data.id, digest: data.digest_json as unknown as HorizonDigest };

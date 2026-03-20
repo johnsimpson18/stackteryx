@@ -11,6 +11,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -180,6 +181,9 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
             <DialogTitle className="text-xl font-medium text-foreground">
               Choose the right plan for your practice
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Compare plan features and upgrade your subscription
+            </DialogDescription>
             <p className="text-[13px] text-muted-foreground mt-1">
               Stackteryx helps MSPs design, price, and sell profitable managed
               services.
