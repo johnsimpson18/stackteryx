@@ -172,7 +172,7 @@ export function BundleList({ bundles, userRole, enablementMap = {} }: BundleList
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Configs</TableHead>
+                <TableHead className="text-right">Pricing Configs</TableHead>
                 <TableHead className="text-right">Latest MRR</TableHead>
                 <TableHead className="text-right">Margin</TableHead>
                 <TableHead>Created</TableHead>

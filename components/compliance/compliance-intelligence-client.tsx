@@ -171,12 +171,23 @@ export function ComplianceIntelligenceClient({
           className="rounded-xl text-center py-16"
           style={{ background: "#111111", border: "1px solid #1e1e1e" }}
         >
-          <p className="text-sm text-muted-foreground mb-4">
-            No compliance analysis available yet. Click Recalculate to analyze your service stack.
+          <p className="text-sm font-semibold text-foreground mb-1">
+            No compliance analysis available
           </p>
-          <Button onClick={handleRecalculate} disabled={isPending}>
-            Run First Analysis
-          </Button>
+          <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
+            Compliance coverage is calculated from your active services.
+            Build a service first, then run an analysis.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button asChild variant="outline">
+              <Link href="/stack-builder">
+                Open Stack Builder
+              </Link>
+            </Button>
+            <Button onClick={handleRecalculate} disabled={isPending}>
+              Run First Analysis
+            </Button>
+          </div>
         </div>
       ) : (
         <>

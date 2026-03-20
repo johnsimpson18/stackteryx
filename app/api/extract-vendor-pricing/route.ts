@@ -216,7 +216,9 @@ export async function POST(req: Request) {
     }
 
     // Track usage (fire-and-forget)
-    incrementUsage("ai_generation").catch(() => {});
+    incrementUsage("ai_generation").catch((err) => {
+      console.error("[BILLING] incrementUsage failed:", err);
+    });
 
     return Response.json({ extracted });
   } catch (err) {

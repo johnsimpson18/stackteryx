@@ -8,7 +8,7 @@ import { PricingStatusBadge } from "@/components/shared/pricing-status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Layers, RefreshCw, LayoutGrid, List as ListIcon, ArrowUpDown } from "lucide-react";
+import { ChevronRight, FileText, Layers, RefreshCw, LayoutGrid, List as ListIcon, ArrowUpDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -343,7 +343,7 @@ export function ServicesList({
               return (
                 <div
                   key={bundle.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border last:border-b-0"
+                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto_auto] gap-x-4 items-center px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border last:border-b-0"
                 >
                   {/* Name */}
                   <div className="min-w-0">
@@ -425,6 +425,19 @@ export function ServicesList({
                     <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                       {formatRelativeDate(bundle.updated_at)}
                     </span>
+                  </div>
+
+                  {/* Proposal */}
+                  <div className="w-24 flex justify-center">
+                    {bundle.status === "active" && (
+                      <Link
+                        href={`/sales-studio?serviceId=${bundle.id}`}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+                      >
+                        <FileText className="h-3 w-3" />
+                        Proposal
+                      </Link>
+                    )}
                   </div>
 
                   {/* Arrow */}

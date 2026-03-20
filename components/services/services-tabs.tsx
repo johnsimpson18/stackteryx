@@ -103,6 +103,27 @@ export function ServicesTabs({
         </RoleGate>
       </PageHeader>
 
+      {/* Sales Studio CTA — shown when user has services */}
+      {bundles.length > 0 && (
+        <div
+          className="rounded-xl px-5 py-3 flex items-center justify-between"
+          style={{
+            background: "#0d1a00",
+            border: "1px solid rgba(200,241,53,0.2)",
+          }}
+        >
+          <span className="text-sm text-muted-foreground">
+            Ready to turn your services into client proposals?
+          </span>
+          <Link
+            href="/sales-studio"
+            className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+          >
+            Go to Sales Studio &rarr;
+          </Link>
+        </div>
+      )}
+
       {/* Zero-services guidance */}
       {bundles.length === 0 && (
         <div className="rounded-xl border border-border bg-card px-5 py-4">

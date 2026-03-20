@@ -286,6 +286,7 @@ function AuthCard() {
   const [signUpDone, setSignUpDone] = useState(false);
   const [signUpError, setSignUpError] = useState("");
   const [isSignUpPending, startSignUpTransition] = useTransition();
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Forgot password
   const [forgotEmail, setForgotEmail] = useState("");
@@ -451,7 +452,8 @@ function AuthCard() {
     signUpName.trim().length >= 2 &&
     signUpEmail.includes("@") &&
     signUpStrength === 4 &&
-    passwordsMatch;
+    passwordsMatch &&
+    termsAccepted;
 
   function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -978,6 +980,12 @@ function AuthCard() {
         </div>
 
         <GoogleButton pending={isGooglePending} onAction={handleGoogle} />
+        <p style={{ fontSize: 12, color: "#6B7280", textAlign: "center", marginTop: 8, fontFamily: "var(--font-mono)" }}>
+          By signing up, you agree to our{" "}
+          <a href="/terms" target="_blank" style={{ color: "#A7B0BE", textDecoration: "none" }}>Terms</a>
+          {" "}and{" "}
+          <a href="/privacy" target="_blank" style={{ color: "#A7B0BE", textDecoration: "none" }}>Privacy Policy</a>
+        </p>
 
         <OrDivider />
 
@@ -1053,6 +1061,35 @@ function AuthCard() {
               {signUpError}
             </p>
           )}
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 4 }}>
+            <input
+              type="checkbox"
+              id="terms-accept"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              style={{ marginTop: 3, cursor: "pointer", accentColor: "#c8f135" }}
+            />
+            <label
+              htmlFor="terms-accept"
+              style={{
+                fontSize: 13,
+                color: "#A7B0BE",
+                cursor: "pointer",
+                lineHeight: 1.5,
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              I agree to the{" "}
+              <a href="/terms" target="_blank" style={{ color: "#c8f135", textDecoration: "none" }}>
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" style={{ color: "#c8f135", textDecoration: "none" }}>
+                Privacy Policy
+              </a>
+            </label>
+          </div>
 
           <PrimaryButton
             label="Create account"

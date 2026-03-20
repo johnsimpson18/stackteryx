@@ -17,6 +17,9 @@ import { PlanProvider } from "@/components/providers/plan-provider";
 import { UpgradeModalProvider } from "@/components/billing/upgrade-modal";
 import { LimitProvider } from "@/components/billing/limit-context";
 import { TrialBannerWrapper } from "@/components/trial/trial-banner-wrapper";
+import { IntelligencePanelProvider } from "@/components/providers/intelligence-panel-provider";
+import { IntelligencePanelGlobal } from "@/components/intelligence-chat/intelligence-panel-global";
+import { assembleChatContext, type ChatContext as ChatCtx } from "@/lib/intelligence/chat-context";
 
 export default async function AppLayout({
   children,
@@ -111,6 +114,16 @@ export default async function AppLayout({
     </div>
   );
 
+  // Fetch chat context for global intelligence panel
+  let globalChatContext: ChatCtx | null = null;
+  if (orgId) {
+    try {
+      globalChatContext = await assembleChatContext(orgId);
+    } catch {
+      // Non-critical
+    }
+  }
+
   // Check tour completion from DB
   let tourCompletedInDb = false;
   try {
@@ -129,19 +142,22 @@ export default async function AppLayout({
     <PlanProvider>
       <UpgradeModalProvider>
         <LimitProvider>
-          <TourProvider tourCompletedInDb={tourCompletedInDb}>
-            <OnboardingGate
-            onboardingComplete={onboardingComplete}
-            orgId={orgId ?? ""}
-            defaultOrgName={orgName}
-            defaultDisplayName={profile.display_name ?? ""}
-            savedProfile={onboardingProfile}
-            savedStep={savedStep}
-            savedTools={savedTools}
-          >
-            {appContent}
-            </OnboardingGate>
-          </TourProvider>
+          <IntelligencePanelProvider>
+            <TourProvider tourCompletedInDb={tourCompletedInDb}>
+              <OnboardingGate
+                onboardingComplete={onboardingComplete}
+                orgId={orgId ?? ""}
+                defaultOrgName={orgName}
+                defaultDisplayName={profile.display_name ?? ""}
+                savedProfile={onboardingProfile}
+                savedStep={savedStep}
+                savedTools={savedTools}
+              >
+                {appContent}
+                <IntelligencePanelGlobal context={globalChatContext} />
+              </OnboardingGate>
+            </TourProvider>
+          </IntelligencePanelProvider>
         </LimitProvider>
       </UpgradeModalProvider>
     </PlanProvider>

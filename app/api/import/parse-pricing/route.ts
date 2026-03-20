@@ -227,7 +227,9 @@ export async function POST(req: Request) {
       .eq("id", importRecord.id);
 
     // Track usage (fire-and-forget)
-    incrementUsage("ai_generation").catch(() => {});
+    incrementUsage("ai_generation").catch((err) => {
+      console.error("[BILLING] incrementUsage failed:", err);
+    });
 
     return Response.json({
       importId: importRecord.id,

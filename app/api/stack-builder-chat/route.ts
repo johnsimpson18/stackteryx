@@ -144,7 +144,9 @@ export async function POST(req: Request) {
   });
 
   // Track usage + agent activity (fire-and-forget)
-  incrementUsage("ai_generation").catch(() => {});
+  incrementUsage("ai_generation").catch((err) => {
+    console.error("[BILLING] incrementUsage failed:", err);
+  });
   try {
     logAgentActivity({
       orgId: profile.active_org_id,

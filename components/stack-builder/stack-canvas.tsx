@@ -76,6 +76,10 @@ interface StackCanvasProps {
   onDismissWarning: (warningId: string) => void;
   onRemovePrevious: (warning: OverlapWarning) => void;
   saving: boolean;
+  serviceName: string;
+  onServiceNameChange: (name: string) => void;
+  nameError: string;
+  nameInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function StackCanvas({
@@ -92,6 +96,10 @@ export function StackCanvas({
   onDismissWarning,
   onRemovePrevious,
   saving,
+  serviceName,
+  onServiceNameChange,
+  nameError,
+  nameInputRef,
 }: StackCanvasProps) {
   const [dragOver, setDragOver] = useState(false);
   const [inlineSearch, setInlineSearch] = useState("");
@@ -212,11 +220,31 @@ export function StackCanvas({
               className="h-7 px-3 text-xs"
             >
               <Save className="h-3 w-3 mr-1" />
-              {saving ? "Saving..." : "Save as Service"}
+              {saving
+                ? "Saving..."
+                : serviceName.trim()
+                  ? `Save ${serviceName.trim()}`
+                  : "Name & Save Service"}
             </Button>
           </div>
         )}
       </div>
+
+      {/* Service name input */}
+      {hasItems && (
+        <div className="px-4 pb-2">
+          <Input
+            ref={nameInputRef}
+            placeholder="Service name (e.g. Managed Security Pro)"
+            value={serviceName}
+            onChange={(e) => onServiceNameChange(e.target.value)}
+            className={`h-7 text-xs ${nameError ? "border-destructive" : ""}`}
+          />
+          {nameError && (
+            <p className="text-[10px] text-destructive mt-0.5">{nameError}</p>
+          )}
+        </div>
+      )}
 
       {/* Drop zone */}
       <div

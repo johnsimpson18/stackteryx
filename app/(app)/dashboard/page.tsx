@@ -19,6 +19,7 @@ import { getAgentActivities } from "@/lib/agents/log-activity";
 import { getActiveNudges, type ScoutNudgeRecord } from "@/actions/scout-nudges";
 import { getOrgSignals, type OrgSignals } from "@/lib/intelligence/signal-engine";
 import { getLatestHorizonDigest } from "@/actions/horizon";
+import { assembleChatContext, type ChatContext } from "@/lib/intelligence/chat-context";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
@@ -269,6 +270,16 @@ export default async function DashboardPage() {
     }
   }
 
+  // Fetch chat context
+  let chatContext: ChatContext | null = null;
+  if (orgId) {
+    try {
+      chatContext = await assembleChatContext(orgId);
+    } catch {
+      // Chat context unavailable — degrade gracefully
+    }
+  }
+
   // Fetch latest Horizon digest
   let horizonDigest: { id: string; digest: import("@/types/horizon").HorizonDigest } | null = null;
   try {
@@ -307,6 +318,7 @@ export default async function DashboardPage() {
       serviceCount={bundles.filter((b) => b.status === "active").length}
       horizonDigest={horizonDigest?.digest ?? null}
       horizonDigestId={horizonDigest?.id ?? null}
+      chatContext={chatContext}
     />
   );
 }

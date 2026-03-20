@@ -62,6 +62,46 @@ export default async function SettingsPage() {
         }))}
         canEdit={canEdit}
       />
+
+      {/* Legal */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border)",
+          paddingTop: 24,
+          marginTop: 24,
+        }}
+      >
+        <h3
+          className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          style={{ marginBottom: 12 }}
+        >
+          Legal
+        </h3>
+        <div className="flex flex-col gap-2">
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Terms of Service &rarr;
+          </a>
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Privacy Policy &rarr;
+          </a>
+          <a
+            href="mailto:legal@stackteryx.com"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Legal Inquiries &rarr;
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

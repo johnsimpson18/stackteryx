@@ -233,3 +233,35 @@ export async function resetTourCompleted(): Promise<void> {
     .update({ tour_completed: false, tour_completed_at: null })
     .eq("id", profile.id);
 }
+
+// ── Onboarding chat helpers ─────────────────────────────────────────────────
+
+export async function saveOnboardingChatAnswer(
+  orgId: string,
+  field: string,
+  value: unknown,
+): Promise<void> {
+  const { saveOnboardingStep } = await import("@/lib/db/org-settings");
+
+  const stepMap: Record<string, { step: number; key: string }> = {
+    sales_model: { step: 6, key: "sales_model" },
+    target_verticals: { step: 2, key: "target_verticals" },
+    client_count_range: { step: 1, key: "company_size" },
+    company_size: { step: 1, key: "company_size" },
+    additional_context: { step: 7, key: "additional_context" },
+    primary_goal: { step: 7, key: "additional_context" },
+    tool_hints: { step: 7, key: "additional_context" },
+  };
+
+  const mapping = stepMap[field];
+  if (mapping) {
+    await saveOnboardingStep(orgId, mapping.step, { [mapping.key]: value });
+  }
+}
+
+export async function completeOnboardingFromChat(
+  orgId: string,
+): Promise<void> {
+  const { markOnboardingComplete } = await import("@/lib/db/org-settings");
+  await markOnboardingComplete(orgId, false);
+}

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import {
   ChevronRight,
   Download,
   FileText,
+  Layers2,
   Loader2,
   RefreshCw,
   Shield,
@@ -63,6 +65,7 @@ import { FractionalCTOStudioPanel } from "./fractional-cto-studio-panel";
 import { ContextQualityBadge } from "@/components/ui/context-quality-badge";
 import { AgentBadge } from "@/components/agents/agent-badge";
 import { AgentWorking } from "@/components/agents/agent-working";
+import { usePlanContext } from "@/components/providers/plan-provider";
 import type {
   ClientWithContracts,
   Proposal,
@@ -592,12 +595,30 @@ export function SalesStudioClient({
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="fractional-cto">Fractional CTO</TabsTrigger>
+          <TabsTrigger value="fractional-cto">Technology Advisory</TabsTrigger>
         </TabsList>
 
         {/* ── Client Proposals Tab ── */}
         <TabsContent value="client" className="space-y-6">
-          {!inputCollapsed ? (
+          {activeBundles.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <Layers2 className="h-8 w-8 text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-semibold text-foreground">
+                  Build a service first
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  Proposals are built from your services. Design your first service
+                  in the Stack Builder, then come back to generate a proposal.
+                </p>
+                <Button asChild className="mt-4">
+                  <Link href="/stack-builder">
+                    Open Stack Builder &rarr;
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : !inputCollapsed ? (
             <Card>
               <CardContent className="p-5 space-y-5">
                 <ClientInputPanel
@@ -758,7 +779,25 @@ export function SalesStudioClient({
 
         {/* ── Prospect Proposals Tab ── */}
         <TabsContent value="prospect" className="space-y-6">
-          {!inputCollapsed ? (
+          {activeBundles.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <Layers2 className="h-8 w-8 text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-semibold text-foreground">
+                  Build a service first
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  Proposals are built from your services. Design your first service
+                  in the Stack Builder, then come back to generate a proposal.
+                </p>
+                <Button asChild className="mt-4">
+                  <Link href="/stack-builder">
+                    Open Stack Builder &rarr;
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : !inputCollapsed ? (
             <Card>
               <CardContent className="p-5 space-y-5">
                 <ProspectInputPanel
@@ -1338,6 +1377,11 @@ function ProposalOutput({
   exportingPdf: boolean;
   exportingDocx: boolean;
 }) {
+  const { usage, limits } = usePlanContext();
+  const exportsRemaining = limits.exportsPerMonth === Infinity
+    ? null
+    : limits.exportsPerMonth - (usage?.exportsCount ?? 0);
+
   return (
     <div className="space-y-0">
       {/* Proposal header bar — Pitch agent */}
@@ -1552,6 +1596,11 @@ function ProposalOutput({
             )}
             Export PDF
           </Button>
+          {exportsRemaining !== null && exportsRemaining <= 5 && (
+            <span className="text-[11px] ml-1" style={{ color: "#EF9F27", fontFamily: "var(--font-mono-alt)" }}>
+              {exportsRemaining} export{exportsRemaining !== 1 ? "s" : ""} remaining
+            </span>
+          )}
         </div>
       )}
     </div>

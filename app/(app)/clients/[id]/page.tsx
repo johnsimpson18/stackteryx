@@ -149,7 +149,7 @@ export default async function ClientDetailPage({
             </Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
-            <Link href="/cto-briefs">
+            <Link href={`/cto-briefs?client=${id}`}>
               <Brain className="h-3 w-3 mr-1" />
               Technology Advisory
             </Link>

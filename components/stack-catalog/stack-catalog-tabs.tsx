@@ -80,7 +80,17 @@ export function StackCatalogTabs({
       <PageHeader
         title="Tools & Costs"
         description="Your tool inventory, pricing health, and vendor management"
-      />
+      >
+        {tools.length > 0 && (
+          <Link
+            href="/stack-builder"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors whitespace-nowrap"
+          >
+            <Layers2 className="h-4 w-4" />
+            Build a Service
+          </Link>
+        )}
+      </PageHeader>
       <p className="text-xs text-muted-foreground/70 -mt-4">
         Tools are the individual products you use (e.g. CrowdStrike Falcon). Vendors are the companies behind them (optional &mdash; for managing vendor relationships).
       </p>

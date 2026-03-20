@@ -204,7 +204,9 @@ Return a JSON object with this exact shape:
 
   // Increment AI usage (fire-and-forget)
   import("@/actions/billing").then(({ incrementUsage }) => {
-    incrementUsage("ai_generation").catch(() => {});
+    incrementUsage("ai_generation").catch((err) => {
+      console.error("[BILLING] incrementUsage failed:", err);
+    });
   });
 
   return digest;

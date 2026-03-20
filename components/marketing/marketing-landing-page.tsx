@@ -917,9 +917,27 @@ export function MarketingLandingPage() {
                 </a>
               ))}
             </div>
-            <p className="text-xs" style={{ color: "#333333", fontFamily: "var(--font-mono-alt)" }}>
-              &copy; {new Date().getFullYear()} Stackteryx
-            </p>
+            <div className="flex items-center gap-6">
+              {[
+                { label: "Terms of Service", href: "/terms" },
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Contact", href: "mailto:support@stackteryx.com" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="text-xs transition-colors"
+                  style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#999999")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#444444")}
+                >
+                  {label}
+                </a>
+              ))}
+              <p className="text-xs" style={{ color: "#333333", fontFamily: "var(--font-mono-alt)" }}>
+                &copy; {new Date().getFullYear()} Stackteryx. All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

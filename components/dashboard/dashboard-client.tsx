@@ -41,6 +41,8 @@ import {
   PracticeIntelligencePlaceholder,
 } from "@/components/dashboard/practice-intelligence";
 import { HorizonDigestCard } from "@/components/horizon/horizon-digest-card";
+import { ChatPanel } from "@/components/intelligence-chat/chat-panel";
+import type { ChatContext } from "@/lib/intelligence/chat-context";
 import { usePlanContext } from "@/components/providers/plan-provider";
 import { useUpgradeModal } from "@/components/billing/upgrade-modal";
 import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
@@ -84,6 +86,7 @@ interface DashboardClientProps {
   serviceCount?: number;
   horizonDigest?: HorizonDigest | null;
   horizonDigestId?: string | null;
+  chatContext?: ChatContext | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -119,6 +122,7 @@ export function DashboardClient({
   serviceCount = 0,
   horizonDigest = null,
   horizonDigestId = null,
+  chatContext = null,
 }: DashboardClientProps) {
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -184,7 +188,9 @@ export function DashboardClient({
           : "negative";
 
   return (
-    <div className="space-y-7">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
+      {/* ── LEFT COLUMN ──────────────────────────────────────────────── */}
+      <div className="space-y-7">
       {/* ── 1. Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
@@ -198,14 +204,12 @@ export function DashboardClient({
             Your portfolio intelligence briefing
           </p>
         </div>
-        {hasServices && (
-          <Button asChild>
-            <Link href="/services/new">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Build a Service
-            </Link>
-          </Button>
-        )}
+        <Button asChild>
+          <Link href={hasServices ? "/services/new" : "/stack-builder"}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            {hasServices ? "Build a Service" : "Build Your First Service"}
+          </Link>
+        </Button>
       </div>
 
       {/* ── Trial Welcome ────────────────────────────────────────── */}
@@ -237,8 +241,8 @@ export function DashboardClient({
             <Link href="/stack-builder" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
               2. Build a service &rarr;
             </Link>
-            <Link href="/fractional-cto" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
-              3. Try the Free CTO Brief &rarr;
+            <Link href="/cto-briefs" className="text-xs font-medium text-primary hover:underline" style={{ fontFamily: "var(--font-mono-alt)" }}>
+              3. Try Technology Advisory &rarr;
             </Link>
           </div>
           {trialEndsAt && (
@@ -266,7 +270,7 @@ export function DashboardClient({
             <X className="h-4 w-4" />
           </button>
           <p className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-            Your free trial has ended.
+            Your Free Trial has ended.
           </p>
           <p className="text-xs text-muted-foreground mt-1 max-w-xl" style={{ fontFamily: "var(--font-mono-alt)" }}>
             Your data is safe &mdash; all your services, clients, and proposals are preserved.
@@ -438,528 +442,38 @@ export function DashboardClient({
         />
       </div>
 
-      {/* ── 4. Intelligence Cards (2×2) ────────────────────────────────── */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-        <IntelligenceCard
-          label="Pricing Health"
-          icon={AlertTriangle}
-          iconColor="#ef9f27"
-          cta={{ label: "View all →", href: "/services" }}
-          emptyState="Add active services with pricing to see health data."
-        >
-          {pricingHealth && <PricingHealthContent data={pricingHealth} />}
-        </IntelligenceCard>
-
-        <IntelligenceCard
-          label="Upcoming Renewals"
-          icon={Calendar}
-          iconColor="#378add"
-          cta={{ label: "All clients →", href: "/clients" }}
-          emptyState="No renewals due in the next 90 days."
-        >
-          {renewals.length > 0 ? <RenewalList renewals={renewals} /> : null}
-        </IntelligenceCard>
-
-        <IntelligenceCard
-          label="Proposal Pipeline"
-          icon={FileText}
-          iconColor="#378add"
-          cta={{ label: "Sales Studio →", href: "/sales-studio" }}
-          emptyState="No proposals generated yet."
-        >
-          {proposalStats.total > 0 ? (
-            <ProposalStatsContent stats={proposalStats} />
-          ) : null}
-        </IntelligenceCard>
-
-        <IntelligenceCard
-          label="CTO Briefs"
-          icon={Brain}
-          iconColor="#c8f135"
-          cta={{ label: "Generate →", href: "/fractional-cto" }}
-          emptyState="No CTO briefs generated yet."
-        >
-          {ctoBriefCount > 0 ? (
-            <div>
-              <div
-                style={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  fontFamily: "var(--font-mono-alt)",
-                  lineHeight: 1,
-                }}
-              >
-                {ctoBriefCount}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#666666",
-                  fontFamily: "var(--font-mono-alt)",
-                  marginTop: 6,
-                }}
-              >
-                briefs generated
-              </div>
-            </div>
-          ) : null}
-        </IntelligenceCard>
       </div>
-
-      {/* ── Practice Intelligence ───────────────────────────────────── */}
-      {serviceCount >= 3 && orgSignals ? (
-        <PracticeIntelligence signals={orgSignals} portfolioMrr={portfolioMrr} />
-      ) : serviceCount > 0 && serviceCount < 3 ? (
-        <PracticeIntelligencePlaceholder />
-      ) : null}
-
-      {/* ── Agent Activity Feed ────────────────────────────────────── */}
-      {recentActivities.length > 0 && (
-        <div
-          style={{
-            background: "#111111",
-            border: "1px solid #1e1e1e",
-            borderRadius: 8,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
-            <div>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  fontFamily: "var(--font-display)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                Agent Activity
-              </span>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#555555",
-                  fontFamily: "var(--font-mono-alt)",
-                  marginTop: 2,
-                }}
-              >
-                Your AI team&apos;s recent work
-              </p>
-            </div>
-            <Link
-              href="/agents"
-              style={{
-                fontSize: 12,
-                color: "#c8f135",
-                fontFamily: "var(--font-mono-alt)",
-                textDecoration: "none",
-              }}
-            >
-              View all &rarr;
-            </Link>
-          </div>
-          <AgentActivityFeed activities={recentActivities} limit={5} />
-        </div>
-      )}
-
-      {/* ── 5. Scout Nudges — Portfolio Intelligence ────────────── */}
-      <div
-        style={{
-          background: "#111111",
-          border: "1px solid #1e1e1e",
-          borderRadius: 8,
-          padding: 20,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <AgentBadge agentId="scout" size="sm" showTitle={false} />
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#ffffff",
-                fontFamily: "var(--font-display)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              Scout · Portfolio Analyst
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: "#555555",
-                fontFamily: "var(--font-mono-alt)",
-              }}
-            >
-              {scoutNudges.length > 0
-                ? `${scoutNudges.length} active signal${scoutNudges.length !== 1 ? "s" : ""}`
-                : attentionItems.length > 0
-                  ? `${attentionItems.length} signal${attentionItems.length !== 1 ? "s" : ""}`
-                  : ""}
-            </span>
-          </div>
-          <Link
-            href="/portfolio-intelligence"
-            style={{
-              fontSize: 12,
-              color: "#c8f135",
-              fontFamily: "var(--font-mono-alt)",
-              textDecoration: "none",
-            }}
-          >
-            View all &rarr;
-          </Link>
-        </div>
-        {scoutNudges.length > 0 ? (
-          <NudgeFeed nudges={scoutNudges} limit={3} />
-        ) : attentionItems.length > 0 ? (
-          <AttentionFeed items={attentionItems.slice(0, 3)} />
-        ) : (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Scout sees no issues with your portfolio right now.
-          </p>
-        )}
+      {/* ── RIGHT COLUMN — Chat Panel ─────────────────────────────────── */}
+      <div className="sticky top-20 hidden lg:block">
+        {chatContext && <ChatPanel context={chatContext} />}
       </div>
-
-      {/* ── 6. Revenue by Service ──────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#111111",
-          border: "1px solid #1e1e1e",
-          borderRadius: 8,
-          padding: 20,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <DollarSign style={{ width: 16, height: 16, color: "#666666" }} />
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#ffffff",
-                fontFamily: "var(--font-display)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              Revenue by Service
-            </span>
-          </div>
-          <Link
-            href="/services"
-            style={{
-              fontSize: 12,
-              color: "#c8f135",
-              fontFamily: "var(--font-mono-alt)",
-              textDecoration: "none",
-            }}
-          >
-            View all →
-          </Link>
-        </div>
-        <MRRBreakdown services={mrrByService} totalMrr={portfolioMrr} />
+      {/* ── Mobile chat (stacked below on small screens) ──────────────── */}
+      <div className="lg:hidden">
+        {chatContext && <ChatPanel context={chatContext} />}
       </div>
-
-      {/* ── Zero-state hero ────────────────────────────────────────────── */}
-      {!hasServices && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Package className="h-7 w-7 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground mb-1">
-            Start by building your first service.
-          </p>
-          <p className="text-sm text-muted-foreground mb-5 max-w-md">
-            Package your tools, define pricing, and generate sales enablement
-            content — all in one guided wizard.
-          </p>
-          <Button size="lg" asChild>
-            <Link href="/services/new">
-              Build a Service
-              <ArrowRight className="h-4 w-4 ml-1.5" />
-            </Link>
-          </Button>
-        </div>
-      )}
-
-      {/* ── 7. Portfolio Health Grid ──────────────────────────────────── */}
-      <PortfolioHealthGrid
-        items={filteredGridBundles}
-        isFiltered={filterNeedingAttention}
-        onClearFilter={() => setFilterNeedingAttention(false)}
-        onToggleFilter={() => setFilterNeedingAttention((prev) => !prev)}
-        hasServices={hasServices}
-      />
     </div>
   );
 }
 
-// ── Pricing Health Content ───────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PricingHealthContent({ data }: { data: PricingHealthSummary }) {
-  const { marginBuckets, topRisks } = data;
-  const total =
-    marginBuckets.healthy +
-    marginBuckets.watch +
-    marginBuckets.atRisk +
-    marginBuckets.critical;
-
-  if (total === 0) return null;
-
-  const buckets = [
-    { label: "Healthy", count: marginBuckets.healthy, color: "#c8f135" },
-    { label: "Watch", count: marginBuckets.watch, color: "#ef9f27" },
-    { label: "At Risk", count: marginBuckets.atRisk, color: "#e24b4a" },
-    { label: "Critical", count: marginBuckets.critical, color: "#ff4444" },
-  ];
-
-  return (
-    <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: topRisks.length > 0 ? 16 : 0 }}>
-        {buckets.map((b) => (
-          <div
-            key={b.label}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: b.color,
-                display: "inline-block",
-              }}
-            />
-            <span
-              style={{
-                fontSize: 12,
-                color: "#888888",
-                fontFamily: "var(--font-mono-alt)",
-              }}
-            >
-              {b.label}
-            </span>
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#ffffff",
-                fontFamily: "var(--font-mono-alt)",
-              }}
-            >
-              {b.count}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {topRisks.length > 0 && (
-        <div style={{ borderTop: "1px solid #1e1e1e", paddingTop: 12 }}>
-          <div
-            style={{
-              fontSize: 11,
-              color: "#666666",
-              fontFamily: "var(--font-mono-alt)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              marginBottom: 8,
-            }}
-          >
-            Lowest Margins
-          </div>
-          {topRisks.map((risk) => (
-            <div
-              key={risk.bundleId}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "4px 0",
-              }}
-            >
-              <Link
-                href={`/services/${risk.bundleId}`}
-                style={{
-                  fontSize: 13,
-                  color: "#ffffff",
-                  fontFamily: "var(--font-mono-alt)",
-                  textDecoration: "none",
-                }}
-              >
-                {risk.bundleName}
-              </Link>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color:
-                    risk.currentMargin < 0.1
-                      ? "#e24b4a"
-                      : risk.currentMargin < 0.25
-                        ? "#ef9f27"
-                        : "#c8f135",
-                  fontFamily: "var(--font-mono-alt)",
-                }}
-              >
-                {(risk.currentMargin * 100).toFixed(0)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  void data; return null; // Removed from dashboard — kept to prevent import errors
 }
 
-// ── Proposal Stats Content ───────────────────────────────────────────────────
-
-function ProposalStatsContent({
-  stats,
-}: {
-  stats: { total: number; drafts: number; sent: number };
-}) {
-  const items = [
-    { label: "Total", value: stats.total, color: "#ffffff" },
-    { label: "Drafts", value: stats.drafts, color: "#ef9f27" },
-    { label: "Sent", value: stats.sent, color: "#c8f135" },
-  ];
-
-  return (
-    <div style={{ display: "flex", gap: 32 }}>
-      {items.map((item) => (
-        <div key={item.label}>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              color: item.color,
-              fontFamily: "var(--font-mono-alt)",
-              lineHeight: 1,
-            }}
-          >
-            {item.value}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#666666",
-              fontFamily: "var(--font-mono-alt)",
-              marginTop: 6,
-            }}
-          >
-            {item.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+function ProposalStatsContent({ stats }: { stats: { total: number; drafts: number; sent: number } }) {
+  void stats; return null;
 }
 
-// ── Getting Started Checklist ────────────────────────────────────────────────
+// ── DELETED: Old intelligence cards, practice intel, activity feed, scout nudges,
+// revenue by service, zero-state hero — all moved to Portfolio Intelligence page.
+// The orphaned JSX from those sections has been removed.
 
-function GettingStartedChecklist({ steps }: { steps: ChecklistSteps }) {
-  const items = [
-    { label: "Add your first vendor", complete: steps.hasVendors, href: "/vendors" },
-    { label: "Build your first service", complete: steps.hasServices, href: "/services/new" },
-    { label: "Generate your first proposal", complete: steps.hasProposals, href: "/services" },
-    { label: "Add your first client", complete: steps.hasClients, href: "/clients" },
-  ];
-  const completedCount = items.filter((s) => s.complete).length;
+// ── LEGACY MARKER — DO NOT ADD CODE BETWEEN HERE AND PortfolioHealthGrid ────
+// (The code below was formerly inline sub-components. PortfolioHealthGrid is
+// still used by the dashboard but the other cards have been removed.)
 
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="h-7 w-7 rounded-lg bg-[#A8FF3E]/10 flex items-center justify-center shrink-0">
-            <Rocket className="h-4 w-4 text-[#A8FF3E]" />
-          </div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Get started with Stackteryx
-          </h2>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4 ml-[38px]">
-          Complete these steps to unlock full value
-        </p>
-
-        <div className="space-y-1 mb-4">
-          {items.map((step) => (
-            <div
-              key={step.label}
-              className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg"
-            >
-              {step.complete ? (
-                <div className="h-5 w-5 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <Check className="h-3 w-3 text-emerald-400" />
-                </div>
-              ) : (
-                <div className="h-5 w-5 rounded-full border border-border flex items-center justify-center shrink-0">
-                  <Circle className="h-2 w-2 text-muted-foreground/40" />
-                </div>
-              )}
-              {step.complete ? (
-                <span className="text-sm text-muted-foreground line-through">
-                  {step.label}
-                </span>
-              ) : (
-                <Link
-                  href={step.href}
-                  className="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                >
-                  {step.label}
-                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="ml-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-muted-foreground">
-              {completedCount} of {items.length} complete
-            </span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-white/5">
-            <div
-              className="h-1.5 rounded-full bg-[#A8FF3E] transition-all duration-500"
-              style={{ width: `${(completedCount / items.length) * 100}%` }}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Portfolio Health Grid ────────────────────────────────────────────────────
-
+// Old sections removed — see Portfolio Intelligence page
 const LAYER_LABELS = ["Outcome", "Service", "Stack", "Economics", "Sales Materials"];
 const LAYER_KEYS: (keyof ServiceCompleteness)[] = [
   "outcome_complete",

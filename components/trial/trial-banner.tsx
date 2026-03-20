@@ -66,7 +66,7 @@ export function TrialBanner({
                 className="text-sm text-foreground"
                 style={{ fontFamily: "var(--font-mono-alt)" }}
               >
-                &#10022; You&apos;re on a free trial &middot;{" "}
+                &#10022; You&apos;re on a Free Trial &middot;{" "}
                 {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining
               </p>
               <p
@@ -84,7 +84,7 @@ export function TrialBanner({
                 style={{ fontFamily: "var(--font-mono-alt)" }}
               >
                 &#9889; {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} left
-                on your free trial
+                on your Free Trial
               </p>
               <p
                 className="text-xs text-muted-foreground mt-0.5"
@@ -118,7 +118,7 @@ export function TrialBanner({
                 className="text-sm text-foreground font-semibold"
                 style={{ fontFamily: "var(--font-mono-alt)" }}
               >
-                Your free trial has ended. You&apos;re now on the Free plan.
+                Your Free Trial has ended. You&apos;re now on the Free plan.
               </p>
               <p
                 className="text-xs text-muted-foreground mt-0.5"

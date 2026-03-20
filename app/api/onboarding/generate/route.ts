@@ -474,7 +474,9 @@ export async function GET(request: Request) {
         await markOnboardingComplete(orgId, true);
 
         // Track usage + agent activity (fire-and-forget)
-        incrementUsage("ai_generation").catch(() => {});
+        incrementUsage("ai_generation").catch((err) => {
+          console.error("[BILLING] incrementUsage failed:", err);
+        });
         try {
           logAgentActivity({
             orgId,

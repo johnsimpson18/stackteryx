@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Monitor } from "lucide-react";
+import { Check, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/constants";
 import { ToolLibraryPanel } from "./tool-library-panel";
 import { StackCanvas } from "./stack-canvas";
 import { IntelligencePanel } from "./intelligence-panel";
@@ -39,6 +43,9 @@ export function StackBuilderClient({
   const [stackAddons, setStackAddons] = useState<AddonServiceOption[]>([]);
   const [overlapWarnings, setOverlapWarnings] = useState<OverlapWarning[]>([]);
   const [saving, setSaving] = useState(false);
+  const [serviceName, setServiceName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const stackToolIds = useMemo(
     () => new Set(stackTools.map((t) => t.id)),
@@ -148,7 +155,14 @@ export function StackBuilderClient({
   const handleSave = useCallback(async () => {
     if (stackTools.length === 0) return;
 
-    const name = `Service from Stack Builder`;
+    if (!serviceName.trim()) {
+      setNameError("Give your service a name before saving");
+      nameInputRef.current?.focus();
+      return;
+    }
+    setNameError("");
+
+    const name = serviceName.trim();
     setSaving(true);
 
     try {
@@ -188,21 +202,134 @@ export function StackBuilderClient({
     } finally {
       setSaving(false);
     }
-  }, [stackTools, stackAddons, defaultSeatCount, suggestedOutcomeIds, existingServicesCount, router]);
+  }, [stackTools, stackAddons, defaultSeatCount, suggestedOutcomeIds, existingServicesCount, router, serviceName]);
+
+  const [mobileServiceName, setMobileServiceName] = useState("");
+  const [mobileSelectedIds, setMobileSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleMobileTool = useCallback((toolId: string) => {
+    setMobileSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(toolId)) next.delete(toolId);
+      else next.add(toolId);
+      return next;
+    });
+  }, []);
+
+  const handleMobileSave = useCallback(async () => {
+    if (mobileSelectedIds.size === 0 || !mobileServiceName.trim()) return;
+    setSaving(true);
+    try {
+      const selectedTools = tools.filter((t) => mobileSelectedIds.has(t.id));
+      const outcomeIds: string[] = [];
+      for (const tool of selectedTools) {
+        const ids = TOOL_CATEGORY_TO_OUTCOMES[tool.category];
+        if (ids) ids.forEach((id) => { if (!outcomeIds.includes(id)) outcomeIds.push(id); });
+      }
+      const result = await saveStackAsService({
+        serviceName: mobileServiceName.trim(),
+        toolIds: Array.from(mobileSelectedIds),
+        seatCount: defaultSeatCount,
+        suggestedOutcomeIds: outcomeIds,
+        addonServices: [],
+      });
+      if (!result.success) {
+        if (result.error === "LIMIT_REACHED") {
+          toast.error("You've reached your plan's service limit. Upgrade to create more.");
+        } else {
+          toast.error(result.error);
+        }
+        return;
+      }
+      toast.success("Service created!");
+      router.push(`/services/${result.data.bundleId}`);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, [mobileSelectedIds, mobileServiceName, tools, defaultSeatCount, router]);
 
   return (
     <>
-      {/* Mobile fallback */}
-      <div className="flex md:hidden items-center justify-center min-h-[60vh] px-6">
-        <div className="text-center">
-          <Monitor className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm font-medium text-foreground mb-1">
-            Stack Builder is optimized for desktop
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Use a wider screen to access the drag-and-drop builder.
-          </p>
-        </div>
+      {/* Mobile flow — simplified checklist */}
+      <div className="flex md:hidden flex-col px-4 pb-6">
+        {tools.length === 0 ? (
+          <div className="text-center py-16">
+            <Monitor className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground mb-1">
+              No tools in your catalog yet
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Add your tools first, then come back to build a service.
+            </p>
+            <Button asChild>
+              <Link href="/stack-catalog">Add Tools &rarr;</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-4">
+              Select the tools to include in this service.
+              Full visual builder available on desktop.
+            </p>
+
+            <div className="space-y-2 mb-4">
+              {tools.map((tool) => {
+                const selected = mobileSelectedIds.has(tool.id);
+                const colors = CATEGORY_COLORS[tool.category];
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    onClick={() => toggleMobileTool(tool.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors text-left ${
+                      selected
+                        ? "border-primary/60 bg-primary/5"
+                        : "border-border bg-card hover:border-border/80"
+                    }`}
+                  >
+                    <div
+                      className={`h-5 w-5 rounded flex items-center justify-center shrink-0 ${
+                        selected ? "bg-primary" : "border border-border"
+                      }`}
+                    >
+                      {selected && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className={`h-2 w-2 rounded-full shrink-0 ${colors.dot}`} />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm font-medium text-foreground block truncate">
+                        {tool.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {tool.vendor} &middot; {CATEGORY_LABELS[tool.category]}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <Input
+              placeholder="Service name (e.g. Managed Security Pro)"
+              value={mobileServiceName}
+              onChange={(e) => setMobileServiceName(e.target.value)}
+              className="mb-3"
+            />
+
+            <Button
+              onClick={handleMobileSave}
+              disabled={saving || mobileSelectedIds.size === 0 || !mobileServiceName.trim()}
+              className="w-full"
+            >
+              {saving ? "Saving..." : `Save Service (${mobileSelectedIds.size} tools)`}
+            </Button>
+
+            <p className="text-center text-[11px] text-muted-foreground mt-3">
+              For full visual design with live compliance scoring, open on desktop.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Desktop three-panel layout */}
@@ -233,6 +360,10 @@ export function StackBuilderClient({
             onDismissWarning={handleDismissWarning}
             onRemovePrevious={handleRemovePrevious}
             saving={saving}
+            serviceName={serviceName}
+            onServiceNameChange={(name) => { setServiceName(name); setNameError(""); }}
+            nameError={nameError}
+            nameInputRef={nameInputRef}
           />
         </div>
 

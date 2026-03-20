@@ -181,7 +181,26 @@ export function PortfolioIntelligenceClient({
         />
       )}
 
-      {!analyzing && (
+      {!analyzing && totalClientsWithContracts === 0 && signals.length === 0 && (
+        <div
+          className="rounded-xl text-center py-16"
+          style={{ background: "#111111", border: "1px solid #1e1e1e" }}
+        >
+          <p className="text-sm font-semibold text-foreground mb-1">
+            No portfolio data yet
+          </p>
+          <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
+            Add your first client to unlock portfolio intelligence, health scores, and Scout signals.
+          </p>
+          <Button asChild>
+            <Link href="/clients/new">
+              Add Your First Client <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {!analyzing && (totalClientsWithContracts > 0 || signals.length > 0) && (
         <>
           {/* ── Scout Nudges ────────────────────────────────────────────── */}
           {scoutNudges.length > 0 && (

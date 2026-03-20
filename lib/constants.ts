@@ -67,7 +67,7 @@ export const NAV_ITEMS = [
     group: "primary" as NavGroup,
   },
   {
-    label: "Fractional CTO",
+    label: "Technology Advisory",
     href: "/cto-briefs",
     icon: Brain,
     disabled: false,

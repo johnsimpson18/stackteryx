@@ -15,6 +15,7 @@ import { switchOrgAction } from "@/actions/orgs";
 import { ChevronsUpDown } from "lucide-react";
 import { AGENTS } from "@/lib/agents";
 import { AgentActivityFeed } from "@/components/agents/agent-activity-feed";
+import { useIntelligencePanel } from "@/components/providers/intelligence-panel-provider";
 import type { AgentActivityRecord } from "@/lib/agents/log-activity";
 
 interface TopbarProps {
@@ -38,6 +39,7 @@ export function Topbar({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pulseOpen, setPulseOpen] = useState(false);
+  const { isOpen: isPanelOpen, toggle: togglePanel } = useIntelligencePanel();
   const hasMultipleOrgs = userOrgs.length > 1;
 
   function handleOrgSwitch(orgId: string) {
@@ -129,6 +131,22 @@ export function Topbar({
             </>
           )}
         </div>
+
+        {/* Intelligence button */}
+        <button
+          type="button"
+          onClick={togglePanel}
+          title="Intelligence Chat (Cmd+I)"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-all"
+          style={{
+            border: "1px solid #c8f135",
+            background: isPanelOpen ? "#c8f135" : "transparent",
+            color: isPanelOpen ? "#1a2e00" : "#c8f135",
+            fontFamily: "var(--font-mono-alt)",
+          }}
+        >
+          &#10022; Intelligence
+        </button>
 
         {/* Org indicator */}
         <div className="flex items-center gap-1.5">
