@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Portfolio Intelligence" };
 
@@ -16,10 +17,49 @@ import { createClient } from "@/lib/supabase/server";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import type { ToolCategory } from "@/lib/types";
 import { getAllHealthScores } from "@/actions/client-health";
+import { checkLimit } from "@/actions/billing";
 import { PortfolioIntelligenceClient } from "@/components/portfolio-intelligence/portfolio-intelligence-client";
 
 export default async function PortfolioIntelligencePage() {
   const orgId = await getActiveOrgId();
+
+  // ── Plan gate: Portfolio Intelligence is Enterprise + Trial only ────────
+  const { allowed } = await checkLimit("portfolioIntelligence");
+  if (!allowed) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center max-w-md mx-auto">
+        <div
+          className="h-14 w-14 rounded-xl flex items-center justify-center mb-5"
+          style={{ background: "rgba(200,241,53,0.1)", border: "1px solid rgba(200,241,53,0.2)" }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#c8f135" }}>
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <h2
+          className="text-xl font-bold text-foreground mb-2"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Portfolio Intelligence
+        </h2>
+        <p
+          className="text-sm text-muted-foreground mb-6 leading-relaxed"
+          style={{ fontFamily: "var(--font-mono-alt)" }}
+        >
+          Monitor your entire client portfolio with AI-powered health scores,
+          renewal signals, and revenue intelligence. Available on the Enterprise plan.
+        </p>
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors"
+          style={{ background: "#c8f135", color: "#0A0A0A" }}
+        >
+          Upgrade to Enterprise &rarr;
+        </Link>
+      </div>
+    );
+  }
 
   // ── Phase 1: Parallel data fetches ──────────────────────────────────────
 

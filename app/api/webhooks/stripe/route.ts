@@ -7,7 +7,7 @@ import type Stripe from "stripe";
 //   URL: https://[your-domain]/api/webhooks/stripe
 //   Events: checkout.session.completed, customer.subscription.created,
 //           customer.subscription.updated, customer.subscription.deleted,
-//           invoice.payment_failed
+//           invoice.payment_failed, customer.subscription.trial_will_end
 
 /** Resolve a Stripe price ID to a plan name. */
 function planFromPriceId(priceId: string | undefined): "free" | "pro" | "enterprise" {
@@ -174,6 +174,40 @@ export async function POST(request: NextRequest) {
           })
           .eq("stripe_customer_id", customerId);
       }
+
+      break;
+    }
+
+    case "customer.subscription.trial_will_end": {
+      // Fires ~3 days before trial ends — create a Scout nudge
+      const sub = event.data.object as Stripe.Subscription;
+      const trialCustomerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+      if (!trialCustomerId) break;
+
+      // Look up org from Stripe customer ID
+      const { data: orgSub } = await service
+        .from("subscriptions")
+        .select("org_id")
+        .eq("stripe_customer_id", trialCustomerId)
+        .single();
+
+      if (!orgSub?.org_id) break;
+
+      // Create high-priority Scout nudge
+      await service.from("scout_nudges").insert({
+        org_id: orgSub.org_id,
+        nudge_type: "trial_expiring",
+        priority: 1,
+        title: "Your Free Trial ends in 3 days",
+        body:
+          "Upgrade to Pro to keep your services, clients, and AI generations. " +
+          "Everything you've built stays exactly as-is.",
+        entity_type: "subscription",
+        entity_name: "Free Trial",
+        status: "active",
+      });
 
       break;
     }

@@ -740,9 +740,20 @@ export function MarketingLandingPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>
                   Premium features
                 </p>
-                {["QBR Generator", "Client Scorecards", "Portfolio Intelligence", "White-label exports", "Team workflows"].map((f) => (
-                  <div key={f} className="flex items-center gap-2 text-sm" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>
-                    <span>&#10003;</span> {f}
+                {[
+                  { label: "QBR Generator", soon: true },
+                  { label: "Client Scorecards", soon: true },
+                  { label: "Portfolio Intelligence", soon: false },
+                  { label: "White-label exports", soon: false },
+                  { label: "Team workflows", soon: true },
+                ].map((f) => (
+                  <div key={f.label} className="flex items-center gap-2 text-sm" style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}>
+                    <span>&#10003;</span> {f.label}
+                    {f.soon && (
+                      <span style={{ fontSize: 10, background: "#1a1a1a", border: "1px solid #333", color: "#888", padding: "2px 6px", borderRadius: 4 }}>
+                        Soon
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

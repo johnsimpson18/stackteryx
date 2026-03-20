@@ -102,16 +102,17 @@ const PREMIUM_ROWS: {
   free: boolean;
   pro: boolean;
   enterprise: boolean;
+  comingSoon?: boolean;
 }[] = [
   { label: "Branded PDF & Word exports", free: false, pro: true, enterprise: true },
   { label: "Sales Studio + proposal generation", free: false, pro: true, enterprise: true },
   { label: "Fractional CTO advisory briefs", free: false, pro: true, enterprise: true },
   { label: "Portfolio intelligence engine", free: false, pro: false, enterprise: true },
-  { label: "QBR generator", free: false, pro: false, enterprise: true },
-  { label: "Client scorecards", free: false, pro: false, enterprise: true },
-  { label: "Bulk client analysis", free: false, pro: false, enterprise: true },
+  { label: "QBR generator", free: false, pro: false, enterprise: true, comingSoon: true },
+  { label: "Client scorecards", free: false, pro: false, enterprise: true, comingSoon: true },
+  { label: "Bulk client analysis", free: false, pro: false, enterprise: true, comingSoon: true },
   { label: "White-label exports (no Stackteryx)", free: false, pro: false, enterprise: true },
-  { label: "Team workflows & approvals", free: false, pro: false, enterprise: true },
+  { label: "Team workflows & approvals", free: false, pro: false, enterprise: true, comingSoon: true },
   { label: "Priority support", free: false, pro: false, enterprise: true },
 ];
 
@@ -332,8 +333,16 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
                     e.currentTarget.style.backgroundColor = "";
                   }}
                 >
-                  <span className="px-3 py-2.5 text-muted-foreground text-[13px]">
+                  <span className="px-3 py-2.5 text-muted-foreground text-[13px] flex items-center gap-1.5">
                     {row.label}
+                    {row.comingSoon && (
+                      <span
+                        className="text-[10px] rounded px-1.5 py-0.5 shrink-0"
+                        style={{ background: "#1a1a1a", border: "1px solid #333", color: "#888" }}
+                      >
+                        Soon
+                      </span>
+                    )}
                   </span>
                   <span className="px-3 py-2.5 flex justify-center">
                     <FeatureIcon included={row.free} />

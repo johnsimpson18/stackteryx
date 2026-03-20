@@ -15,7 +15,7 @@ export const PLAN_LIMITS = {
     teamWorkflows: false,
   },
   trial: {
-    // Full Pro access during trial
+    // Full access during trial — showcase all features
     services: Infinity,
     clients: Infinity,
     aiGenerationsPerMonth: Infinity,
@@ -25,7 +25,7 @@ export const PLAN_LIMITS = {
     qbrGenerator: false,
     clientScorecards: false,
     bulkClientAnalysis: false,
-    portfolioIntelligence: false,
+    portfolioIntelligence: true,
     whiteLabel: false,
     teamWorkflows: false,
   },
