@@ -488,11 +488,18 @@ export async function createCheckoutSession(
     if (email) sessionParams.customer_email = email;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const session = await getStripe().checkout.sessions.create(sessionParams as any);
+  let sessionUrl: string;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const session = await getStripe().checkout.sessions.create(sessionParams as any);
+    if (!session.url) throw new Error("Stripe returned no checkout URL");
+    sessionUrl = session.url;
+  } catch (err) {
+    console.error("[STRIPE] checkout.sessions.create failed:", err);
+    throw new Error("Stripe checkout unavailable. Please try again.");
+  }
 
-  if (!session.url) throw new Error("Failed to create checkout session");
-  return { url: session.url };
+  return { url: sessionUrl };
 }
 
 export async function downgradeToFree(orgId: string): Promise<void> {

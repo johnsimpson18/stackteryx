@@ -18,6 +18,7 @@ import { createCheckoutSession } from "@/actions/billing";
 import { PLAN_LIMITS, PLAN_DISPLAY, type LimitKey } from "@/lib/plans";
 import { Loader2, Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ── Context for opening the modal from anywhere ─────────────────────────────
 
@@ -147,7 +148,9 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
       try {
         const { url } = await createCheckoutSession(plan);
         window.location.href = url;
-      } catch {
+      } catch (err) {
+        console.error("[STRIPE] Checkout creation failed:", err);
+        toast.error("Could not start checkout. Please try again.");
         setPendingPlan(null);
       }
     });
