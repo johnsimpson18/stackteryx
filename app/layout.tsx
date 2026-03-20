@@ -28,7 +28,11 @@ export const metadata: Metadata = {
   description:
     "The pricing, margin, and enablement engine for profitable MSP security offerings.",
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: "/favicon.svg",
   },
 };
 
