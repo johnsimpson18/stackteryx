@@ -156,6 +156,16 @@ export function MarketingLandingPage() {
               materials that make you look like the most strategic MSP
               in the room.
             </p>
+            <p
+              className="landing-fade-in text-sm mt-4"
+              style={{
+                color: "#666666",
+                animationDelay: "380ms",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              This is how you design, price, and run a security practice on purpose.
+            </p>
 
             {/* CTA buttons */}
             <div
@@ -286,14 +296,24 @@ export function MarketingLandingPage() {
               className="text-[15px] md:text-base leading-[1.75] max-w-2xl mx-auto"
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
-              A single place where your services are designed,
-              your costs are modeled, and your margins are real.
+              There&apos;s never been a system that connects
+              what you sell,
+              what it costs,
+              and what it&apos;s actually worth.
             </p>
             <p
               className="text-xl md:text-2xl font-extrabold"
               style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
             >
-              That&apos;s what Stackteryx is.
+              Until now.
+            </p>
+            <p
+              className="text-sm leading-[1.75] max-w-md mx-auto"
+              style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+            >
+              Not a spreadsheet. Not a PSA report. Not a vendor dashboard.
+              <br />
+              A system for running your security business on purpose.
             </p>
           </div>
         </div>
@@ -346,7 +366,7 @@ export function MarketingLandingPage() {
               {
                 step: "03",
                 label: "Stack",
-                desc: "Add the vendor tools that power the service. Stackteryx pulls in your real costs \u2014 no estimates, no guesses.",
+                desc: "Add the vendor tools that power the service. Stackteryx pulls in your real costs \u2014 no estimates, no guesses. You\u2019re not guessing anymore. You\u2019re operating on real service economics.",
               },
               {
                 step: "04",
@@ -396,6 +416,16 @@ export function MarketingLandingPage() {
           </p>
         </div>
       </section>
+
+      {/* ── Service economics model line ──────────────────────── */}
+      <div className="py-12" style={{ background: "#0A0A0A" }}>
+        <p
+          className="text-center text-sm tracking-[0.15em]"
+          style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+        >
+          Outcome &rarr; Service &rarr; Stack &rarr; Cost &rarr; Price
+        </p>
+      </div>
 
       {/* ═══════════════════════════════════════════════════════
           SECTION 4 — THE INTELLIGENCE LAYER (Agents)
@@ -520,6 +550,12 @@ export function MarketingLandingPage() {
                 No new hires. No new tools. Just a service you were
                 never set up to deliver before.
               </p>
+              <p
+                className="text-[15px] leading-[1.75]"
+                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+              >
+                Now it&apos;s structured. Repeatable. Productized inside a system.
+              </p>
             </div>
 
             {/* Value stats */}
@@ -576,14 +612,22 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              WHY MSPS DON&apos;T LEAVE
+              THE STACKTERYX ARC
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              After 90 days, this becomes how you run your practice.
+              From managing tools to engineering a security business.
             </h2>
+            <p
+              className="text-[15px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+            >
+              Not because you changed what you do.
+              Because you finally have a system that connects
+              outcomes, services, cost, and price.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -647,6 +691,7 @@ export function MarketingLandingPage() {
               style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
             >
               Every plan starts with a 7-day free trial &mdash; full Pro access, no card required.
+              No setup. No rebuilding. Just clarity &mdash; immediately.
             </p>
           </div>
 
@@ -855,6 +900,12 @@ export function MarketingLandingPage() {
             Generate a proposal your client will actually read.
             Deliver advisory that makes you look like a strategic partner,
             not a support desk.
+          </p>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
+          >
+            You don&apos;t need more tools. You need a system.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
