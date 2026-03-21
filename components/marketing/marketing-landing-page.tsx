@@ -146,7 +146,7 @@ export function MarketingLandingPage() {
             <p
               className="landing-fade-in text-base md:text-lg mt-6 max-w-xl leading-[1.75]"
               style={{
-                color: "#999999",
+                color: "#AAAAAA",
                 animationDelay: "300ms",
                 fontFamily: "var(--font-mono-alt)",
               }}
@@ -157,9 +157,9 @@ export function MarketingLandingPage() {
               in the room.
             </p>
             <p
-              className="landing-fade-in text-sm mt-4"
+              className="landing-fade-in text-[15px] mt-4"
               style={{
-                color: "#666666",
+                color: "#AAAAAA",
                 animationDelay: "380ms",
                 fontFamily: "var(--font-mono-alt)",
               }}
@@ -217,8 +217,8 @@ export function MarketingLandingPage() {
         {/* Credibility line */}
         <div className="max-w-4xl mx-auto px-6 mt-20">
           <p
-            className="text-center text-sm leading-relaxed"
-            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+            className="text-center text-[15px] leading-relaxed"
+            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
             Used by MSPs who are done guessing at margins and ready
             to build a practice that actually scales.
@@ -287,14 +287,14 @@ export function MarketingLandingPage() {
 
           <div className="text-center space-y-6">
             <p
-              className="text-sm font-semibold uppercase tracking-wider"
-              style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] font-semibold uppercase tracking-wider"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               What&apos;s missing:
             </p>
             <p
-              className="text-[15px] md:text-base leading-[1.75] max-w-2xl mx-auto"
-              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               There&apos;s never been a system that connects
               what you sell,
@@ -308,8 +308,8 @@ export function MarketingLandingPage() {
               Until now.
             </p>
             <p
-              className="text-sm leading-[1.75] max-w-md mx-auto"
-              style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] leading-[1.75] max-w-md mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               Not a spreadsheet. Not a PSA report. Not a vendor dashboard.
               <br />
@@ -407,8 +407,8 @@ export function MarketingLandingPage() {
           </div>
 
           <p
-            className="text-center text-sm"
-            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
+            className="text-center text-[15px]"
+            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
             Once your services are built, the platform keeps working &mdash;
             monitoring your clients, flagging risks, and surfacing
@@ -420,8 +420,8 @@ export function MarketingLandingPage() {
       {/* ── Service economics model line ──────────────────────── */}
       <div className="py-12" style={{ background: "#0A0A0A" }}>
         <p
-          className="text-center text-sm tracking-[0.15em]"
-          style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+          className="text-center text-[15px] tracking-[0.15em]"
+          style={{ color: "#777777", fontFamily: "var(--font-mono-alt)" }}
         >
           Outcome &rarr; Service &rarr; Stack &rarr; Cost &rarr; Price
         </p>
@@ -446,8 +446,8 @@ export function MarketingLandingPage() {
               Six agents handling the work that used to eat your week.
             </h2>
             <p
-              className="text-[15px] leading-[1.75] max-w-2xl mx-auto"
-              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               Every part of Stackteryx is powered by a named AI agent
               with a specific job. They don&apos;t need to be asked. They run
@@ -528,7 +528,7 @@ export function MarketingLandingPage() {
             <div className="space-y-4">
               <p
                 className="text-[15px] leading-[1.75]"
-                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+                style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
               >
                 MSPs using Stackteryx charge $500&ndash;$1,000 per month per
                 client for quarterly technology strategy briefings &mdash;
@@ -537,14 +537,14 @@ export function MarketingLandingPage() {
               </p>
               <p
                 className="text-[15px] leading-[1.75]"
-                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+                style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
               >
                 Sage generates each brief automatically. Enter the client&apos;s
                 domain. Hit generate. Branded PDF ready in under 60 seconds.
               </p>
               <p
                 className="text-[15px] leading-[1.75]"
-                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+                style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
               >
                 Ten clients. $120,000 in new annual recurring revenue.
                 No new hires. No new tools. Just a service you were
@@ -552,7 +552,7 @@ export function MarketingLandingPage() {
               </p>
               <p
                 className="text-[15px] leading-[1.75]"
-                style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+                style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
               >
                 Now it&apos;s structured. Repeatable. Productized inside a system.
               </p>
@@ -621,8 +621,8 @@ export function MarketingLandingPage() {
               From managing tools to engineering a security business.
             </h2>
             <p
-              className="text-[15px] leading-[1.75] max-w-2xl mx-auto"
-              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               Not because you changed what you do.
               Because you finally have a system that connects
@@ -687,8 +687,8 @@ export function MarketingLandingPage() {
               Start free. Scale when you&apos;re ready.
             </h2>
             <p
-              className="text-sm max-w-xl mx-auto"
-              style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
+              className="text-[15px] max-w-xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
               Every plan starts with a 7-day free trial &mdash; full Pro access, no card required.
               No setup. No rebuilding. Just clarity &mdash; immediately.
@@ -893,8 +893,8 @@ export function MarketingLandingPage() {
             Stop guessing. Start building services that actually pay.
           </h2>
           <p
-            className="text-base leading-[1.75] max-w-xl mx-auto"
-            style={{ color: "#999999", fontFamily: "var(--font-mono-alt)" }}
+            className="text-base md:text-[17px] leading-[1.75] max-w-xl mx-auto"
+            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
             Design your first service with real cost modeling.
             Generate a proposal your client will actually read.
@@ -902,8 +902,8 @@ export function MarketingLandingPage() {
             not a support desk.
           </p>
           <p
-            className="text-sm font-semibold"
-            style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}
+            className="text-[15px] font-semibold"
+            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
             You don&apos;t need more tools. You need a system.
           </p>
