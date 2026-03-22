@@ -1,4 +1,4 @@
-import type { ChatContext, WizardProfile } from "./chat-context";
+import type { ChatContext, WizardProfile, ToolCatalog } from "./chat-context";
 
 function getVoiceProfile(teamSize: string): string {
   if (teamSize === "Just me" || teamSize === "solo") {
@@ -42,6 +42,73 @@ function buildHorizonCategoryContext(
     .join("\n");
 }
 
+function getToolCatalogContext(tc: ToolCatalog): string {
+  if (tc.tools.length === 0 && Object.keys(tc.categoryBreakdown).length === 0) {
+    return `
+## TOOL CATALOG
+This MSP has no tools in their catalog yet.
+If they ask about bundling, guide them to Tools & Costs first.
+Do NOT ask them to list their tools verbally — direct them to the UI.`;
+  }
+
+  const toolList = tc.tools.length > 0
+    ? tc.tools
+        .map((t) => `- ${t.name} (${t.vendor}) | ${t.category} | Cost: $${t.costPerSeat}/seat`)
+        .join("\n")
+    : Object.entries(tc.categoryBreakdown)
+        .map(([cat, count]) => `- ${cat}: ${count} tool(s)`)
+        .join("\n");
+
+  const gapList = tc.coverageGaps.length > 0
+    ? tc.coverageGaps.join(", ")
+    : "none identified";
+
+  return `
+## TOOL CATALOG (${tc.tools.length || Object.values(tc.categoryBreakdown).reduce((s, n) => s + n, 0)} tools)
+
+${toolList}
+
+Category coverage:
+${Object.entries(tc.categoryBreakdown).map(([cat, count]) => `- ${cat}: ${count}`).join("\n")}
+
+Coverage gaps: ${gapList}
+
+Compliance proximity:
+- HIPAA: ${tc.complianceProximity.hipaa}%
+- PCI DSS: ${tc.complianceProximity.pci}%
+- CMMC: ${tc.complianceProximity.cmmc}%
+
+## TOOL CATALOG RULES
+
+NEVER ask the MSP what tools they use. You already know.
+NEVER say "I don't have access to your tools." You do.
+ALWAYS reference tools by their actual names from the catalog above.
+
+When recommending bundles, use actual tool names, not generic descriptions.
+When identifying gaps, name the specific missing category.`;
+}
+
+function getBundleRecommendationRules(): string {
+  return `
+## BUNDLE RECOMMENDATION RULES
+
+When an MSP asks about bundling or "building a service":
+
+1. LOOK AT THEIR ACTUAL TOOLS first
+2. GROUP them by what security outcome they collectively deliver
+3. NAME the bundle based on the outcome, not the tools
+4. SHOW the math: combined cost, recommended sell price, margin
+
+Standard bundle patterns:
+- 3-5 tools (endpoint + email + identity) = "SMB Foundational Security"
+- Above + backup = "Business Continuity & Security"
+- Above + compliance tooling = "[Framework]-Ready Security"
+- Above + MDR/SOC = "Enterprise Security Operations"
+
+Reference their actual tools by name. Show cost/price/margin math.
+Identify one tool addition that would unlock a compliance tier.`;
+}
+
 export function buildChatSystemPrompt(context: ChatContext): string {
   const voice = getVoiceProfile(context.profile.teamSize);
   const horizonCategories = buildHorizonCategoryContext(context.horizonByCategory);
@@ -61,7 +128,10 @@ Current state:
 - ${context.practice.serviceCount} services, ${context.practice.clientCount} clients
 ${context.practice.servicesBelowTargetMargin.length > 0 ? `- Services below margin target: ${context.practice.servicesBelowTargetMargin.map((s) => `${s.name} (${s.margin}%)`).join(", ")}` : ""}
 
-Tool catalog covers: ${context.tools.categories.join(", ") || "no tools added yet"}
+Tool categories: ${context.tools.categories.join(", ") || "no tools added yet"} (${context.tools.toolCount} tools)
+
+${getToolCatalogContext(context.toolCatalog)}
+${getBundleRecommendationRules()}
 ${voice}
 
 ## WHAT SCOUT IS SEEING RIGHT NOW
