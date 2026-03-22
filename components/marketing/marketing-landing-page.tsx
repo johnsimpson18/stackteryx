@@ -17,42 +17,42 @@ const AGENTS = [
     title: "Service Architect",
     color: "#c8f135",
     Icon: Layers2,
-    desc: "Designs your service stack and maps tools to outcomes.",
+    desc: "Turns your tools into structured, sellable services.",
   },
   {
     name: "Margin",
     title: "Pricing Analyst",
     color: "#378ADD",
     Icon: TrendingUp,
-    desc: "Models real delivery costs and suggests profitable pricing.",
+    desc: "Makes sure every service you sell actually makes money.",
   },
   {
     name: "Scout",
     title: "Portfolio Analyst",
     color: "#5DCAA5",
     Icon: BarChart2,
-    desc: "Monitors every client for risk and opportunity 24/7.",
+    desc: "Shows you where clients are at risk \u2014 or ready to grow.",
   },
   {
     name: "Sage",
     title: "Advisory Agent",
     color: "#AFA9EC",
     Icon: Brain,
-    desc: "Generates executive CTO briefs and advisory reports.",
+    desc: "Turns your expertise into a structured advisory offering.",
   },
   {
     name: "Pitch",
     title: "Pre-Sales Agent",
     color: "#F0997B",
     Icon: FileText,
-    desc: "Writes proposals, playbooks, and talk tracks from your service stack.",
+    desc: "Turns your services into clear, outcome-driven proposals.",
   },
   {
     name: "Horizon",
     title: "Market Intelligence",
     color: "#EF9F27",
     Icon: Telescope,
-    desc: "Watches MSP industry trends, technology shifts, and competitive movements \u2014 delivers a weekly briefing every Monday morning.",
+    desc: "Keeps you ahead of what\u2019s changing \u2014 before clients ask.",
   },
 ];
 
@@ -131,7 +131,7 @@ export function MarketingLandingPage() {
               className="landing-fade-in text-[11px] uppercase tracking-[0.3em] font-semibold mb-6"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              BUILT FOR MSP AND MSSP SERVICE BUSINESSES
+              BUILT FOR MSPs BUILDING A REAL SECURITY BUSINESS
             </p>
             <h1
               className="landing-fade-in text-4xl md:text-6xl font-extrabold leading-[1.08] tracking-tight"
@@ -141,7 +141,9 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-display)",
               }}
             >
-              Your MSP deserves better than a spreadsheet.
+              You didn&apos;t mean to build a security practice.
+              <br className="hidden md:block" />
+              But now you&apos;re running one.
             </h1>
             <p
               className="landing-fade-in text-base md:text-lg mt-6 max-w-xl leading-[1.75]"
@@ -151,20 +153,40 @@ export function MarketingLandingPage() {
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              Finally know what your services actually cost to deliver.
-              Price them profitably. Walk into every client meeting with
-              materials that make you look like the most strategic MSP
-              in the room.
+              It started with a few tools. A few client requests.
+              Now you&apos;ve got a stack, some recurring revenue &mdash;
+              and no clear system behind any of it.
             </p>
             <p
-              className="landing-fade-in text-[15px] mt-4"
+              className="landing-fade-in text-base md:text-lg mt-4 max-w-xl leading-[1.75]"
+              style={{
+                color: "#AAAAAA",
+                animationDelay: "350ms",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              Stackteryx gives you one.
+            </p>
+            <p
+              className="landing-fade-in text-[15px] mt-4 max-w-xl leading-[1.75]"
               style={{
                 color: "#AAAAAA",
                 animationDelay: "380ms",
                 fontFamily: "var(--font-mono-alt)",
               }}
             >
-              This is how you design, price, and run a security practice on purpose.
+              Design your services. Understand your costs.
+              Price with confidence. Deliver like a real security business.
+            </p>
+            <p
+              className="landing-fade-in text-[15px] mt-4 font-semibold"
+              style={{
+                color: "#AAAAAA",
+                animationDelay: "400ms",
+                fontFamily: "var(--font-mono-alt)",
+              }}
+            >
+              This is how you operate a security practice on purpose.
             </p>
 
             {/* CTA buttons */}
@@ -172,9 +194,8 @@ export function MarketingLandingPage() {
               className="landing-fade-in mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4"
               style={{ animationDelay: "450ms" }}
             >
-              <a
-                href="#how-it-works"
-                onClick={(e) => scrollToSection(e, "how-it-works")}
+              <Link
+                href="/login?tab=signup"
                 className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
                 style={{
                   background: "#c8f135",
@@ -184,11 +205,12 @@ export function MarketingLandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
               >
-                See how it works
+                Start free &mdash; no card required
                 <ArrowRight className="h-4 w-4" />
-              </a>
-              <Link
-                href="/fractional-cto"
+              </Link>
+              <a
+                href="#how-it-works"
+                onClick={(e) => scrollToSection(e, "how-it-works")}
                 className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
                 style={{
                   color: "#c8f135",
@@ -204,25 +226,14 @@ export function MarketingLandingPage() {
                   e.currentTarget.style.background = "transparent";
                 }}
               >
-                Generate a Free CTO Brief
-              </Link>
+                See how it works
+              </a>
             </div>
           </div>
 
           <div className="landing-fade-in flex-1 w-full max-w-lg lg:max-w-none" style={{ animationDelay: "600ms" }}>
             <HeroGraphic />
           </div>
-        </div>
-
-        {/* Credibility line */}
-        <div className="max-w-4xl mx-auto px-6 mt-20">
-          <p
-            className="text-center text-[15px] leading-relaxed"
-            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
-          >
-            Used by MSPs who are done guessing at margins and ready
-            to build a practice that actually scales.
-          </p>
         </div>
       </section>
 
@@ -245,14 +256,22 @@ export function MarketingLandingPage() {
               Your PSA tracks tickets. Your RMM tracks devices.
               Neither one tells you if you&apos;re making money.
             </h2>
+            <p
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
+            >
+              None of these were built to run a security business.
+              They track activity. They don&apos;t define what you actually sell,
+              what it costs to deliver, or whether it&apos;s built to scale.
+            </p>
           </div>
 
           {/* Three systems */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: "Your PSA", tools: "ConnectWise, Autotask", what: "Tells you what broke and when it was fixed. Doesn\u2019t tell you what that service costs to deliver or whether the contract is profitable." },
-              { title: "Your RMM", tools: "NinjaOne, Automate", what: "Tells you what\u2019s running across your client base. Doesn\u2019t tell you whether your stack is covering your compliance obligations or leaving gaps." },
-              { title: "Your spreadsheet", tools: "Excel, Google Sheets", what: "Tells you what you think you\u2019re charging. Doesn\u2019t account for vendor price changes, seat overages, or what you actually spend on labor." },
+              { title: "Your PSA", tools: "ConnectWise, Autotask", what: "Tracks tickets. Not services. Shows what happened \u2014 not what it costs to deliver or how it performs as a business." },
+              { title: "Your RMM", tools: "NinjaOne, Automate", what: "Tracks devices. Not outcomes. Doesn\u2019t tell you if your stack actually covers risk \u2014 or leaves gaps." },
+              { title: "Your spreadsheet", tools: "Excel, Google Sheets", what: "Tracks assumptions. Breaks the moment vendor pricing shifts, labor changes, or clients scale." },
             ].map(({ title, tools, what }) => (
               <div
                 key={title}
@@ -282,7 +301,7 @@ export function MarketingLandingPage() {
             ))}
           </div>
 
-          {/* The gap */}
+          {/* The gap — Category moment */}
           <div style={{ height: 1, background: "#1E1E1E" }} />
 
           <div className="text-center space-y-6">
@@ -293,19 +312,17 @@ export function MarketingLandingPage() {
               What&apos;s missing:
             </p>
             <p
-              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
-              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
+              className="text-xl md:text-2xl font-extrabold"
+              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              There&apos;s never been a system that connects
-              what you sell,
-              what it costs,
-              and what it&apos;s actually worth.
+              A system for running your security business.
             </p>
             <p
-              className="text-xl md:text-2xl font-extrabold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-display)" }}
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-lg mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
-              Until now.
+              One that connects:
+              <br />what you sell &rarr; what it costs &rarr; what it&apos;s actually worth
             </p>
             <p
               className="text-[15px] leading-[1.75] max-w-md mx-auto"
@@ -313,7 +330,13 @@ export function MarketingLandingPage() {
             >
               Not a spreadsheet. Not a PSA report. Not a vendor dashboard.
               <br />
-              A system for running your security business on purpose.
+              A system designed for service economics.
+            </p>
+            <p
+              className="text-[15px] font-semibold"
+              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+            >
+              For building, pricing, and scaling a security practice &mdash; on purpose.
             </p>
           </div>
         </div>
@@ -335,9 +358,16 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Design a service in minutes.
-              Know your margin before you quote.
+              Build a security business you can actually operate.
+              <br className="hidden md:block" />
+              Not just a stack you hope is profitable.
             </h2>
+            <p
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
+              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
+            >
+              This is the system behind every service you sell:
+            </p>
           </div>
 
           {/* Flow labels */}
@@ -356,27 +386,27 @@ export function MarketingLandingPage() {
               {
                 step: "01",
                 label: "Outcome",
-                desc: "Start with the business result your client is actually buying \u2014 reduced risk, regulatory compliance, operational resilience. Not the tools. The outcome.",
+                desc: "Start with what the client actually buys: risk reduction, compliance, resilience.\n\nNot the tools. The outcome.",
               },
               {
                 step: "02",
                 label: "Service",
-                desc: "Define what you deliver. What\u2019s included. What the client gets. Build it once, deploy it to every client who fits the profile.",
+                desc: "Define how you deliver that outcome. Standardize it. Package it. Make it repeatable across clients.",
               },
               {
                 step: "03",
                 label: "Stack",
-                desc: "Add the vendor tools that power the service. Stackteryx pulls in your real costs \u2014 no estimates, no guesses. You\u2019re not guessing anymore. You\u2019re operating on real service economics.",
+                desc: "Map tools to what actually matters. Remove overlap. Find gaps. Build a stack that supports the business \u2014 not the other way around.",
               },
               {
                 step: "04",
                 label: "Cost",
-                desc: "See exactly what this service costs to deliver \u2014 tools, labor, overhead, all together for the first time. This is the number most MSPs have never seen.",
+                desc: "See the real cost of delivery: tools, labor, overhead \u2014 all in one place.\n\nNo guessing. No surprises.",
               },
               {
                 step: "05",
                 label: "Price",
-                desc: "Set a price that hits your target margin. Know what you make before the proposal goes out. Every time, on every deal.",
+                desc: "Set pricing that actually works. Margin-aware. Defensible. Scalable.\n\nEvery service. Every client. Every time.",
               },
             ].map(({ step, label, desc }) => (
               <div
@@ -397,7 +427,7 @@ export function MarketingLandingPage() {
                   {label}
                 </h3>
                 <p
-                  className="text-[14px] leading-[1.7]"
+                  className="text-[14px] leading-[1.7] whitespace-pre-line"
                   style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
                 >
                   {desc}
@@ -407,12 +437,10 @@ export function MarketingLandingPage() {
           </div>
 
           <p
-            className="text-center text-[15px]"
+            className="text-center text-[15px] font-semibold"
             style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
-            Once your services are built, the platform keeps working &mdash;
-            monitoring your clients, flagging risks, and surfacing
-            opportunities you&apos;d otherwise miss.
+            This isn&apos;t pricing. It&apos;s operating your service business with real economics.
           </p>
         </div>
       </section>
@@ -443,17 +471,17 @@ export function MarketingLandingPage() {
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Six agents handling the work that used to eat your week.
+              Six agents. Running the business behind your services.
             </h2>
             <p
               className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
               style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
-              Every part of Stackteryx is powered by a named AI agent
-              with a specific job. They don&apos;t need to be asked. They run
-              in the background &mdash; designing, pricing, writing, monitoring,
-              and advising &mdash; so you can spend your time on clients,
-              not admin.
+              Designing. Pricing. Monitoring. Advising.
+              <br /><br />
+              Not as tools you use &mdash;
+              but as a system that runs continuously behind your practice.
+              So you can operate like a security business, not react like a service provider.
             </p>
           </div>
 
@@ -603,68 +631,33 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 6 — THE MOAT
+          SECTION 6 — THE SHIFT
           ═══════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32" style={{ background: "#111111" }}>
-        <div className="max-w-5xl mx-auto px-6 space-y-14">
-          <div className="text-center space-y-5">
-            <p
-              className="text-[11px] uppercase tracking-[0.3em] font-semibold"
-              style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
-            >
-              THE STACKTERYX ARC
-            </p>
-            <h2
-              className="text-3xl md:text-[42px] font-extrabold leading-tight"
-              style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-            >
-              From managing tools to engineering a security business.
-            </h2>
-            <p
-              className="text-[15px] md:text-[17px] leading-[1.75] max-w-2xl mx-auto"
-              style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
-            >
-              Not because you changed what you do.
-              Because you finally have a system that connects
-              outcomes, services, cost, and price.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Your services live here",
-                body: "Every service you\u2019ve designed, every margin you\u2019ve modeled, every proposal you\u2019ve generated \u2014 it\u2019s all here. Your institutional knowledge, structured and searchable. Not in someone\u2019s head or a shared drive no one updates.",
-              },
-              {
-                title: "Your clients are monitored",
-                body: "Scout watches every client in your portfolio. Renewal coming up? Scout flags it. Client missing a compliance framework? Scout flags it. Upsell opportunity sitting in plain sight? Scout surfaces it. You stop reacting and start anticipating.",
-              },
-              {
-                title: "Your practice keeps learning",
-                body: "The more you use Stackteryx, the smarter it gets about your practice. Which tool combinations you build most. Which margins perform best. Which client profiles match your highest-value services. The system builds on itself.",
-              },
-            ].map(({ title, body }) => (
-              <div
-                key={title}
-                className="rounded-lg p-6 space-y-3"
-                style={{ background: "#0A0A0A", border: "1px solid #1E1E1E" }}
-              >
-                <h3
-                  className="text-base font-bold"
-                  style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-[15px] leading-[1.7]"
-                  style={{ color: "#666666", fontFamily: "var(--font-mono-alt)" }}
-                >
-                  {body}
-                </p>
-              </div>
-            ))}
-          </div>
+        <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
+          <p
+            className="text-[11px] uppercase tracking-[0.3em] font-semibold"
+            style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
+          >
+            THE SHIFT
+          </p>
+          <h2
+            className="text-3xl md:text-[42px] font-extrabold leading-tight"
+            style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
+          >
+            You&apos;re already doing the work.
+          </h2>
+          <p
+            className="text-[15px] md:text-[17px] leading-[1.85] max-w-xl mx-auto"
+            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
+          >
+            You have the tools. You have the clients. You have the expertise.
+            <br /><br />
+            What you don&apos;t have &mdash; is a system connecting it all.
+            <br /><br />
+            Stackteryx turns what you&apos;ve built into something intentional.
+            A security business that&apos;s designed, priced, and operated on purpose.
+          </p>
         </div>
       </section>
 
@@ -678,19 +671,22 @@ export function MarketingLandingPage() {
               className="text-[11px] uppercase tracking-[0.3em] font-semibold"
               style={{ color: "#c8f135", fontFamily: "var(--font-mono-alt)" }}
             >
-              7-DAY FREE TRIAL
+              PRICING
             </p>
             <h2
               className="text-3xl md:text-[42px] font-extrabold leading-tight"
               style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
             >
-              Start free. Scale when you&apos;re ready.
+              Start building your security business &mdash; today.
             </h2>
             <p
-              className="text-[15px] max-w-xl mx-auto"
+              className="text-[15px] md:text-[17px] leading-[1.75] max-w-xl mx-auto"
               style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
             >
-              Every plan starts with a 7-day free trial &mdash; full Pro access, no card required.
+              Not in theory. In real services, real pricing, real numbers.
+              <br /><br />
+              See your stack. Model your cost. Build something you can actually scale.
+              <br />
               No setup. No rebuilding. Just clarity &mdash; immediately.
             </p>
           </div>
@@ -710,7 +706,7 @@ export function MarketingLandingPage() {
               <div>
                 <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$149</span>
                 <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
-                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>after your free trial</p>
+                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>7-day free trial &middot; no card required</p>
               </div>
               <div className="space-y-2 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}>
@@ -761,7 +757,7 @@ export function MarketingLandingPage() {
               <div>
                 <span className="text-4xl font-extrabold" style={{ color: "#FFFFFF", fontFamily: "var(--font-mono-alt)" }}>$399</span>
                 <span className="text-sm ml-1" style={{ color: "#666666" }}>/month</span>
-                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>after your free trial</p>
+                <p className="text-xs mt-1" style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}>7-day free trial &middot; no card required</p>
               </div>
               <div className="space-y-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#888888", fontFamily: "var(--font-mono-alt)" }}>
@@ -824,7 +820,7 @@ export function MarketingLandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 8 — WHY NOW
+          SECTION 8 — WHY NOW (no changes)
           ═══════════════════════════════════════════════════════ */}
       <section style={{ background: "#111111" }} className="py-24 md:py-32">
         <div className="max-w-5xl mx-auto px-6 space-y-14">
@@ -890,27 +886,21 @@ export function MarketingLandingPage() {
             className="text-3xl md:text-[42px] font-extrabold leading-tight"
             style={{ color: "#FFFFFF", fontFamily: "var(--font-display)" }}
           >
-            Stop guessing. Start building services that actually pay.
+            The business you&apos;re already running
+            deserves to be designed on purpose.
           </h2>
           <p
             className="text-base md:text-[17px] leading-[1.75] max-w-xl mx-auto"
             style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
           >
-            Design your first service with real cost modeling.
-            Generate a proposal your client will actually read.
-            Deliver advisory that makes you look like a strategic partner,
-            not a support desk.
+            You don&apos;t need more tools.
+            <br /><br />
+            You need a system.
           </p>
-          <p
-            className="text-[15px] font-semibold"
-            style={{ color: "#AAAAAA", fontFamily: "var(--font-mono-alt)" }}
-          >
-            You don&apos;t need more tools. You need a system.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div>
             <Link
               href="/login?tab=signup"
-              className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
+              className="inline-flex items-center gap-2 h-12 px-8 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
               style={{
                 background: "#c8f135",
                 color: "#0A0A0A",
@@ -919,35 +909,15 @@ export function MarketingLandingPage() {
               onMouseEnter={(e) => (e.currentTarget.style.background = "#d4f74d")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "#c8f135")}
             >
-              Get started free
+              Start free &mdash; no card required
               <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/fractional-cto"
-              className="h-11 px-7 flex items-center gap-2 rounded-md text-sm font-bold uppercase tracking-wider transition-all"
-              style={{
-                color: "#c8f135",
-                border: "1px solid #c8f13540",
-                fontFamily: "var(--font-display)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#c8f135";
-                e.currentTarget.style.background = "#c8f13510";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#c8f13540";
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              Try the free CTO brief
             </Link>
           </div>
           <p
             className="text-xs"
-            style={{ color: "#444444", fontFamily: "var(--font-mono-alt)" }}
+            style={{ color: "#555555", fontFamily: "var(--font-mono-alt)" }}
           >
-            Free to start. No credit card. The CTO brief works
-            with no account at all &mdash; just your client&apos;s domain.
+            No contracts. Cancel anytime. Your data is yours.
           </p>
         </div>
       </section>
