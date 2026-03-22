@@ -15,6 +15,9 @@ import { detectSkill, type ChatSkill } from "@/lib/intelligence/chat-skills";
 import type { ChatContext } from "@/lib/intelligence/chat-context";
 import type { OrchestrationPlan } from "@/lib/intelligence/agent-orchestrator";
 
+// Module-level flag shared across desktop + mobile ChatPanel instances
+let assessmentTriggered = false;
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -114,12 +117,10 @@ export function ChatPanel({ context }: ChatPanelProps) {
   }, [messages]);
 
   // Auto-trigger first-load practice assessment
+  const isFirstLoad = context?.wizardProfile?.isFirstDashboardLoad ?? false;
   useEffect(() => {
-    if (
-      context?.wizardProfile?.isFirstDashboardLoad &&
-      messages.length === 1 && // only the welcome message
-      !isLoading
-    ) {
+    if (isFirstLoad && !assessmentTriggered && !isLoading) {
+      assessmentTriggered = true;
       (async () => {
         setIsLoading(true);
         setMessages([
@@ -142,10 +143,11 @@ export function ChatPanel({ context }: ChatPanelProps) {
           ]);
           setAssessmentChips(result.chips.map((c) => ({ label: c, message: c })));
           setHasInteracted(false); // keep chips visible
-          // Mark assessment as shown so it doesn't repeat
-          markFirstLoadAssessmentComplete().catch(() => {});
-        } catch {
-          // Fallback to welcome message
+          markFirstLoadAssessmentComplete().catch((err) => {
+            console.error("[ASSESSMENT] markComplete failed:", err);
+          });
+        } catch (err) {
+          console.error("[ASSESSMENT] generation failed:", err);
           setMessages([
             { id: "welcome", role: "assistant", content: welcome, action: null, orchestration: null, followUp: "" },
           ]);
@@ -155,7 +157,7 @@ export function ChatPanel({ context }: ChatPanelProps) {
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isFirstLoad]);
 
   // Log behavior on unmount
   useEffect(() => {

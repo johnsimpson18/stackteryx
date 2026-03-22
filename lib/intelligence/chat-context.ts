@@ -130,11 +130,16 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
   try {
     const { data: wizSettings } = await service
       .from("org_settings")
-      .select("sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, first_load_assessment_shown_at, target_margin_pct")
+      .select("settings, sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, first_load_assessment_shown_at, target_margin_pct")
       .eq("org_id", orgId)
       .maybeSingle();
 
-    if (wizSettings?.onboarding_complete) {
+    // Check both: the column (chat onboarding path) and the JSONB blob (old wizard path)
+    const onboardingDone =
+      wizSettings?.onboarding_complete ||
+      (wizSettings?.settings as Record<string, unknown> | null)?.onboarding_completed === true;
+
+    if (onboardingDone && wizSettings) {
       // Fetch onboarding tools for margin calculation
       const { data: onbTools } = await service
         .from("onboarding_tool_selections")
@@ -160,13 +165,10 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
         hasLowMarginTools = margins.some((m: number) => m < 30);
       }
 
-      // Determine if this is first dashboard load (completed within last 10 min AND no assessment shown yet)
+      // First dashboard load = onboarding completed + assessment never shown
       const completedAt = wizSettings.onboarding_completed_at;
       const assessmentShown = wizSettings.first_load_assessment_shown_at;
-      const isFirstDashboardLoad =
-        !assessmentShown &&
-        !!completedAt &&
-        Date.now() - new Date(completedAt).getTime() < 10 * 60 * 1000;
+      const isFirstDashboardLoad = onboardingDone && !assessmentShown;
 
       wizardProfile = {
         serviceModel: wizSettings.sales_model as string | null,
