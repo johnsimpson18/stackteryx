@@ -201,7 +201,9 @@ export function DashboardClient({
             {greeting}.
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Your portfolio intelligence briefing
+            {chatContext?.wizardProfile?.isFirstDashboardLoad
+              ? "Your practice assessment is ready in the chat \u2192"
+              : "Your portfolio intelligence briefing"}
           </p>
         </div>
         <Button asChild>

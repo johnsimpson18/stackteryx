@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { Send, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sendChatMessage, saveChatBehavior, type ChatMessage, type ChatAction, type ChatResponse } from "@/actions/intelligence-chat";
+import { sendChatMessage, saveChatBehavior, generateFirstLoadAssessment, markFirstLoadAssessmentComplete, type ChatMessage, type ChatAction, type ChatResponse } from "@/actions/intelligence-chat";
 import { ServicePreviewCard } from "./action-cards/service-preview-card";
 import { OpenModuleCard } from "./action-cards/open-module-card";
 import { ShowSignalsCard } from "./action-cards/show-signals-card";
@@ -24,6 +24,7 @@ interface Message {
   orchestration: OrchestrationPlan | null;
   followUp: string;
   suggestedFollowUps?: string[];
+  isAssessment?: boolean;
 }
 
 function generateWelcome(ctx: ChatContext): string {
@@ -100,13 +101,61 @@ export function ChatPanel({ context }: ChatPanelProps) {
   const conversationHistory = useRef<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const chips = activeSkill?.suggestedFollowUps.length
-    ? activeSkill.suggestedFollowUps.map((f) => ({ label: f, message: f }))
-    : defaultChips;
+  const [assessmentChips, setAssessmentChips] = useState<{ label: string; message: string }[]>([]);
+
+  const chips = assessmentChips.length > 0
+    ? assessmentChips
+    : activeSkill?.suggestedFollowUps.length
+      ? activeSkill.suggestedFollowUps.map((f) => ({ label: f, message: f }))
+      : defaultChips;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Auto-trigger first-load practice assessment
+  useEffect(() => {
+    if (
+      context?.wizardProfile?.isFirstDashboardLoad &&
+      messages.length === 1 && // only the welcome message
+      !isLoading
+    ) {
+      (async () => {
+        setIsLoading(true);
+        setMessages([
+          { id: "assessment-loading", role: "assistant", content: "", action: null, orchestration: null, followUp: "" },
+        ]);
+
+        try {
+          const result = await generateFirstLoadAssessment(context.wizardProfile!);
+          setMessages([
+            {
+              id: "assessment",
+              role: "assistant",
+              content: result.message,
+              action: result.action,
+              orchestration: null,
+              followUp: result.followUp,
+              suggestedFollowUps: result.chips,
+              isAssessment: true,
+            },
+          ]);
+          setAssessmentChips(result.chips.map((c) => ({ label: c, message: c })));
+          setHasInteracted(false); // keep chips visible
+          // Mark assessment as shown so it doesn't repeat
+          markFirstLoadAssessmentComplete().catch(() => {});
+        } catch {
+          // Fallback to welcome message
+          setMessages([
+            { id: "welcome", role: "assistant", content: welcome, action: null, orchestration: null, followUp: "" },
+          ]);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Log behavior on unmount
   useEffect(() => {
@@ -277,6 +326,20 @@ export function ChatPanel({ context }: ChatPanelProps) {
               </div>
             ) : (
               <div className="max-w-[95%]">
+                {msg.isAssessment && (
+                  <div
+                    className="mb-1.5 px-1"
+                    style={{
+                      fontSize: 10,
+                      color: "#c8f135",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontFamily: "var(--font-mono-alt)",
+                    }}
+                  >
+                    Practice Assessment
+                  </div>
+                )}
                 {msg.content ? (
                   <div className="rounded-lg px-3 py-2 text-sm prose-sm" style={{ background: "#0d0d0d", border: "1px solid #1a1a1a" }}>
                     <ReactMarkdown

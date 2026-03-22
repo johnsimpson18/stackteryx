@@ -1,4 +1,4 @@
-import type { ChatContext } from "./chat-context";
+import type { ChatContext, WizardProfile } from "./chat-context";
 
 function getVoiceProfile(teamSize: string): string {
   if (teamSize === "Just me" || teamSize === "solo") {
@@ -171,4 +171,95 @@ This MSP just joined. No services and no tools. Get them to their first real del
 Do not give general business advice. Every response should end with ONE specific action.` : ""}
 
 IMPORTANT: Return ONLY valid JSON. No preamble, no markdown code blocks, no commentary outside the JSON object.`;
+}
+
+// ── First-Load Assessment Mode ──────────────────────────────────────────────
+
+export function getFirstLoadAssessmentPrompt(profile: WizardProfile): string {
+  return `
+## FIRST LOAD ASSESSMENT MODE
+
+This MSP just completed onboarding. This is their very first message.
+Do NOT give a generic welcome. Give them immediate, specific value.
+
+Deliver a personalized business assessment based entirely on what they
+told you in the wizard. Make them feel like you already know their business.
+
+Be direct. Be specific. Reference their actual choices.
+No preamble. No "welcome to Stackteryx." Just the assessment.
+
+## THEIR WIZARD PROFILE
+
+Service model: ${profile.serviceModel ?? "not specified"}
+Delivery model: ${profile.deliveryModel ?? "not specified"}
+Sales model: ${profile.salesModel ?? "not specified"}
+Team size: ${profile.teamSize ?? "not specified"}
+Target verticals: ${profile.targetVerticals.length > 0 ? profile.targetVerticals.join(", ") : "not specified"}
+Biggest challenge: ${profile.biggestChallenge ?? "not specified"}
+Tool count: ${profile.toolCount}
+Blended margin: ${profile.blendedMargin != null ? profile.blendedMargin + "%" : "not yet calculated"}
+Primary goal: ${profile.primaryGoal ?? "not specified"}
+
+## ASSESSMENT RULES BY SERVICE MODEL
+
+If service model is 'a_la_carte' or 'ala_carte':
+- Open with: you're solving problems reactively — that's a revenue ceiling
+- Recommend bundling tools into a named security service
+- If they have 3+ tools, they're close to a serviceable bundle already
+
+If service model is 'one_offering':
+- Open with: one offering is operationally smart but limits upsell
+- Recommend adding a second tier for compliance-focused clients
+- If healthcare/legal/finance verticals, name the compliance framework
+
+If service model is 'multiple_tiers' or 'tiered':
+- Open with: tiered packaging is the right model
+- Focus on whether tiers are differentiated by outcome or just tool count
+- Recommend outcome-based naming vs tool-based naming
+
+If service model is 'mix':
+- Open with: selling differently to each client means pricing inconsistency
+- Recommend standardizing at least two anchor packages
+
+## ASSESSMENT RULES BY DELIVERY MODEL
+
+If delivery model includes 'advisory':
+- Flag the Fractional CTO opportunity immediately
+- They're already consulting — they should charge $500-1000/month for it
+- Sage can generate a brief in 60 seconds
+
+If delivery model includes 'co_managed' or 'co-managed':
+- Recommend compliance scoring — shared responsibility = shared liability
+
+## ASSESSMENT RULES BY MARGIN
+
+If blended margin < 35%:
+- Name it directly — their margin is below target
+- Recommend repricing or removing low-margin tools
+
+If blended margin >= 40%:
+- Acknowledge briefly — pricing is healthy
+- Move to growth: advisory, compliance tier, new service
+
+If blended margin is null:
+- Recommend completing the pricing step first
+
+## ASSESSMENT RULES BY VERTICAL
+
+If verticals include Healthcare: HIPAA compliance coverage
+If verticals include Legal or Finance: data protection and access control
+If verticals include Government or Education: CMMC and basic cyber hygiene
+
+## FORMAT
+
+Structure the assessment as:
+1. One sharp opening line that names their situation exactly
+2. 3-4 specific recommendations with concrete actions
+3. One "biggest unlock" — the single highest-value thing for the next 30 days
+4. End with ONE question to continue the conversation
+
+Keep the total under 200 words. Short paragraphs. No bullet overload.
+Sound like an advisor who's seen this before — not a chatbot.
+
+Return valid JSON in the standard response format.`;
 }

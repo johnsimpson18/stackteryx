@@ -1,5 +1,20 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
+export interface WizardProfile {
+  serviceModel: string | null;
+  deliveryModel: string | null;
+  salesModel: string | null;
+  targetVerticals: string[];
+  teamSize: string | null;
+  biggestChallenge: string | null;
+  toolCount: number;
+  blendedMargin: number | null;
+  hasHighMarginTools: boolean;
+  hasLowMarginTools: boolean;
+  primaryGoal: string | null;
+  isFirstDashboardLoad: boolean;
+}
+
 export interface ChatContext {
   profile: {
     serviceModel: string;
@@ -7,6 +22,7 @@ export interface ChatContext {
     teamSize: string;
     biggestChallenge: string;
   };
+  wizardProfile: WizardProfile | null;
   practice: {
     avgMargin: number;
     targetMargin: number;
@@ -109,6 +125,70 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
     // Non-critical
   }
 
+  // Fetch wizard profile for first-load assessment
+  let wizardProfile: WizardProfile | null = null;
+  try {
+    const { data: wizSettings } = await service
+      .from("org_settings")
+      .select("sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, first_load_assessment_shown_at, target_margin_pct")
+      .eq("org_id", orgId)
+      .maybeSingle();
+
+    if (wizSettings?.onboarding_complete) {
+      // Fetch onboarding tools for margin calculation
+      const { data: onbTools } = await service
+        .from("onboarding_tool_selections")
+        .select("cost_amount, sell_amount, pricing_entered")
+        .eq("org_id", orgId);
+
+      const pricedTools = (onbTools ?? []).filter(
+        (t: { cost_amount: number | null; sell_amount: number | null; pricing_entered: boolean }) =>
+          t.pricing_entered && t.cost_amount != null && t.sell_amount != null && t.sell_amount > 0,
+      );
+
+      let blendedMargin: number | null = null;
+      let hasHighMarginTools = false;
+      let hasLowMarginTools = false;
+
+      if (pricedTools.length > 0) {
+        const margins = pricedTools.map(
+          (t: { cost_amount: number; sell_amount: number }) =>
+            ((t.sell_amount - t.cost_amount) / t.sell_amount) * 100,
+        );
+        blendedMargin = Math.round(margins.reduce((s: number, m: number) => s + m, 0) / margins.length);
+        hasHighMarginTools = margins.some((m: number) => m > 60);
+        hasLowMarginTools = margins.some((m: number) => m < 30);
+      }
+
+      // Determine if this is first dashboard load (completed within last 10 min AND no assessment shown yet)
+      const completedAt = wizSettings.onboarding_completed_at;
+      const assessmentShown = wizSettings.first_load_assessment_shown_at;
+      const isFirstDashboardLoad =
+        !assessmentShown &&
+        !!completedAt &&
+        Date.now() - new Date(completedAt).getTime() < 10 * 60 * 1000;
+
+      wizardProfile = {
+        serviceModel: wizSettings.sales_model as string | null,
+        deliveryModel: Array.isArray(wizSettings.delivery_models)
+          ? (wizSettings.delivery_models as string[]).join(", ")
+          : (wizSettings.delivery_models as string | null),
+        salesModel: wizSettings.sales_team_type as string | null,
+        targetVerticals: (wizSettings.target_verticals as string[]) ?? [],
+        teamSize: wizSettings.company_size as string | null,
+        biggestChallenge: wizSettings.additional_context as string | null,
+        toolCount: (onbTools ?? []).length,
+        blendedMargin,
+        hasHighMarginTools,
+        hasLowMarginTools,
+        primaryGoal: wizSettings.additional_context as string | null,
+        isFirstDashboardLoad,
+      };
+    }
+  } catch {
+    // Non-critical — wizard profile unavailable
+  }
+
   const targetMargin = settings ? Number(settings.default_target_margin_pct) * 100 : 35;
 
   // Client name map for health scores
@@ -170,6 +250,7 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
       teamSize: onboarding?.company_size ?? "unknown",
       biggestChallenge: onboarding?.additional_context ?? "not specified",
     },
+    wizardProfile,
     practice: {
       avgMargin: bundles.length > 0
         ? Math.round(bundles.reduce((s: number, b: { latest_margin: number | null }) => s + (Number(b.latest_margin ?? 0) * 100), 0) / bundles.length)
