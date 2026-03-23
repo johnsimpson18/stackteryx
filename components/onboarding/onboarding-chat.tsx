@@ -32,6 +32,30 @@ const STEPS: OnboardingStep[] = [
     dbField: "sales_model",
   },
   {
+    id: "delivery_model",
+    question: "How do you deliver your services?",
+    type: "choice",
+    options: [
+      "Fully managed \u2014 we do everything",
+      "Co-managed \u2014 shared with the client",
+      "Advisory / consulting only",
+      "Mix depending on the client",
+    ],
+    dbField: "delivery_model",
+  },
+  {
+    id: "sales_team_type",
+    question: "Who leads your sales conversations?",
+    type: "choice",
+    options: [
+      "Owner / founder \u2014 that\u2019s me",
+      "Dedicated sales person or team",
+      "vCISO or technical lead",
+      "Mix \u2014 depends on the deal",
+    ],
+    dbField: "sales_team_type",
+  },
+  {
     id: "client_verticals",
     question: "What industries do most of your clients work in?",
     type: "multi_choice",
@@ -53,7 +77,7 @@ const STEPS: OnboardingStep[] = [
     question: "How big is your team?",
     type: "choice",
     options: ["Just me", "2\u20135 people", "6\u201315 people", "15+"],
-    dbField: "company_size",
+    dbField: "team_size",
   },
   {
     id: "biggest_challenge",
@@ -66,7 +90,7 @@ const STEPS: OnboardingStep[] = [
       "Managing renewals and client retention",
       "Pricing my services confidently",
     ],
-    dbField: "additional_context",
+    dbField: "biggest_challenge",
   },
   {
     id: "primary_goal",
@@ -390,6 +414,13 @@ function generateAcknowledgment(stepId: string, answer: string, nextQuestion: st
         : a.includes("la carte")
           ? `\u00C0 la carte gives flexibility but watch your margins. ${nextQuestion}`
           : `Got it. ${nextQuestion}`,
+    delivery_model: (a) =>
+      a.includes("Fully managed")
+        ? `Fully managed means you own the outcome. Good \u2014 that\u2019s where the margin is. ${nextQuestion}`
+        : a.includes("Advisory")
+          ? `Advisory is high-margin, low-overhead. Smart. ${nextQuestion}`
+          : `${nextQuestion}`,
+    sales_team_type: () => `${nextQuestion}`,
     client_verticals: (a) =>
       a.includes("Healthcare")
         ? `Healthcare means HIPAA compliance is a consistent requirement. That shapes which tools matter most. ${nextQuestion}`

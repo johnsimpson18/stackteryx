@@ -241,22 +241,35 @@ export async function saveOnboardingChatAnswer(
   field: string,
   value: unknown,
 ): Promise<void> {
-  const { saveOnboardingStep } = await import("@/lib/db/org-settings");
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
 
-  const stepMap: Record<string, { step: number; key: string }> = {
-    sales_model: { step: 6, key: "sales_model" },
-    target_verticals: { step: 2, key: "target_verticals" },
-    client_count_range: { step: 1, key: "company_size" },
-    company_size: { step: 1, key: "company_size" },
-    additional_context: { step: 7, key: "additional_context" },
-    primary_goal: { step: 7, key: "additional_context" },
-    tool_hints: { step: 7, key: "additional_context" },
+  // Direct column mapping — each field saves to its own dedicated column
+  const validFields = [
+    "sales_model", "delivery_model", "sales_team_type",
+    "target_verticals", "client_count_range", "team_size",
+    "biggest_challenge", "primary_goal", "tool_hints",
+  ];
+
+  if (!validFields.includes(field)) return;
+
+  // Also keep backward compat: sales_model → old step 6, target_verticals → old step 2
+  const legacyMap: Record<string, Record<string, unknown>> = {
+    sales_model: { sales_model: value },
+    delivery_model: { delivery_models: Array.isArray(value) ? value : [value] },
+    sales_team_type: { sales_team_type: value },
+    target_verticals: { target_verticals: value },
+    team_size: { company_size: value },
   };
 
-  const mapping = stepMap[field];
-  if (mapping) {
-    await saveOnboardingStep(orgId, mapping.step, { [mapping.key]: value });
-  }
+  const legacyUpdate = legacyMap[field] ?? {};
+
+  await supabase
+    .from("org_settings")
+    .upsert(
+      { org_id: orgId, [field]: value, ...legacyUpdate },
+      { onConflict: "org_id" },
+    );
 }
 
 export async function completeOnboardingFromChat(

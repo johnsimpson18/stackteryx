@@ -9,12 +9,14 @@ export interface WizardProfile {
   salesModel: string | null;
   targetVerticals: string[];
   teamSize: string | null;
+  clientCountRange: string | null;
   biggestChallenge: string | null;
+  primaryGoal: string | null;
+  toolHints: string | null;
   toolCount: number;
   blendedMargin: number | null;
   hasHighMarginTools: boolean;
   hasLowMarginTools: boolean;
-  primaryGoal: string | null;
 }
 
 export interface ToolCatalogItem {
@@ -149,7 +151,7 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
   try {
     const { data: wizSettings } = await service
       .from("org_settings")
-      .select("settings, sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, target_margin_pct")
+      .select("settings, sales_model, delivery_model, delivery_models, sales_team_type, target_verticals, company_size, team_size, biggest_challenge, primary_goal, tool_hints, additional_context, onboarding_complete, onboarding_completed_at, target_margin_pct, client_count_range")
       .eq("org_id", orgId)
       .maybeSingle();
 
@@ -184,20 +186,26 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
         hasLowMarginTools = margins.some((m: number) => m < 30);
       }
 
+      // Prefer new dedicated columns, fall back to legacy columns
+      const deliveryModel = (wizSettings.delivery_model as string | null)
+        ?? (Array.isArray(wizSettings.delivery_models)
+          ? (wizSettings.delivery_models as string[]).join(", ")
+          : (wizSettings.delivery_models as string | null));
+
       wizardProfile = {
         serviceModel: wizSettings.sales_model as string | null,
-        deliveryModel: Array.isArray(wizSettings.delivery_models)
-          ? (wizSettings.delivery_models as string[]).join(", ")
-          : (wizSettings.delivery_models as string | null),
+        deliveryModel,
         salesModel: wizSettings.sales_team_type as string | null,
         targetVerticals: (wizSettings.target_verticals as string[]) ?? [],
-        teamSize: wizSettings.company_size as string | null,
-        biggestChallenge: wizSettings.additional_context as string | null,
+        teamSize: (wizSettings.team_size as string | null) ?? (wizSettings.company_size as string | null),
+        clientCountRange: wizSettings.client_count_range as string | null,
+        biggestChallenge: (wizSettings.biggest_challenge as string | null) ?? (wizSettings.additional_context as string | null),
+        primaryGoal: wizSettings.primary_goal as string | null,
+        toolHints: wizSettings.tool_hints as string | null,
         toolCount: (onbTools ?? []).length,
         blendedMargin,
         hasHighMarginTools,
         hasLowMarginTools,
-        primaryGoal: wizSettings.additional_context as string | null,
       };
     }
   } catch {
