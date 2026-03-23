@@ -15,7 +15,6 @@ export interface WizardProfile {
   hasHighMarginTools: boolean;
   hasLowMarginTools: boolean;
   primaryGoal: string | null;
-  isFirstDashboardLoad: boolean;
 }
 
 export interface ToolCatalogItem {
@@ -150,7 +149,7 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
   try {
     const { data: wizSettings } = await service
       .from("org_settings")
-      .select("settings, sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, first_load_assessment_shown_at, target_margin_pct")
+      .select("settings, sales_model, delivery_models, sales_team_type, target_verticals, company_size, additional_context, onboarding_complete, onboarding_completed_at, target_margin_pct")
       .eq("org_id", orgId)
       .maybeSingle();
 
@@ -185,11 +184,6 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
         hasLowMarginTools = margins.some((m: number) => m < 30);
       }
 
-      // First dashboard load = onboarding completed + assessment never shown
-      const completedAt = wizSettings.onboarding_completed_at;
-      const assessmentShown = wizSettings.first_load_assessment_shown_at;
-      const isFirstDashboardLoad = onboardingDone && !assessmentShown;
-
       wizardProfile = {
         serviceModel: wizSettings.sales_model as string | null,
         deliveryModel: Array.isArray(wizSettings.delivery_models)
@@ -204,7 +198,6 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
         hasHighMarginTools,
         hasLowMarginTools,
         primaryGoal: wizSettings.additional_context as string | null,
-        isFirstDashboardLoad,
       };
     }
   } catch {

@@ -4,8 +4,8 @@ import { getAnthropicClient } from "@/lib/ai/client";
 import { stripCodeFences } from "@/lib/ai/validate";
 import { getActiveOrgId } from "@/lib/org-context";
 import { incrementUsage } from "@/actions/billing";
-import { assembleChatContext, type WizardProfile } from "@/lib/intelligence/chat-context";
-import { buildChatSystemPrompt, getFirstLoadAssessmentPrompt } from "@/lib/intelligence/chat-system-prompt";
+import { assembleChatContext } from "@/lib/intelligence/chat-context";
+import { buildChatSystemPrompt } from "@/lib/intelligence/chat-system-prompt";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -112,113 +112,6 @@ export async function sendChatMessage(
   });
 
   return parsed;
-}
-
-// ── First-Load Assessment ────────────────────────────────────────────────────
-
-export interface AssessmentResponse {
-  message: string;
-  action: ChatAction | null;
-  followUp: string;
-  chips: string[];
-}
-
-export async function generateFirstLoadAssessment(
-  wizardProfile: WizardProfile,
-): Promise<AssessmentResponse> {
-  const orgId = await getActiveOrgId();
-  if (!orgId) {
-    return {
-      message: "Welcome to Stackteryx. Let me know how I can help you get started.",
-      action: null,
-      followUp: "",
-      chips: ["Help me get started"],
-    };
-  }
-
-  const context = await assembleChatContext(orgId);
-  const systemPrompt =
-    buildChatSystemPrompt(context) + "\n\n" + getFirstLoadAssessmentPrompt(wizardProfile);
-
-  const client = getAnthropicClient();
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1000,
-    temperature: 0.4,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user" as const,
-        content: "Generate my business assessment based on my onboarding answers.",
-      },
-    ],
-  });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
-
-  let parsed: ChatResponse;
-  try {
-    parsed = JSON.parse(stripCodeFences(text));
-  } catch {
-    parsed = {
-      intent: "advisory",
-      message: text || "Let me review your practice setup.",
-      action: null,
-      orchestration: null,
-      followUp: "What would you like to focus on first?",
-    };
-  }
-
-  // Increment AI usage
-  incrementUsage("ai_generation").catch((err) => {
-    console.error("[BILLING] incrementUsage failed:", err);
-  });
-
-  const chips = generateAssessmentChips(wizardProfile);
-
-  return {
-    message: parsed.message,
-    action: parsed.action,
-    followUp: parsed.followUp,
-    chips,
-  };
-}
-
-function generateAssessmentChips(profile: WizardProfile): string[] {
-  const chips: string[] = [];
-
-  if (
-    profile.serviceModel === "a_la_carte" ||
-    profile.serviceModel === "ala_carte"
-  ) {
-    chips.push("Help me build my first bundle");
-  }
-  if (profile.blendedMargin != null && profile.blendedMargin < 40) {
-    chips.push("Show me which tools are hurting my margin");
-  }
-  if (profile.targetVerticals.includes("Healthcare")) {
-    chips.push("Am I close to HIPAA coverage?");
-  }
-  if (profile.deliveryModel?.includes("advisory")) {
-    chips.push("How do I start charging for advisory?");
-  }
-
-  chips.push("What should I do first?");
-  return chips.slice(0, 3);
-}
-
-export async function markFirstLoadAssessmentComplete(): Promise<void> {
-  const orgId = await getActiveOrgId();
-  if (!orgId) return;
-
-  const { createServiceClient } = await import("@/lib/supabase/service");
-  const service = createServiceClient();
-
-  await service
-    .from("org_settings")
-    .update({ first_load_assessment_shown_at: new Date().toISOString() })
-    .eq("org_id", orgId);
 }
 
 export async function saveChatBehavior(

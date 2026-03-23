@@ -42,7 +42,9 @@ import {
 } from "@/components/dashboard/practice-intelligence";
 import { HorizonDigestCard } from "@/components/horizon/horizon-digest-card";
 import { ChatPanel } from "@/components/intelligence-chat/chat-panel";
+import { PracticeAssessmentCard } from "@/components/dashboard/practice-assessment-card";
 import type { ChatContext } from "@/lib/intelligence/chat-context";
+import type { StoredAssessment } from "@/actions/practice-assessment";
 import { usePlanContext } from "@/components/providers/plan-provider";
 import { useUpgradeModal } from "@/components/billing/upgrade-modal";
 import type { ScoutNudgeRecord } from "@/actions/scout-nudges";
@@ -87,6 +89,8 @@ interface DashboardClientProps {
   horizonDigest?: HorizonDigest | null;
   horizonDigestId?: string | null;
   chatContext?: ChatContext | null;
+  currentAssessment?: StoredAssessment | null;
+  practiceChanged?: boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -123,6 +127,8 @@ export function DashboardClient({
   horizonDigest = null,
   horizonDigestId = null,
   chatContext = null,
+  currentAssessment = null,
+  practiceChanged = false,
 }: DashboardClientProps) {
   const [filterNeedingAttention, setFilterNeedingAttention] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
@@ -201,9 +207,7 @@ export function DashboardClient({
             {greeting}.
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {chatContext?.wizardProfile?.isFirstDashboardLoad
-              ? "Your practice assessment is ready in the chat \u2192"
-              : "Your portfolio intelligence briefing"}
+            Your portfolio intelligence briefing
           </p>
         </div>
         <Button asChild>
@@ -327,6 +331,12 @@ export function DashboardClient({
           All agents active
         </span>
       </div>
+
+      {/* ── Practice Assessment ────────────────────────────────────── */}
+      <PracticeAssessmentCard
+        initialAssessment={currentAssessment}
+        practiceChanged={practiceChanged}
+      />
 
       {/* ── Horizon Market Intelligence ────────────────────────────── */}
       <HorizonDigestCard digest={horizonDigest} digestId={horizonDigestId} />

@@ -21,6 +21,7 @@ import { getOrgSignals, type OrgSignals } from "@/lib/intelligence/signal-engine
 import { getLatestHorizonDigest } from "@/actions/horizon";
 import { assembleChatContext, type ChatContext } from "@/lib/intelligence/chat-context";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { getCurrentAssessment, checkPracticeChanged } from "@/actions/practice-assessment";
 import type { AttentionItem } from "@/components/dashboard/attention-feed";
 
 export default async function DashboardPage() {
@@ -280,6 +281,18 @@ export default async function DashboardPage() {
     }
   }
 
+  // Fetch practice assessment
+  let currentAssessment: Awaited<ReturnType<typeof getCurrentAssessment>> = null;
+  let practiceChanged = false;
+  try {
+    [currentAssessment, practiceChanged] = await Promise.all([
+      getCurrentAssessment(),
+      checkPracticeChanged(),
+    ]);
+  } catch {
+    // Assessment unavailable — degrade gracefully
+  }
+
   // Fetch latest Horizon digest
   let horizonDigest: { id: string; digest: import("@/types/horizon").HorizonDigest } | null = null;
   try {
@@ -319,6 +332,8 @@ export default async function DashboardPage() {
       horizonDigest={horizonDigest?.digest ?? null}
       horizonDigestId={horizonDigest?.id ?? null}
       chatContext={chatContext}
+      currentAssessment={currentAssessment}
+      practiceChanged={practiceChanged}
     />
   );
 }
