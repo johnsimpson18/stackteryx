@@ -109,7 +109,7 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
     service.from("org_settings").select("default_target_margin_pct").eq("org_id", orgId).single(),
     service.from("scout_nudges").select("nudge_type, title, entity_name, priority").eq("org_id", orgId).eq("status", "active").order("priority").limit(5),
     service.from("client_health_scores").select("client_id, overall_score, stack_gaps, compliance_gaps, advisory_gaps, commercial_gaps").eq("org_id", orgId),
-    service.from("tools").select("id, name, vendor, category, per_seat_cost").eq("org_id", orgId).eq("status", "active"),
+    service.from("tools").select("id, name, vendor, category, per_seat_cost").eq("org_id", orgId).eq("is_active", true),
     service.from("clients").select("id, name").eq("org_id", orgId),
     service.from("proposals").select("id").eq("org_id", orgId).limit(1),
     service.from("fractional_cto_briefs").select("id").eq("org_id", orgId).limit(1),
@@ -266,18 +266,50 @@ export async function assembleChatContext(orgId: string): Promise<ChatContext> {
   const allActions = behaviorData.flatMap((b) => b.actions_taken);
   const allTopics = behaviorData.flatMap((b) => b.topics);
 
-  // Build tool catalog for chat context
-  const toolCatalogItems: ToolCatalogItem[] = tools.map(
-    (t: { name: string; vendor: string; category: string; per_seat_cost: number | null }) => ({
-      name: t.name.slice(0, 60),
-      vendor: t.vendor,
-      category: CATEGORY_LABELS[t.category as ToolCategory] ?? t.category,
-      costPerSeat: t.per_seat_cost ?? 0,
-      margin: 0, // Margin is at the bundle/version level, not the tool level
-    }),
-  );
+  // Build tool catalog — prefer `tools` table, fall back to `onboarding_tool_selections`
+  let toolCatalogItems: ToolCatalogItem[];
+  let toolCategories: string[];
 
-  const toolCategories = tools.map((t: { category: string }) => t.category);
+  if (tools.length > 0) {
+    toolCatalogItems = tools.map(
+      (t: { name: string; vendor: string; category: string; per_seat_cost: number | null }) => ({
+        name: t.name.slice(0, 60),
+        vendor: t.vendor,
+        category: CATEGORY_LABELS[t.category as ToolCategory] ?? t.category,
+        costPerSeat: t.per_seat_cost ?? 0,
+        margin: 0,
+      }),
+    );
+    toolCategories = tools.map((t: { category: string }) => t.category);
+  } else {
+    // Fallback: check onboarding_tool_selections for chat-onboarded users
+    let onbToolItems: ToolCatalogItem[] = [];
+    let onbCategories: string[] = [];
+    try {
+      const { data: onbTools } = await service
+        .from("onboarding_tool_selections")
+        .select("tool_name, vendor_name, category, cost_amount, sell_amount")
+        .eq("org_id", orgId);
+      if (onbTools && onbTools.length > 0) {
+        onbToolItems = onbTools.map((t: { tool_name: string; vendor_name: string | null; category: string; cost_amount: number | null; sell_amount: number | null }) => {
+          const cost = t.cost_amount ?? 0;
+          const sell = t.sell_amount ?? 0;
+          return {
+            name: t.tool_name.slice(0, 60),
+            vendor: t.vendor_name ?? "Unknown",
+            category: CATEGORY_LABELS[t.category as ToolCategory] ?? t.category,
+            costPerSeat: cost,
+            margin: sell > 0 ? Math.round(((sell - cost) / sell) * 100) : 0,
+          };
+        });
+        onbCategories = onbTools.map((t: { category: string }) => t.category);
+      }
+    } catch {
+      // Non-critical
+    }
+    toolCatalogItems = onbToolItems;
+    toolCategories = onbCategories;
+  }
   const categoryBreakdown: Record<string, number> = {};
   for (const t of toolCatalogItems) {
     categoryBreakdown[t.category] = (categoryBreakdown[t.category] ?? 0) + 1;
